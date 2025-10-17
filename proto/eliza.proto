@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package example.v1;
+
+service ElizaService {
+  rpc Say(SayRequest) returns (SayResponse) {}
+}
+
+message SayRequest {
+  string sentence = 1;
+}
+
+message SayResponse {
+  string sentence = 1;
+}
