@@ -1,15 +1,34 @@
 syntax = "proto3";
 
-package example.v1;
+package auth.v1;
 
-service ElizaService {
-  rpc Say(SayRequest) returns (SayResponse) {}
+service AuthService {
+  // SignJWT signs a payload and returns a JWT token
+  rpc SignJWT(SignJWTRequest) returns (SignJWTResponse) {}
+
+  // GetRoles extracts and returns the roles array from a JWT payload
+  rpc GetRoles(GetRolesRequest) returns (GetRolesResponse) {}
 }
 
-message SayRequest {
-  string sentence = 1;
+message UserPayload {
+  string id = 1;
+  repeated string roles = 2;
+  int64 iat = 3;
 }
 
-message SayResponse {
-  string sentence = 1;
+message SignJWTRequest {
+  UserPayload payload = 1;
+  string secret = 2;
+}
+
+message SignJWTResponse {
+  string token = 1;
+}
+
+message GetRolesRequest {
+  string token = 1;
+}
+
+message GetRolesResponse {
+  repeated string roles = 1;
 }

@@ -1,17 +1,7 @@
 import { type Interceptor } from "@connectrpc/connect";
 import jwt from "jsonwebtoken";
 import { userContextKey } from "../context/auth";
-
-export interface UserPayload {
-  sub?: string;
-  name?: string;
-  username?: string;
-  email?: string;
-  roles?: string[];
-  iat?: number;
-  exp?: number;
-  [key: string]: unknown;
-}
+import { type UserPayload } from "../types/auth";
 
 export function authInterceptor(secret: string): Interceptor {
   return (next) => async (req) => {

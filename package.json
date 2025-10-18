@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "gen": "cd proto && bunx buf generate"
+    "gen": "cd proto && bunx buf generate",
+    "dev:backend": "bun --watch src/server.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -21,6 +22,7 @@
     "@connectrpc/connect-node": "^2.1.0",
     "@connectrpc/validate": "^0.2.0",
     "buf": "bufbuild/buf",
+    "effect": "^3.18.4",
     "jsonwebtoken": "^9.0.2"
   }
 }
