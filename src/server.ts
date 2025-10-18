@@ -4,24 +4,23 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { createValidateInterceptor } from "@connectrpc/validate";
 import jwt from "jsonwebtoken";
 import { AuthService } from "./gen/auth/v1/auth_pb.ts";
+import { type UserPayload } from "./types/auth.ts";
+import { authInterceptor } from "./interceptors/auth.ts";
 
-interface UserPayload {
-  id: string;
-  roles: string[];
-  iat: number;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not set");
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-
 const handler = connectNodeAdapter({
-  interceptors: [createValidateInterceptor()],
+  interceptors: [createValidateInterceptor(), authInterceptor(JWT_SECRET)],
   routes: (router: ConnectRouter) => {
     // AuthService implementation
     router.service(AuthService, {
       signJWT(req) {
         try {
           console.log("=== SignJWT Request ===");
-          // console.log("Full request:", JSON.stringify(req, null, 2));
           console.log("Payload:", req.payload);
           console.log("Payload type:", typeof req.payload);
 
@@ -40,12 +39,11 @@ const handler = connectNodeAdapter({
 
           console.log("Payload constructed:", payload);
 
-          const secret = req.secret || JWT_SECRET;
+          const secret = req.secret;
           console.log("Signing with secret length:", secret.length);
 
           const token = jwt.sign(payload, secret, {
             algorithm: "HS256",
-            expiresIn: "1h",
           });
 
           console.log("Token generated successfully");
@@ -61,7 +59,6 @@ const handler = connectNodeAdapter({
           throw new Error(`Failed to sign JWT: ${errorMessage}`);
         }
       },
-
       getRoles(req) {
         try {
           console.log("=== GetRoles Request ===");

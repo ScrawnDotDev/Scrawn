@@ -3,8 +3,16 @@ import jwt from "jsonwebtoken";
 import { userContextKey } from "../context/auth";
 import { type UserPayload } from "../types/auth";
 
+const no_auth = ["/auth.v1.AuthService/SignJWT"];
+
 export function authInterceptor(secret: string): Interceptor {
   return (next) => async (req) => {
+    for (const path of no_auth) {
+      if (req.url.endsWith(path)) {
+        return await next(req);
+      }
+    }
+
     const authorization = req.header.get("Authorization");
     if (!authorization?.startsWith("Bearer ")) {
       throw new Error("Missing or invalid Authorization header");
