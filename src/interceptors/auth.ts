@@ -4,7 +4,7 @@ import { userContextKey } from "../context/auth";
 import { type UserPayload } from "../types/auth";
 import { authSchema } from "../zod/auth";
 import { AuthError, AuthErrorType } from "../errors/auth";
-import { ErrorLogger } from "../errors/logger";
+import { logger } from "../errors/logger";
 
 const no_auth = ["/auth.v1.AuthService/SignJWT"];
 
@@ -21,8 +21,7 @@ export function authInterceptor(secret: string): Interceptor {
       const authorization = req.header.get("Authorization");
       if (!authorization) {
         const error = AuthError.missingHeader();
-        ErrorLogger.logError(
-          "AuthInterceptor",
+        logger.logError(
           AuthErrorType.MISSING_HEADER,
           error.message,
           undefined,
@@ -33,8 +32,7 @@ export function authInterceptor(secret: string): Interceptor {
 
       if (!authorization.startsWith("Bearer ")) {
         const error = AuthError.invalidHeaderFormat();
-        ErrorLogger.logError(
-          "AuthInterceptor",
+        logger.logError(
           AuthErrorType.INVALID_HEADER_FORMAT,
           error.message,
           undefined,
@@ -53,26 +51,17 @@ export function authInterceptor(secret: string): Interceptor {
         let error: AuthError;
         if (err instanceof jwt.TokenExpiredError) {
           error = AuthError.expiredToken(err);
-          ErrorLogger.logError(
-            "AuthInterceptor",
-            AuthErrorType.EXPIRED_TOKEN,
-            error.message,
-            err,
-            { expiredAt: err.expiredAt?.toISOString() },
-          );
+          logger.logError(AuthErrorType.EXPIRED_TOKEN, error.message, err, {
+            expiredAt: err.expiredAt?.toISOString(),
+          });
         } else if (err instanceof jwt.JsonWebTokenError) {
           error = AuthError.invalidToken(err);
-          ErrorLogger.logError(
-            "AuthInterceptor",
-            AuthErrorType.INVALID_TOKEN,
-            error.message,
-            err,
-            { tokenLength: token.length },
-          );
+          logger.logError(AuthErrorType.INVALID_TOKEN, error.message, err, {
+            tokenLength: token.length,
+          });
         } else {
           error = AuthError.unknown(err instanceof Error ? err : undefined);
-          ErrorLogger.logError(
-            "AuthInterceptor",
+          logger.logError(
             AuthErrorType.UNKNOWN,
             error.message,
             err instanceof Error ? err : undefined,
@@ -90,8 +79,7 @@ export function authInterceptor(secret: string): Interceptor {
         const error = AuthError.malformedPayload(
           err instanceof Error ? err : undefined,
         );
-        ErrorLogger.logError(
-          "AuthInterceptor",
+        logger.logError(
           AuthErrorType.MALFORMED_PAYLOAD,
           error.message,
           err instanceof Error ? err : undefined,
@@ -111,12 +99,11 @@ export function authInterceptor(secret: string): Interceptor {
         throw err;
       }
       const error = AuthError.unknown(err instanceof Error ? err : undefined);
-      ErrorLogger.logError(
-        "AuthInterceptor",
+      logger.logError(
         AuthErrorType.UNKNOWN,
         error.message,
         err instanceof Error ? err : undefined,
-        { endpoint: req.url },
+        { endpoint: (err as any)?.url || "unknown" },
       );
       throw error;
     }

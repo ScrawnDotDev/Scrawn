@@ -1,41 +1,46 @@
-type LogLevel = "debug" | "info" | "warn" | "error";
+import pino, { type Logger as PinoLogger } from "pino";
 
-interface LogConfig {
-  level: LogLevel;
-  isDevelopment: boolean;
-  maxDuplicates: number;
+interface LogContext {
+  errorType?: string;
+  location?: string;
+  endpoint?: string;
+  [key: string]: unknown;
 }
 
-const LOG_LEVELS: Record<LogLevel, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-};
+class ErrorLogger {
+  private logger: PinoLogger;
+  private errorCounts = new Map<string, number>();
+  private suppressedErrors = new Set<string>();
+  private maxDuplicates = 3;
 
-export class ErrorLogger {
-  private static config: LogConfig = {
-    level: "error",
-    isDevelopment: process.env.NODE_ENV !== "production",
-    maxDuplicates: 3,
-  };
+  constructor() {
+    const isDev = process.env.NODE_ENV !== "production";
 
-  private static errorCounts = new Map<string, number>();
-  private static suppressedErrors = new Set<string>();
-
-  static configure(config: Partial<LogConfig>): void {
-    this.config = { ...this.config, ...config };
+    this.logger = pino({
+      level: process.env.LOG_LEVEL || "info",
+      transport: isDev
+        ? {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              translateTime: "SYS:standard",
+              ignore: "pid,hostname",
+              singleLine: false,
+            },
+          }
+        : undefined,
+    });
   }
 
-  private static getErrorKey(prefix: string, message: string): string {
-    return `${prefix}:${message}`;
+  private getErrorKey(errorType: string, message: string): string {
+    return `${errorType}:${message}`;
   }
 
-  private static shouldLog(prefix: string, message: string): boolean {
-    const key = this.getErrorKey(prefix, message);
+  private shouldLog(errorType: string, message: string): boolean {
+    const key = this.getErrorKey(errorType, message);
     const count = this.errorCounts.get(key) || 0;
 
-    if (count >= this.config.maxDuplicates) {
+    if (count >= this.maxDuplicates) {
       this.suppressedErrors.add(key);
       return false;
     }
@@ -44,109 +49,66 @@ export class ErrorLogger {
     return true;
   }
 
-  private static extractLocation(error?: Error): string {
+  logError(
+    errorType: string,
+    message: string,
+    originalError?: Error,
+    context?: LogContext,
+  ): void {
+    if (!this.shouldLog(errorType, message)) {
+      return;
+    }
+
+    const logContext: Record<string, unknown> = {
+      errorType,
+      ...context,
+    };
+
+    if (originalError) {
+      logContext.cause = originalError.message;
+      logContext.location = this.extractLocation(originalError);
+    }
+
+    this.logger.error(logContext, message);
+  }
+
+  logWarning(message: string, context?: LogContext): void {
+    this.logger.warn(context || {}, message);
+  }
+
+  logInfo(message: string, context?: LogContext): void {
+    this.logger.info(context || {}, message);
+  }
+
+  logDebug(message: string, context?: LogContext): void {
+    this.logger.debug(context || {}, message);
+  }
+
+  private extractLocation(error: Error): string {
     if (!error?.stack) return "unknown location";
 
     const lines = error.stack.split("\n");
-    // Find the first meaningful line after the error message
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i]?.trim();
       if (line?.startsWith("at ")) {
-        const location =
-          line.replace("at ", "").split(" ")[0] || "unknown location";
-        return location;
+        return line.replace("at ", "").split(" ")[0] || "unknown location";
       }
     }
     return "unknown location";
   }
 
-  private static formatErrorDetails(
-    errorType: string,
-    message: string,
-    originalError?: Error,
-    details?: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const output: Record<string, unknown> = {
-      type: errorType,
-      message,
-    };
-
-    if (originalError) {
-      output.cause = originalError.message;
-      output.location = this.extractLocation(originalError);
-    }
-
-    if (details && Object.keys(details).length > 0) {
-      output.details = details;
-    }
-
-    return output;
-  }
-
-  static logError(
-    prefix: string,
-    errorType: string,
-    message: string,
-    originalError?: Error,
-    details?: Record<string, unknown>,
-  ): void {
-    if (!this.shouldLog(prefix, message)) {
-      return;
-    }
-
-    const output = this.formatErrorDetails(
-      errorType,
-      message,
-      originalError,
-      details,
-    );
-
-    console.error(`❌ [${prefix}]`, output);
-  }
-
-  static logWarning(
-    prefix: string,
-    message: string,
-    details?: Record<string, unknown>,
-  ): void {
-    const output: Record<string, unknown> = {
-      message,
-    };
-
-    if (details && Object.keys(details).length > 0) {
-      output.details = details;
-    }
-
-    console.warn(`⚠️  [${prefix}]`, output);
-  }
-
-  static logDebug(prefix: string, message: string, data?: unknown): void {
-    if (
-      !this.config.isDevelopment ||
-      LOG_LEVELS[this.config.level] > LOG_LEVELS.debug
-    ) {
-      return;
-    }
-    console.debug(`🔍 [${prefix}]`, message, data);
-  }
-
-  static logInfo(prefix: string, message: string, data?: unknown): void {
-    if (LOG_LEVELS[this.config.level] > LOG_LEVELS.info) {
-      return;
-    }
-    console.info(`ℹ️  [${prefix}]`, message, data);
-  }
-
-  static resetErrorCounts(): void {
+  resetErrorCounts(): void {
     this.errorCounts.clear();
     this.suppressedErrors.clear();
   }
 
-  static getSuppressedErrorCount(): number {
+  getSuppressedErrorCount(): number {
     return this.suppressedErrors.size;
   }
 
-  static getSuppressedErrors(): string[] {
+  getSuppressedErrors(): string[] {
     return Array.from(this.suppressedErrors);
   }
 }
+
+export const logger = new ErrorLogger();
