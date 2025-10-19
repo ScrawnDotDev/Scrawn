@@ -23,6 +23,7 @@
     "@connectrpc/validate": "^0.2.0",
     "buf": "bufbuild/buf",
     "effect": "^3.18.4",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^4.1.12"
   }
 }

@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file auth/v1/auth.proto.
  */
 export const file_auth_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiNQoLVXNlclBheWxvYWQSCgoCaWQYASABKAkSDQoFcm9sZXMYAiADKAkSCwoDaWF0GAMgASgDIkcKDlNpZ25KV1RSZXF1ZXN0EiUKB3BheWxvYWQYASABKAsyFC5hdXRoLnYxLlVzZXJQYXlsb2FkEg4KBnNlY3JldBgCIAEoCSIgCg9TaWduSldUUmVzcG9uc2USDQoFdG9rZW4YASABKAkiIAoPR2V0Um9sZXNSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIiEKEEdldFJvbGVzUmVzcG9uc2USDQoFcm9sZXMYASADKAkykAEKC0F1dGhTZXJ2aWNlEj4KB1NpZ25KV1QSFy5hdXRoLnYxLlNpZ25KV1RSZXF1ZXN0GhguYXV0aC52MS5TaWduSldUUmVzcG9uc2UiABJBCghHZXRSb2xlcxIYLmF1dGgudjEuR2V0Um9sZXNSZXF1ZXN0GhkuYXV0aC52MS5HZXRSb2xlc1Jlc3BvbnNlIgBiBnByb3RvMw");
+  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiKAoLVXNlclBheWxvYWQSCgoCaWQYASABKAkSDQoFcm9sZXMYAiADKAkiRwoOU2lnbkpXVFJlcXVlc3QSJQoHcGF5bG9hZBgBIAEoCzIULmF1dGgudjEuVXNlclBheWxvYWQSDgoGc2VjcmV0GAIgASgJIiAKD1NpZ25KV1RSZXNwb25zZRINCgV0b2tlbhgBIAEoCSIgCg9HZXRSb2xlc1JlcXVlc3QSDQoFdG9rZW4YASABKAkiIQoQR2V0Um9sZXNSZXNwb25zZRINCgVyb2xlcxgBIAMoCTKQAQoLQXV0aFNlcnZpY2USPgoHU2lnbkpXVBIXLmF1dGgudjEuU2lnbkpXVFJlcXVlc3QaGC5hdXRoLnYxLlNpZ25KV1RSZXNwb25zZSIAEkEKCEdldFJvbGVzEhguYXV0aC52MS5HZXRSb2xlc1JlcXVlc3QaGS5hdXRoLnYxLkdldFJvbGVzUmVzcG9uc2UiAGIGcHJvdG8z");
 
 /**
  * @generated from message auth.v1.UserPayload
@@ -25,11 +25,6 @@ export type UserPayload = Message<"auth.v1.UserPayload"> & {
    * @generated from field: repeated string roles = 2;
    */
   roles: string[];
-
-  /**
-   * @generated from field: int64 iat = 3;
-   */
-  iat: bigint;
 };
 
 /**

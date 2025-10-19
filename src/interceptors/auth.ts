@@ -2,6 +2,9 @@ import { type Interceptor } from "@connectrpc/connect";
 import jwt from "jsonwebtoken";
 import { userContextKey } from "../context/auth";
 import { type UserPayload } from "../types/auth";
+import { authSchema } from "../zod/auth";
+import { AuthError, AuthErrorType } from "../errors/auth";
+import { ErrorLogger } from "../errors/logger";
 
 const no_auth = ["/auth.v1.AuthService/SignJWT"];
 
@@ -13,19 +16,109 @@ export function authInterceptor(secret: string): Interceptor {
       }
     }
 
-    const authorization = req.header.get("Authorization");
-    if (!authorization?.startsWith("Bearer ")) {
-      throw new Error("Missing or invalid Authorization header");
-    }
-
-    const token = authorization.slice("Bearer ".length);
-
     try {
-      const decoded = jwt.verify(token, secret) as UserPayload;
-      // attach user info to context for use in handlers
-      req.contextValues.set(userContextKey, decoded);
+      // Extract and validate authorization header
+      const authorization = req.header.get("Authorization");
+      if (!authorization) {
+        const error = AuthError.missingHeader();
+        ErrorLogger.logError(
+          "AuthInterceptor",
+          AuthErrorType.MISSING_HEADER,
+          error.message,
+          undefined,
+          { endpoint: req.url },
+        );
+        throw error;
+      }
+
+      if (!authorization.startsWith("Bearer ")) {
+        const error = AuthError.invalidHeaderFormat();
+        ErrorLogger.logError(
+          "AuthInterceptor",
+          AuthErrorType.INVALID_HEADER_FORMAT,
+          error.message,
+          undefined,
+          { headerValue: authorization.substring(0, 20) + "..." },
+        );
+        throw error;
+      }
+
+      const token = authorization.slice("Bearer ".length);
+
+      // Verify JWT signature and decode
+      let decoded: unknown;
+      try {
+        decoded = jwt.verify(token, secret);
+      } catch (err) {
+        let error: AuthError;
+        if (err instanceof jwt.TokenExpiredError) {
+          error = AuthError.expiredToken(err);
+          ErrorLogger.logError(
+            "AuthInterceptor",
+            AuthErrorType.EXPIRED_TOKEN,
+            error.message,
+            err,
+            { expiredAt: err.expiredAt?.toISOString() },
+          );
+        } else if (err instanceof jwt.JsonWebTokenError) {
+          error = AuthError.invalidToken(err);
+          ErrorLogger.logError(
+            "AuthInterceptor",
+            AuthErrorType.INVALID_TOKEN,
+            error.message,
+            err,
+            { tokenLength: token.length },
+          );
+        } else {
+          error = AuthError.unknown(err instanceof Error ? err : undefined);
+          ErrorLogger.logError(
+            "AuthInterceptor",
+            AuthErrorType.UNKNOWN,
+            error.message,
+            err instanceof Error ? err : undefined,
+            { endpoint: req.url },
+          );
+        }
+        throw error;
+      }
+
+      // Validate payload structure against schema
+      let payload: UserPayload;
+      try {
+        payload = authSchema.parse(decoded) as UserPayload;
+      } catch (err) {
+        const error = AuthError.malformedPayload(
+          err instanceof Error ? err : undefined,
+        );
+        ErrorLogger.logError(
+          "AuthInterceptor",
+          AuthErrorType.MALFORMED_PAYLOAD,
+          error.message,
+          err instanceof Error ? err : undefined,
+          {
+            decodedKeys: Object.keys(decoded as Record<string, unknown>),
+            expectedKeys: ["id", "roles", "iat"],
+          },
+        );
+        throw error;
+      }
+
+      // Attach user info to context for use in handlers
+      req.contextValues.set(userContextKey, payload);
     } catch (err) {
-      throw new Error("Invalid or expired token");
+      // Re-throw AuthError as-is, wrap other errors
+      if (err instanceof AuthError) {
+        throw err;
+      }
+      const error = AuthError.unknown(err instanceof Error ? err : undefined);
+      ErrorLogger.logError(
+        "AuthInterceptor",
+        AuthErrorType.UNKNOWN,
+        error.message,
+        err instanceof Error ? err : undefined,
+        { endpoint: req.url },
+      );
+      throw error;
     }
 
     return await next(req);

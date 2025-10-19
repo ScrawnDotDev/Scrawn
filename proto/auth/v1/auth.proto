@@ -13,7 +13,6 @@ service AuthService {
 message UserPayload {
   string id = 1;
   repeated string roles = 2;
-  int64 iat = 3;
 }
 
 message SignJWTRequest {

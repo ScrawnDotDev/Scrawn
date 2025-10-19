@@ -4,8 +4,10 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { createValidateInterceptor } from "@connectrpc/validate";
 import jwt from "jsonwebtoken";
 import { AuthService } from "./gen/auth/v1/auth_pb.ts";
-import { type UserPayload } from "./types/auth.ts";
+import { type UserPayload } from "./types/auth";
 import { authInterceptor } from "./interceptors/auth.ts";
+import { userContextKey } from "./context/auth.ts";
+import { AuthError } from "./errors/auth.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -25,16 +27,14 @@ const handler = connectNodeAdapter({
           console.log("Payload type:", typeof req.payload);
 
           if (!req.payload) {
-            throw new Error("Payload is required");
+            throw AuthError.invalidPayload("Payload is required");
           }
 
           console.log("Creating UserPayload...");
           const payload: UserPayload = {
             id: req.payload.id || "",
             roles: Array.isArray(req.payload.roles) ? req.payload.roles : [],
-            iat:
-              parseInt(req.payload.iat.toString()) ||
-              parseInt(Math.floor(Date.now() / 1000).toString()),
+            iat: Math.floor(Date.now() / 1000),
           };
 
           console.log("Payload constructed:", payload);
@@ -56,23 +56,24 @@ const handler = connectNodeAdapter({
           console.error("=== SignJWT Error ===");
           console.error("Message:", errorMessage);
           console.error("Stack:", stack);
-          throw new Error(`Failed to sign JWT: ${errorMessage}`);
+          throw AuthError.signingError(`Failed to sign JWT: ${errorMessage}`);
         }
       },
-      getRoles(req) {
+      getRoles(req, context) {
         try {
           console.log("=== GetRoles Request ===");
           console.log("Token:", req.token.substring(0, 20) + "...");
 
-          const secret = JWT_SECRET;
+          const payload = context.values.get(userContextKey);
 
-          // Verify and decode the token
-          const decoded = jwt.verify(req.token, secret) as UserPayload;
-
-          console.log("Decoded token:", decoded);
+          if (!payload) {
+            throw AuthError.invalidPayload(
+              "User payload is missing in context",
+            );
+          }
 
           // Extract roles array from the payload
-          const roles = decoded.roles || [];
+          const roles = payload.roles || [];
 
           console.log("Extracted roles:", roles);
 
@@ -82,7 +83,9 @@ const handler = connectNodeAdapter({
             error instanceof Error ? error.message : String(error);
           console.error("=== GetRoles Error ===");
           console.error("Message:", errorMessage);
-          throw new Error(`Failed to extract roles from JWT: ${errorMessage}`);
+          throw AuthError.invalidPayload(
+            `Failed to extract roles from JWT: ${errorMessage}`,
+          );
         }
       },
     });
