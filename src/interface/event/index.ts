@@ -1,1 +1,1 @@
-export { type EventType as Event } from "./Event.ts";
+export { type EventType } from "./Event.ts";

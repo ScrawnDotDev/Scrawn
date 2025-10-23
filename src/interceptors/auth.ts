@@ -17,6 +17,13 @@ export function authInterceptor(secret: string): Interceptor {
     }
 
     try {
+      let split = req.url.split("/");
+      console.log(`=> ${split[split.length - 2]}/${split[split.length - 1]}`);
+    } catch (e) {
+      console.error("=> could not parse endpoint for logging", req.url);
+    }
+
+    try {
       // Extract and validate authorization header
       const authorization = req.header.get("Authorization");
       if (!authorization) {

@@ -5,11 +5,11 @@ export class ServerlessFunctionCallEvent
   implements ServerlessFunctionCallEventType
 {
   public reported_timestamp: DateTime;
+  public readonly type = "SERVERLESS_FUNCTION_CALL" as const;
 
   constructor(
     public userId: string,
     public data: { debitAmount: number },
-    public type: "SERVERLESS_FUNCTION_CALL",
   ) {
     this.reported_timestamp = DateTime.utc();
   }

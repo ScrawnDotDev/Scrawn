@@ -1,4 +1,4 @@
-import type { Event } from "../interface/event/index.ts";
+import type { EventType } from "../interface/event/index.ts";
 import type { StorageAdapter } from "../interface/storage/Storage.ts";
 
 /**
