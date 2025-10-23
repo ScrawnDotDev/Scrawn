@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package event.v1;
+
+service EventService {
+  // RegisterEvent registers an event as being done by a user
+  rpc RegisterEvent(RegisterEventRequest) returns (RegisterEventResponse) {}
+}
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  SERVERLESS_FUNCTION_CALL = 1
+}
+
+message RegisterEventRequest {
+    EventType type = 1;
+    string userId = 2;
+    
+}

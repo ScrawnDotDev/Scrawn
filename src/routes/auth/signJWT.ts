@@ -2,6 +2,7 @@ import { AuthError } from "../../errors/auth";
 import jwt from "jsonwebtoken";
 import { type UserPayload } from "../../types/auth";
 import { type SignJWTRequest } from "../../gen/auth/v1/auth_pb";
+import { DateTime } from "luxon";
 
 export function signJWT(req: SignJWTRequest) {
   try {
@@ -17,7 +18,7 @@ export function signJWT(req: SignJWTRequest) {
     const payload: UserPayload = {
       id: req.payload.id || "",
       roles: Array.isArray(req.payload.roles) ? req.payload.roles : [],
-      iat: Math.floor(Date.now() / 1000),
+      iat: DateTime.utc().toUnixInteger(),
     };
 
     console.log("Payload constructed:", payload);
