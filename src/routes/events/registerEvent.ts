@@ -49,7 +49,7 @@ export function registerEvent(req: RegisterEventRequest) {
     // Serialize the event
     let serializedEvent: string;
     try {
-      StorageAdapterFactory.getStorageAdapter(event).consume();
+      StorageAdapterFactory.getStorageAdapter(event).add();
       // console.log("Event serialized successfully:", serializedEvent);
     } catch (error) {
       throw EventError.serializationError(

@@ -8,12 +8,20 @@ import { authInterceptor } from "./interceptors/auth.ts";
 import { signJWT } from "./routes/auth/signJWT.ts";
 import { getRoles } from "./routes/auth/getRoles.ts";
 import { registerEvent } from "./routes/events/registerEvent.ts";
+import { getPostgresDB } from "./storage/postgres.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is not set");
 }
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is not defined in environment variables");
+}
+
+getPostgresDB(DATABASE_URL);
 
 const handler = connectNodeAdapter({
   interceptors: [createValidateInterceptor(), authInterceptor(JWT_SECRET)],
