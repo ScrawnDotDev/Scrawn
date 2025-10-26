@@ -3,11 +3,13 @@ import type { EventType } from "../event/Event.ts";
 /**
  * Storage - Consumes events
  */
-export interface StorageAdapter {
+export interface StorageAdapterType {
   name: string;
-  consume(event: EventType): Promise<void>;
+  event: EventType;
+
+  consume(): Promise<void>;
 }
 
-export interface PostgresStorageAdapter extends StorageAdapter {
-  name: "POSTGRES",
+export interface PostgresStorageAdapterType extends StorageAdapterType {
+  name: "POSTGRES";
 }

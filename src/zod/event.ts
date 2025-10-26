@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const BaseEvent = z.object({
-  type: z.string(), // overwritten later by discriminators
+  type: z.number(), // overwritten later by discriminators
   userId: z.uuid(),
 });
 

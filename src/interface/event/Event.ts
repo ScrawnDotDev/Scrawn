@@ -1,4 +1,5 @@
 import type { DateTime } from "luxon";
+import { type StorageAdapterType } from "../storage/Storage";
 
 type ServerlessFunctionCallEventData = {
   debitAmount: number;
