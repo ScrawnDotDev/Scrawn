@@ -28,8 +28,11 @@ export class AuthError extends ConnectError {
     this.type = context.type;
     this.originalError = context.originalError;
 
-    // Maintain proper prototype chain for instanceof checks
-    Object.setPrototypeOf(this, AuthError.prototype);
+    // Fix prototype chain for instanceof checks
+    // Must set AuthError.prototype after ConnectError constructor
+    if (Object.getPrototypeOf(this) !== AuthError.prototype) {
+      Object.setPrototypeOf(this, AuthError.prototype);
+    }
   }
 
   static missingHeader(): AuthError {

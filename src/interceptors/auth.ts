@@ -1,5 +1,5 @@
 import { type Interceptor } from "@connectrpc/connect";
-import jwt from "jsonwebtoken";
+import jwt, { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 import { userContextKey } from "../context/auth";
 import { type UserPayload } from "../types/auth";
 import { authSchema } from "../zod/auth";
@@ -56,12 +56,12 @@ export function authInterceptor(secret: string): Interceptor {
         decoded = jwt.verify(token, secret);
       } catch (err) {
         let error: AuthError;
-        if (err instanceof jwt.TokenExpiredError) {
+        if (err instanceof TokenExpiredError) {
           error = AuthError.expiredToken(err);
           logger.logError(AuthErrorType.EXPIRED_TOKEN, error.message, err, {
             expiredAt: err.expiredAt?.toISOString(),
           });
-        } else if (err instanceof jwt.JsonWebTokenError) {
+        } else if (err instanceof JsonWebTokenError) {
           error = AuthError.invalidToken(err);
           logger.logError(AuthErrorType.INVALID_TOKEN, error.message, err, {
             tokenLength: token.length,
@@ -102,7 +102,7 @@ export function authInterceptor(secret: string): Interceptor {
       req.contextValues.set(userContextKey, payload);
     } catch (err) {
       // Re-throw AuthError as-is, wrap other errors
-      if (err instanceof AuthError) {
+      if (err instanceof AuthError || (err as any)?.type in AuthErrorType) {
         throw err;
       }
       const error = AuthError.unknown(err instanceof Error ? err : undefined);

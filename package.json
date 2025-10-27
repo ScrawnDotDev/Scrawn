@@ -5,13 +5,17 @@
   "private": true,
   "scripts": {
     "gen": "cd proto && bunx buf generate",
-    "dev:backend": "bun --watch src/server.ts"
+    "dev:backend": "bun --watch src/server.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/jsonwebtoken": "^9.0.10",
+    "@vitest/ui": "^4.0.3",
     "drizzle-kit": "^0.31.5",
-    "tsx": "^4.20.6"
+    "tsx": "^4.20.6",
+    "vitest": "^4.0.3"
   },
   "peerDependencies": {
     "typescript": "^5"
