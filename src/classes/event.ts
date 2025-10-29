@@ -14,12 +14,15 @@ export class ServerlessFunctionCallEvent
     this.reported_timestamp = DateTime.utc();
   }
 
-  serialize(): string {
-    return JSON.stringify({
-      type: this.type,
-      userId: this.userId,
-      reported_timestamp: this.reported_timestamp,
-      data: this.data,
-    });
+  serialize() {
+    return {
+      POSTGRES: {
+        type: this.type,
+        userId: this.userId,
+        reported_timestamp: this.reported_timestamp,
+        data: this.data,
+      },
+    };
   }
 }
+ 
