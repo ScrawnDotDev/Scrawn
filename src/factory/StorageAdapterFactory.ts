@@ -1,6 +1,6 @@
 import type { EventType } from "../interface/event/Event.ts";
 import type { StorageAdapterType } from "../interface/storage/Storage.ts";
-import { PostgresStorageAdapter } from "../classes/storage.ts";
+import { PostgresStorageAdapter } from "../storage/adapters/postgres/PostgresStorageAdapter.ts";
 
 /**
  * StorageAdapterFactory

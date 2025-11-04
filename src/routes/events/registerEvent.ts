@@ -1,7 +1,7 @@
 import type { RegisterEventRequest } from "../../gen/event/v1/event_pb";
 import { eventSchema } from "../../zod/event";
 import { type EventType } from "../../interface/event/Event";
-import { ServerlessFunctionCallEvent } from "../../classes/event";
+import { ServerlessFunctionCallEvent } from "../../events/ServerlessFunctionCallEvent";
 import { EventError } from "../../errors/event";
 import { ZodError } from "zod";
 import { StorageAdapterFactory } from "../../factory";
