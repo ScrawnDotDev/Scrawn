@@ -5,3 +5,14 @@ export type { AuthErrorContext } from "./auth";
 // Event errors
 export { EventError, EventErrorType } from "./event";
 export type { EventErrorContext } from "./event";
+
+// Storage errors
+export { StorageError, StorageErrorType } from "./storage";
+export type { StorageErrorContext } from "./storage";
+
+// PostgreSQL Storage errors
+export {
+  PostgresStorageError,
+  PostgresStorageErrorType,
+} from "./postgres-storage";
+export type { PostgresStorageErrorContext } from "./postgres-storage";
