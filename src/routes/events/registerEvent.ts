@@ -1,4 +1,9 @@
-import type { RegisterEventRequest } from "../../gen/event/v1/event_pb";
+import type {
+  RegisterEventRequest,
+  RegisterEventResponse,
+} from "../../gen/event/v1/event_pb";
+import { RegisterEventResponseSchema } from "../../gen/event/v1/event_pb";
+import { create } from "@bufbuild/protobuf";
 import { eventSchema } from "../../zod/event";
 import { type EventType } from "../../interface/event/Event";
 import { ServerlessFunctionCallEvent } from "../../events/ServerlessFunctionCallEvent";
@@ -6,7 +11,9 @@ import { EventError } from "../../errors/event";
 import { ZodError } from "zod";
 import { StorageAdapterFactory } from "../../factory";
 
-export function registerEvent(req: RegisterEventRequest) {
+export async function registerEvent(
+  req: RegisterEventRequest,
+): Promise<RegisterEventResponse> {
   try {
     // Validate the incoming request against the schema
     let eventSkeleton;
@@ -46,19 +53,20 @@ export function registerEvent(req: RegisterEventRequest) {
       throw EventError.unknown(error as Error);
     }
 
-    // Serialize the event
-    let serializedEvent: string;
+    // Get the storage adapter and persist the event
     try {
-      StorageAdapterFactory.getStorageAdapter(event).add();
-      // console.log("Event serialized successfully:", serializedEvent);
+      const adapter = StorageAdapterFactory.getStorageAdapter(event);
+      await adapter.add();
     } catch (error) {
       throw EventError.serializationError(
-        "Failed to serialize event data",
+        "Failed to store event",
         error as Error,
       );
     }
 
-    return { random: "Yello" };
+    return create(RegisterEventResponseSchema, {
+      random: "Event stored successfully",
+    });
   } catch (error) {
     console.error("=== RegisterEvent Error ===");
     console.error("Error:", error);

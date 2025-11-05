@@ -16,7 +16,7 @@ export class ServerlessFunctionCallEvent
 
   serialize() {
     return {
-      POSTGRES: {
+      SQL: {
         type: this.type,
         userId: this.userId,
         reported_timestamp: this.reported_timestamp,

@@ -1,5 +1,4 @@
 import type { DateTime } from "luxon";
-import { type StorageAdapterType } from "../storage/Storage";
 
 type ServerlessFunctionCallEventData = {
   debitAmount: number;
@@ -12,8 +11,10 @@ type EventDataMap = {
   SERVERLESS_FUNCTION_CALL: ServerlessFunctionCallEventData;
 };
 
-type EventStorageAdapterMap<Type extends keyof EventDataMap = keyof EventDataMap> = {
-  POSTGRES: {
+type EventStorageAdapterMap<
+  Type extends keyof EventDataMap = keyof EventDataMap,
+> = {
+  SQL: {
     type: Type;
     userId: string;
     reported_timestamp: DateTime;

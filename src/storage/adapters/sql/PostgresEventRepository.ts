@@ -3,14 +3,15 @@ import {
   eventsTable,
   serverlessFunctionCallEventsTable,
   usersTable,
-} from "../../db/schema";
+} from "../../db/postgres/schema";
 import { PostgresStorageError } from "../../../errors/postgres-storage";
+import type { IEventRepository } from "./IEventRepository";
 
-export class EventRepository {
+export class PostgresEventRepository implements IEventRepository {
   /**
    * Insert a new user or skip if already exists (duplicate key)
    */
-  static async insertOrSkipUser(
+  async insertOrSkipUser(
     txn: PgTransaction<any, any>,
     userId: string,
   ): Promise<void> {
@@ -35,7 +36,7 @@ export class EventRepository {
   /**
    * Insert an event and return the generated ID
    */
-  static async insertEvent(
+  async insertEvent(
     txn: PgTransaction<any, any>,
     reportedTimestamp: string,
     userId: string,
@@ -71,7 +72,7 @@ export class EventRepository {
   /**
    * Insert serverless function call event-specific details
    */
-  static async insertServerlessFunctionCallEventDetails(
+  async insertServerlessFunctionCallEventDetails(
     txn: PgTransaction<any, any>,
     eventId: string,
     debitAmount: number,
