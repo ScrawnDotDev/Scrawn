@@ -8,7 +8,7 @@ import { authInterceptor } from "./interceptors/auth.ts";
 import { signJWT } from "./routes/auth/signJWT.ts";
 import { getRoles } from "./routes/auth/getRoles.ts";
 import { registerEvent } from "./routes/events/registerEvent.ts";
-import { SQLAdapterFactory } from "./storage/handlers/SQLAdapter.ts";
+import { SQLAdapterFactory } from "./storage/handlers/SQLAdapterFactory.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const DATABASE_URL = process.env.DATABASE_URL;

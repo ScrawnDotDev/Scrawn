@@ -38,11 +38,11 @@ export class SQLAdapterFactory {
    * @returns The corresponding ServerlessFunctionCallHandler implementation
    * @throws Error if an unsupported database type is provided
    */
-  static getConnector() {
+  static async getConnector() {
     const type = this.getAdapter();
     switch (type) {
       case "MYSQL":
-        return getMysqlDB();
+        return await getMysqlDB();
       case "POSTGRES":
         return getPostgresDB();
       case "SQLITE":

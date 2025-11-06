@@ -40,7 +40,7 @@ export const serverlessFunctionCallEventsTable = mysqlTable(
     debitAmount: decimal("debit_amount", {
       precision: 19,
       scale: 4,
-      mode: "string",
+      mode: "number",
     }).notNull(),
   },
 );

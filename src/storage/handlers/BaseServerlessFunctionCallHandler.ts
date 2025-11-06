@@ -1,8 +1,9 @@
 import { StorageError } from "../../errors/storage";
 import type { ServerlessFunctionCallEventType } from "../../interface/event/Event";
 import type { IEventRepository } from "../adapters/sql/IEventRepository";
-import { SQLAdapterFactory } from "./SQLAdapter";
-import { EventRepositoryFactory } from "./SQLRepository";
+import { SQLAdapterFactory } from "./SQLAdapterFactory";
+import { SQLRepositoryFactory } from "./SQLRepository";
+import { type TransactionType } from "../../types/drizzle";
 
 /**
  * Abstract base handler for SERVERLESS_FUNCTION_CALL events
@@ -10,6 +11,8 @@ import { EventRepositoryFactory } from "./SQLRepository";
  * Each database implementation only needs to implement 4 template methods
  */
 export abstract class BaseServerlessFunctionCallHandler {
+  private cachedRepository: IEventRepository | null = null;
+
   /**
    * Handle SERVERLESS_FUNCTION_CALL event storage
    * Uses injected database-specific implementations
@@ -59,9 +62,9 @@ export abstract class BaseServerlessFunctionCallHandler {
     reportedTimestamp: string,
   ): Promise<void> {
     try {
-      const repository = this.getRepository();
+      const repository = await this.getRepository();
 
-      await this.executeInTransaction(async (txn: any) => {
+      await this.executeInTransaction(async (txn) => {
         try {
           // Step 1: Insert or skip user if already exists
           await repository.insertOrSkipUser(txn, event.userId);
@@ -114,40 +117,39 @@ export abstract class BaseServerlessFunctionCallHandler {
 
   /**
    * Get the database connection
-   * Implemented by subclasses for database-specific initialization
    */
-  protected getDatabase(): any {
-    return SQLAdapterFactory.getConnector();
+  protected async getDatabase() {
+    return await SQLAdapterFactory.getConnector();
   }
 
   /**
    * Get the event repository
-   * Implemented by subclasses with database-specific repository
+   * Caches the repository to avoid repeated async operations
    */
-  protected getRepository(): IEventRepository {
-    return EventRepositoryFactory.getRepository();
+  protected async getRepository(): Promise<IEventRepository> {
+    if (!this.cachedRepository) {
+      this.cachedRepository = await SQLRepositoryFactory.getRepository();
+    }
+    return this.cachedRepository;
   }
 
   /**
    * Execute code within a transaction
-   * Implemented by subclasses for database-specific transaction handling
    */
   protected async executeInTransaction(
-    callback: (txn: any) => Promise<void>,
+    callback: (txn: TransactionType) => Promise<void>,
   ): Promise<void> {
     const db = await this.getDatabase();
-    await db.transaction(async (txn: any) => {
+    await db.transaction(async (txn) => {
       await callback(txn);
     });
   }
 
   /**
    * Convert timestamp to database-specific format
-   * Implemented by subclasses for database-specific timestamp handling
    */
   protected convertTimestamp(dt: any): string | null {
     try {
-      // Try ISO format first, then SQL, then toString as fallback
       return dt.toISO() || dt.toSQL() || dt.toString();
     } catch (error) {
       console.error("Failed to convert timestamp to string:", error);
@@ -157,8 +159,6 @@ export abstract class BaseServerlessFunctionCallHandler {
 
   /**
    * Create an error with database-specific error handling
-   * Implemented by subclasses for database-specific error types
-   * Returns Error type since subclasses may throw StorageError or PostgresStorageError
    */
   protected createError(type: string, message: string): Error {
     switch (type) {

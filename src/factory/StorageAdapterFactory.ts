@@ -1,5 +1,5 @@
 import type { EventType } from "../interface/event/Event.ts";
-import { SQLAdapterFactory } from "../storage/handlers/SQLAdapter.ts";
+import { SQLAdapterFactory } from "../storage/handlers/SQLAdapterFactory.ts";
 
 /**
  * StorageAdapterFactory - Facade for the new SQL adapter factory

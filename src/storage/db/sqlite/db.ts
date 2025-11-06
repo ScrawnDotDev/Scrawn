@@ -19,3 +19,6 @@ export function getSqliteDB(DATABASE_PATH?: string) {
 
   return db;
 }
+
+export const { usersTable, eventsTable, serverlessFunctionCallEventsTable } =
+  schema;

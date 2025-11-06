@@ -13,3 +13,8 @@ export async function getMysqlDB(DATABASE_URL?: string) {
   db = drizzle(process.env.DATABASE_URL!, { schema, mode: "default" });
   return db;
 }
+
+export const usersTable = schema.usersTable;
+export const eventsTable = schema.eventsTable;
+export const serverlessFunctionCallEventsTable =
+  schema.serverlessFunctionCallEventsTable;
