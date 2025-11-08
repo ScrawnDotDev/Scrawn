@@ -1,148 +1,473 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { getRoles } from "../routes/auth/getRoles";
+import { AuthError } from "../errors/auth";
 import { userContextKey } from "../context/auth";
-import type { HandlerContext } from "@connectrpc/connect";
+import { isAuthError } from "./helpers/error";
+import type { UserPayload } from "../types/auth";
 import type { GetRolesRequest } from "../gen/auth/v1/auth_pb";
+import type { HandlerContext } from "@connectrpc/connect";
 
 describe("getRoles", () => {
-  let mockContext: Partial<HandlerContext>;
+  let mockRequest: GetRolesRequest;
+  let mockContext: HandlerContext;
+  let consoleLogSpy: any;
+  let consoleErrorSpy: any;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockRequest = {
+      token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.signature",
+    } as GetRolesRequest;
+
     mockContext = {
-      values: new Map() as any,
-    };
+      values: new Map(),
+    } as HandlerContext;
   });
 
-  const createUserPayload = (roles: string[]) => ({
-    id: "12345678-1234-1234-1234-123456789012",
-    roles,
-    iat: 1688132800,
-  });
-
-  const createRequest = (token = "test-token") => ({
-    token,
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   describe("successful role extraction", () => {
-    it("should return roles from context payload", () => {
-      const testCases = [
-        { roles: ["admin", "user"], description: "multiple roles" },
-        { roles: ["admin"], description: "single role" },
-        { roles: [], description: "empty array" },
-        {
-          roles: ["admin:write", "user:read"],
-          description: "roles with special characters",
-        },
-      ];
+    it("should extract roles from context payload", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin", "user"],
+        iat: 1234567890,
+      };
 
-      testCases.forEach(({ roles }) => {
-        mockContext.values!.set(userContextKey, createUserPayload(roles));
-        const result = getRoles(
-          createRequest() as GetRolesRequest,
-          mockContext as HandlerContext,
-        );
-        expect(result.roles).toEqual(roles);
-      });
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["admin", "user"]);
     });
 
-    it("should handle missing roles property gracefully", () => {
-      mockContext.values!.set(userContextKey, {
-        id: "12345678-1234-1234-1234-123456789012",
-        iat: 1688132800,
-      } as any);
+    it("should return empty array when roles is empty", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: [],
+        iat: 1234567890,
+      };
 
-      const result = getRoles(
-        createRequest() as GetRolesRequest,
-        mockContext as HandlerContext,
-      );
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
 
       expect(result.roles).toEqual([]);
     });
 
-    it("should handle null or undefined roles", () => {
-      const payloads = [
-        { ...createUserPayload([]), roles: null },
-        { ...createUserPayload([]), roles: undefined },
-      ];
+    it("should handle single role", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin"],
+        iat: 1234567890,
+      };
 
-      payloads.forEach((payload) => {
-        mockContext.values!.set(userContextKey, payload as any);
-        const result = getRoles(
-          createRequest() as GetRolesRequest,
-          mockContext as HandlerContext,
-        );
-        expect(result.roles).toEqual([]);
-      });
-    });
+      mockContext.values.set(userContextKey, userPayload);
 
-    it("should preserve role order", () => {
-      const roles = ["viewer", "moderator", "admin", "user"];
-      mockContext.values!.set(userContextKey, createUserPayload(roles));
-
-      const result = getRoles(
-        createRequest() as GetRolesRequest,
-        mockContext as HandlerContext,
-      );
-
-      expect(result.roles).toEqual(roles);
-    });
-  });
-
-  describe("error handling", () => {
-    it("should throw error when payload is missing from context", () => {
-      expect(() => {
-        getRoles(
-          createRequest() as GetRolesRequest,
-          mockContext as HandlerContext,
-        );
-      }).toThrow();
-    });
-
-    it("should throw error when payload is null or undefined", () => {
-      [null, undefined].forEach((value) => {
-        mockContext.values!.set(userContextKey, value);
-        expect(() => {
-          getRoles(
-            createRequest() as GetRolesRequest,
-            mockContext as HandlerContext,
-          );
-        }).toThrow();
-      });
-    });
-
-    it("should throw error with helpful message when context is empty", () => {
-      expect(() => {
-        getRoles(
-          createRequest() as GetRolesRequest,
-          mockContext as HandlerContext,
-        );
-      }).toThrow();
-    });
-  });
-
-  describe("edge cases", () => {
-    it("should handle very long token strings", () => {
-      const longToken = "x".repeat(10000);
-      mockContext.values!.set(userContextKey, createUserPayload(["admin"]));
-
-      const result = getRoles(
-        { token: longToken } as GetRolesRequest,
-        mockContext as HandlerContext,
-      );
+      const result = getRoles(mockRequest, mockContext);
 
       expect(result.roles).toEqual(["admin"]);
     });
 
-    it("should return response object with roles property", () => {
-      mockContext.values!.set(userContextKey, createUserPayload(["user"]));
+    it("should handle multiple roles", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin", "user", "moderator", "viewer"],
+        iat: 1234567890,
+      };
 
-      const result = getRoles(
-        createRequest() as GetRolesRequest,
-        mockContext as HandlerContext,
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["admin", "user", "moderator", "viewer"]);
+    });
+
+    it("should preserve role order", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["viewer", "moderator", "user", "admin"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["viewer", "moderator", "user", "admin"]);
+    });
+
+    it("should handle roles with special characters", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin:write", "user:read", "moderator@v1", "viewer#read"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual([
+        "admin:write",
+        "user:read",
+        "moderator@v1",
+        "viewer#read",
+      ]);
+    });
+
+    it("should handle roles with unicode characters", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin", "用户", "管理员"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["admin", "用户", "管理员"]);
+    });
+
+    it("should log request token prefix", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      getRoles(mockRequest, mockContext);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith("=== GetRoles Request ===");
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "Token:",
+        expect.stringContaining("..."),
       );
+    });
+
+    it("should log extracted roles", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin", "user"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      getRoles(mockRequest, mockContext);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith("Extracted roles:", [
+        "admin",
+        "user",
+      ]);
+    });
+  });
+
+  describe("error handling - missing payload", () => {
+    it("should throw AuthError when payload is not in context", () => {
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown AuthError");
+      } catch (error) {
+        expect(isAuthError(error)).toBe(true);
+        expect((error as any).type).toBe("INVALID_PAYLOAD");
+      }
+    });
+
+    it("should throw AuthError when payload is null", () => {
+      mockContext.values.set(userContextKey, null);
+
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown AuthError");
+      } catch (error) {
+        expect(isAuthError(error)).toBe(true);
+        expect((error as any).type).toBe("INVALID_PAYLOAD");
+      }
+    });
+
+    it("should throw AuthError when payload is undefined", () => {
+      mockContext.values.set(userContextKey, undefined);
+
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown AuthError");
+      } catch (error) {
+        expect(isAuthError(error)).toBe(true);
+        expect((error as any).type).toBe("INVALID_PAYLOAD");
+      }
+    });
+
+    it("should include descriptive error message when payload is missing", () => {
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown AuthError");
+      } catch (error) {
+        expect((error as any).rawMessage).toContain(
+          "Failed to extract roles from JWT",
+        );
+      }
+    });
+
+    it("should log error when payload is missing", () => {
+      try {
+        getRoles(mockRequest, mockContext);
+      } catch {
+        // Error expected
+      }
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith("=== GetRoles Error ===");
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe("edge cases", () => {
+    it("should handle payload with missing roles property", () => {
+      const userPayload = {
+        id: "user-123",
+        iat: 1234567890,
+      } as any;
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual([]);
+    });
+
+    it("should handle payload with null roles", () => {
+      const userPayload = {
+        id: "user-123",
+        roles: null,
+        iat: 1234567890,
+      } as any;
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual([]);
+    });
+
+    it("should handle payload with undefined roles", () => {
+      const userPayload = {
+        id: "user-123",
+        roles: undefined,
+        iat: 1234567890,
+      } as any;
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual([]);
+    });
+
+    it("should handle very long token", () => {
+      const longToken = "a".repeat(10000);
+      mockRequest.token = longToken;
+
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["admin"]);
+    });
+
+    it("should handle empty token string", () => {
+      mockRequest.token = "";
+
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["admin"]);
+    });
+
+    it("should handle different user IDs", () => {
+      const userIds = [
+        "user-123",
+        "12345678-1234-1234-1234-123456789012",
+        "admin@example.com",
+      ];
+
+      for (const userId of userIds) {
+        mockContext.values.clear();
+
+        const userPayload: UserPayload = {
+          id: userId,
+          roles: ["admin"],
+          iat: 1234567890,
+        };
+
+        mockContext.values.set(userContextKey, userPayload);
+
+        const result = getRoles(mockRequest, mockContext);
+
+        expect(result.roles).toEqual(["admin"]);
+      }
+    });
+
+    it("should handle different timestamps", () => {
+      const timestamps = [0, 1234567890, 9999999999, Date.now()];
+
+      for (const timestamp of timestamps) {
+        mockContext.values.clear();
+
+        const userPayload: UserPayload = {
+          id: "user-123",
+          roles: ["admin"],
+          iat: timestamp,
+        };
+
+        mockContext.values.set(userContextKey, userPayload);
+
+        const result = getRoles(mockRequest, mockContext);
+
+        expect(result.roles).toEqual(["admin"]);
+      }
+    });
+
+    it("should handle roles array with whitespace", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: [" admin", "user ", " moderator "],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      // Should preserve whitespace as-is
+      expect(result.roles).toEqual([" admin", "user ", " moderator "]);
+    });
+
+    it("should handle roles with empty strings", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["", "admin", ""],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual(["", "admin", ""]);
+    });
+
+    it("should handle very long role names", () => {
+      const longRoleName = "a".repeat(1000);
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: [longRoleName, "admin"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(result.roles).toEqual([longRoleName, "admin"]);
+    });
+  });
+
+  describe("response format", () => {
+    it("should return object with roles property", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
 
       expect(result).toHaveProperty("roles");
       expect(Array.isArray(result.roles)).toBe(true);
+    });
+
+    it("should return response with only roles property", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin", "user"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result = getRoles(mockRequest, mockContext);
+
+      expect(Object.keys(result)).toEqual(["roles"]);
+    });
+
+    it("should return consistent roles array across calls", () => {
+      const userPayload: UserPayload = {
+        id: "user-123",
+        roles: ["admin", "user"],
+        iat: 1234567890,
+      };
+
+      mockContext.values.set(userContextKey, userPayload);
+
+      const result1 = getRoles(mockRequest, mockContext);
+      const result2 = getRoles(mockRequest, mockContext);
+
+      expect(result1.roles).toEqual(result2.roles);
+    });
+  });
+
+  describe("error wrapping", () => {
+    it("should wrap missing payload error with context message", () => {
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect((error as any).rawMessage).toContain(
+          "Failed to extract roles from JWT",
+        );
+      }
+    });
+
+    it("should be an AuthError instance", () => {
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect(isAuthError(error)).toBe(true);
+      }
+    });
+
+    it("should have INVALID_PAYLOAD type for missing context", () => {
+      try {
+        getRoles(mockRequest, mockContext);
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect((error as any).type).toBe("INVALID_PAYLOAD");
+      }
     });
   });
 });
