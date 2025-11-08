@@ -16,8 +16,3 @@ export function getPostgresDB(DATABASE_URL?: string) {
 
   return db;
 }
-
-export const usersTable = schema.usersTable;
-export const eventsTable = schema.eventsTable;
-export const serverlessFunctionCallEventsTable =
-  schema.serverlessFunctionCallEventsTable;

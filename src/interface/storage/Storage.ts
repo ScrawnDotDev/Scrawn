@@ -10,11 +10,3 @@ export interface StorageAdapterType {
 
   add(): Promise<void>;
 }
-
-/**
- * SQL Storage Adapter - Base interface for all SQL database implementations
- * Implemented by PostgreSQL, SQLite, and MySQL adapters
- */
-export interface SQLStorageAdapter extends StorageAdapterType {
-  name: "POSTGRES" | "SQLITE" | "MYSQL";
-}

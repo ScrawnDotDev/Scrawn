@@ -55,7 +55,7 @@ export async function registerEvent(
 
     // Get the storage adapter and persist the event
     try {
-      const adapter = StorageAdapterFactory.getStorageAdapter(event);
+      const adapter = await StorageAdapterFactory.getStorageAdapter(event);
       await adapter.add();
     } catch (error) {
       throw EventError.serializationError(

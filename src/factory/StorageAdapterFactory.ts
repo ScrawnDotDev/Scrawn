@@ -1,5 +1,5 @@
 import type { EventType } from "../interface/event/Event.ts";
-import { SQLAdapterFactory } from "../storage/handlers/SQLAdapterFactory.ts";
+import { PostgresAdapter } from "../storage/adapter/postgres.ts";
 
 /**
  * StorageAdapterFactory - Facade for the new SQL adapter factory
@@ -15,6 +15,13 @@ export class StorageAdapterFactory {
    * @returns The storage adapter instance for the event type
    */
   public static async getStorageAdapter(event: EventType) {
-    return await SQLAdapterFactory.getConnector();
+    switch (event.type) {
+      case "SERVERLESS_FUNCTION_CALL": {
+        return new PostgresAdapter(event);
+      }
+      default: {
+        throw new Error(`Unknown event type: ${event}`);
+      }
+    }
   }
 }

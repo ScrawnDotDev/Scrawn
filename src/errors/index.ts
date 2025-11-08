@@ -10,9 +10,3 @@ export type { EventErrorContext } from "./event";
 export { StorageError, StorageErrorType } from "./storage";
 export type { StorageErrorContext } from "./storage";
 
-// PostgreSQL Storage errors
-export {
-  PostgresStorageError,
-  PostgresStorageErrorType,
-} from "./postgres-storage";
-export type { PostgresStorageErrorContext } from "./postgres-storage";
