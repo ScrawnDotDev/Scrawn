@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { ServerlessFunctionCallEvent } from "../events/ServerlessFunctionCallEvent";
+import { ServerlessFunctionCallEvent } from "../../../events/ServerlessFunctionCallEvent";
 import { DateTime } from "luxon";
-import type { ServerlessFunctionCallEventType } from "../interface/event/Event";
+import type { ServerlessFunctionCallEventType } from "../../../interface/event/Event";
 
 describe("ServerlessFunctionCallEvent", () => {
   let userId: string;

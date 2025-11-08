@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { signJWT } from "../routes/auth/signJWT";
-import { AuthError } from "../errors/auth";
-import { isAuthError } from "./helpers/error";
-import type { SignJWTRequest } from "../gen/auth/v1/auth_pb";
-import type { UserPayload } from "../types/auth";
+import { signJWT } from "../../../routes/auth/signJWT";
+import { AuthError } from "../../../errors/auth";
+import { isAuthError } from "../../helpers/error";
+import type { SignJWTRequest } from "../../../gen/auth/v1/auth_pb";
+import type { UserPayload } from "../../../types/auth";
 
 vi.mock("jsonwebtoken", () => ({
   default: {

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { getRoles } from "../routes/auth/getRoles";
-import { AuthError } from "../errors/auth";
-import { userContextKey } from "../context/auth";
-import { isAuthError } from "./helpers/error";
-import type { UserPayload } from "../types/auth";
-import type { GetRolesRequest } from "../gen/auth/v1/auth_pb";
+import { getRoles } from "../../../routes/auth/getRoles";
+import { AuthError } from "../../../errors/auth";
+import { userContextKey } from "../../../context/auth";
+import { isAuthError } from "../../helpers/error";
+import type { UserPayload } from "../../../types/auth";
+import type { GetRolesRequest } from "../../../gen/auth/v1/auth_pb";
 import type { HandlerContext } from "@connectrpc/connect";
 
 describe("getRoles", () => {

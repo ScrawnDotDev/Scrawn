@@ -7,7 +7,8 @@
     "gen": "cd proto && bunx buf generate",
     "dev:backend": "bun --watch src/server.ts",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "start": "bun run src/server.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DateTime } from "luxon";
-import { PostgresAdapter } from "../storage/adapter/postgres";
-import { StorageError } from "../errors/storage";
-import { isStorageError } from "./helpers/error";
+import { PostgresAdapter } from "../../../storage/adapter/postgres";
+import { StorageError } from "../../../errors/storage";
+import { isStorageError } from "../../helpers/error";
 
 // Mock the database module
-vi.mock("../storage/db/postgres/db", () => ({
+vi.mock("../../../storage/db/postgres/db", () => ({
   getPostgresDB: vi.fn(),
 }));
 
-import { getPostgresDB } from "../storage/db/postgres/db";
+import { getPostgresDB } from "../../../storage/db/postgres/db";
 
 describe("PostgresAdapter", () => {
   let mockEvent: any;
