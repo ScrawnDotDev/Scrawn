@@ -3,11 +3,10 @@ import { Code, ConnectError } from "@connectrpc/connect";
 export enum AuthErrorType {
   MISSING_HEADER = "MISSING_HEADER",
   INVALID_HEADER_FORMAT = "INVALID_HEADER_FORMAT",
-  INVALID_TOKEN = "INVALID_TOKEN",
-  EXPIRED_TOKEN = "EXPIRED_TOKEN",
-  INVALID_PAYLOAD = "INVALID_PAYLOAD",
-  SIGNING_ERROR = "SIGNING_ERROR",
-  MALFORMED_PAYLOAD = "MALFORMED_PAYLOAD",
+  INVALID_API_KEY = "INVALID_API_KEY",
+  EXPIRED_API_KEY = "EXPIRED_API_KEY",
+  REVOKED_API_KEY = "REVOKED_API_KEY",
+  DATABASE_ERROR = "DATABASE_ERROR",
   UNKNOWN = "UNKNOWN",
 }
 
@@ -46,52 +45,40 @@ export class AuthError extends ConnectError {
   static invalidHeaderFormat(): AuthError {
     return new AuthError({
       type: AuthErrorType.INVALID_HEADER_FORMAT,
-      message: 'Authorization header must be in format "Bearer <token>"',
+      message: 'Authorization header must be in format "Bearer <api_key>"',
       code: Code.Unauthenticated,
     });
   }
 
-  static invalidToken(originalError?: Error): AuthError {
+  static invalidAPIKey(details?: string): AuthError {
     return new AuthError({
-      type: AuthErrorType.INVALID_TOKEN,
-      message: "Invalid token",
-      code: Code.Unauthenticated,
-      originalError,
-    });
-  }
-
-  static expiredToken(originalError?: Error): AuthError {
-    return new AuthError({
-      type: AuthErrorType.EXPIRED_TOKEN,
-      message: "Token has expired",
-      code: Code.Unauthenticated,
-      originalError,
-    });
-  }
-
-  static invalidPayload(details?: string): AuthError {
-    return new AuthError({
-      type: AuthErrorType.INVALID_PAYLOAD,
-      message: details
-        ? `Invalid token payload: ${details}`
-        : "Invalid token payload",
+      type: AuthErrorType.INVALID_API_KEY,
+      message: details ? `Invalid API key: ${details}` : "Invalid API key",
       code: Code.Unauthenticated,
     });
   }
 
-  static signingError(details?: string): AuthError {
+  static expiredAPIKey(): AuthError {
     return new AuthError({
-      type: AuthErrorType.SIGNING_ERROR,
-      message: details ? `Signing Error: ${details}` : "Signing Error",
+      type: AuthErrorType.EXPIRED_API_KEY,
+      message: "API key has expired",
       code: Code.Unauthenticated,
     });
   }
 
-  static malformedPayload(originalError?: Error): AuthError {
+  static revokedAPIKey(): AuthError {
     return new AuthError({
-      type: AuthErrorType.MALFORMED_PAYLOAD,
-      message: "Token payload does not match expected schema",
+      type: AuthErrorType.REVOKED_API_KEY,
+      message: "API key has been revoked",
       code: Code.Unauthenticated,
+    });
+  }
+
+  static databaseError(originalError?: Error): AuthError {
+    return new AuthError({
+      type: AuthErrorType.DATABASE_ERROR,
+      message: "Failed to verify API key",
+      code: Code.Internal,
       originalError,
     });
   }

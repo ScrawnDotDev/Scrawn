@@ -12,12 +12,13 @@ export class StorageAdapterFactory {
    * Get the appropriate storage adapter for a given event
    *
    * @param event - The event to get a storage adapter for
+   * @param apiKeyId - Optional API key ID to associate with the event
    * @returns The storage adapter instance for the event type
    */
-  public static async getStorageAdapter(event: EventType) {
+  public static async getStorageAdapter(event: EventType, apiKeyId?: string) {
     switch (event.type) {
       case "SDK_CALL": {
-        return new PostgresAdapter(event);
+        return new PostgresAdapter(event, apiKeyId);
       }
       case "ADD_KEY": {
         return new PostgresAdapter(event);

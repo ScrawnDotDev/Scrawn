@@ -9,21 +9,21 @@ import { registerEvent } from "./routes/events/registerEvent.ts";
 import { createAPIKey } from "./routes/auth/createAPIKey.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
 
-const JWT_SECRET = process.env.JWT_SECRET;
 const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is not set");
-}
+const HMAC_SECRET = process.env.HMAC_SECRET;
 
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is not defined in environment variables");
 }
 
+if (!HMAC_SECRET) {
+  throw new Error("HMAC_SECRET environment variable is not set");
+}
+
 getPostgresDB(DATABASE_URL);
 
 const handler = connectNodeAdapter({
-  interceptors: [createValidateInterceptor(), authInterceptor(JWT_SECRET)],
+  interceptors: [createValidateInterceptor(), authInterceptor()],
   routes: (router: ConnectRouter) => {
     // EventService implementation
     router.service(EventService, {

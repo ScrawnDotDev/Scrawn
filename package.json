@@ -9,11 +9,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "start": "bun run src/server.ts",
-    "generate_token": "bun run src/utils/generate_token.ts"
+    "init_key": "bun run src/utils/generateInitialAPIKey.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/jsonwebtoken": "^9.0.10",
     "@vitest/ui": "^4.0.3",
     "drizzle-kit": "^0.31.6",
     "tsx": "^4.20.6",
@@ -34,7 +33,6 @@
     "buf": "bufbuild/buf",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
-    "jsonwebtoken": "^9.0.2",
     "luxon": "^3.7.2",
     "mysql2": "^3.15.3",
     "pino": "^10.1.0",

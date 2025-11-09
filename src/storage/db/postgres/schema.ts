@@ -46,12 +46,19 @@ export const eventsTable = pgTable("events", {
   userId: uuid("user_id")
     .references(() => usersTable.id)
     .notNull(),
+  api_keyId: uuid("api_key_id")
+    .references(() => apiKeysTable.id)
+    .notNull(),
 });
 
 export const eventsRelation = relations(eventsTable, ({ one }) => ({
   user: one(usersTable, {
     fields: [eventsTable.userId],
     references: [usersTable.id],
+  }),
+  apiKey: one(apiKeysTable, {
+    fields: [eventsTable.api_keyId],
+    references: [apiKeysTable.id],
   }),
 }));
 

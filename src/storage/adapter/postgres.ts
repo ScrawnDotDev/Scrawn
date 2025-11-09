@@ -13,11 +13,13 @@ export class PostgresAdapter implements StorageAdapterType {
   name: string;
   connectionObject;
   event: EventType;
+  apiKeyId?: string;
 
-  constructor(event: EventType) {
+  constructor(event: EventType, apiKeyId?: string) {
     this.name = event.type;
     this.connectionObject = getPostgresDB();
     this.event = event;
+    this.apiKeyId = apiKeyId;
   }
 
   async add(): Promise<{ id: string } | void> {
@@ -26,8 +28,6 @@ export class PostgresAdapter implements StorageAdapterType {
 
     switch (event_data.type) {
       case "SDK_CALL": {
-        let smth = event_data;
-        
         try {
           await this.connectionObject.transaction(async (txn) => {
             try {
@@ -58,11 +58,18 @@ export class PostgresAdapter implements StorageAdapterType {
               throw StorageError.invalidData("reported_timestamp is undefined");
             }
 
+            if (!this.apiKeyId) {
+              throw StorageError.invalidData(
+                "API key ID is required for event storage",
+              );
+            }
+
             let [eventID] = await txn
               .insert(eventsTable)
               .values({
                 reported_timestamp,
                 userId: event_data.userId,
+                api_keyId: this.apiKeyId,
               })
               .returning({ id: eventsTable.id });
 

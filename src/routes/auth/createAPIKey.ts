@@ -6,17 +6,28 @@ import { CreateAPIKeyResponseSchema } from "../../gen/auth/v1/auth_pb";
 import { create } from "@bufbuild/protobuf";
 import { createAPIKeySchema } from "../../zod/apikey";
 import { APIKeyError } from "../../errors/apikey";
+import { AuthError } from "../../errors/auth";
 import { ZodError } from "zod";
 import { generateAPIKey } from "../../utils/generateAPIKey";
 import { StorageAdapterFactory } from "../../factory";
 import { AddKey } from "../../events/AddKey";
 import type { HandlerContext } from "@connectrpc/connect";
+import { apiKeyContextKey } from "../../context/auth";
+import { hashAPIKey } from "../../utils/hashAPIKey";
 
 export async function createAPIKey(
   req: CreateAPIKeyRequest,
   context: HandlerContext,
 ): Promise<CreateAPIKeyResponse> {
   try {
+    // Get API key ID from context (set by auth interceptor)
+    const apiKeyId = context.values.get(apiKeyContextKey);
+    if (!apiKeyId) {
+      throw AuthError.invalidAPIKey("API key ID not found in context");
+    }
+
+    console.log(`[CreateAPIKey] Authenticated with API Key ID: ${apiKeyId}`);
+
     // Validate the incoming request against the schema
     let validatedData;
     try {
@@ -37,6 +48,9 @@ export async function createAPIKey(
     // Generate the actual API key
     const apiKey = generateAPIKey();
 
+    // Hash the API key before storing
+    const apiKeyHash = hashAPIKey(apiKey);
+
     // Calculate expiration date
     const now = new Date();
     const expiresInSeconds =
@@ -45,15 +59,15 @@ export async function createAPIKey(
         : validatedData.expiresIn;
     const expiresAt = new Date(now.getTime() + expiresInSeconds * 1000);
 
-    // Create AddKey event
+    // Create AddKey event (store hash, not plaintext)
     const addKeyEvent = new AddKey({
       name: validatedData.name,
-      key: apiKey,
+      key: apiKeyHash,
       expiresAt: expiresAt.toISOString(),
     });
 
     // Use storage adapter factory to persist the event
-    let keyEventData: { id : string } | void;
+    let keyEventData: { id: string } | void;
     try {
       const adapter =
         await StorageAdapterFactory.getStorageAdapter(addKeyEvent);

@@ -8,13 +8,25 @@ import { eventSchema } from "../../zod/event";
 import { type EventType } from "../../interface/event/Event";
 import { SDKCall } from "../../events/SDKCall";
 import { EventError } from "../../errors/event";
+import { AuthError } from "../../errors/auth";
 import { ZodError } from "zod";
 import { StorageAdapterFactory } from "../../factory";
+import type { HandlerContext } from "@connectrpc/connect";
+import { apiKeyContextKey } from "../../context/auth";
 
 export async function registerEvent(
   req: RegisterEventRequest,
+  context: HandlerContext,
 ): Promise<RegisterEventResponse> {
   try {
+    // Get API key ID from context (set by auth interceptor)
+    const apiKeyId = context.values.get(apiKeyContextKey);
+    if (!apiKeyId) {
+      throw AuthError.invalidAPIKey("API key ID not found in context");
+    }
+
+    console.log(`[RegisterEvent] Authenticated with API Key ID: ${apiKeyId}`);
+
     // Validate the incoming request against the schema
     let eventSkeleton;
     try {
@@ -52,7 +64,10 @@ export async function registerEvent(
 
     // Get the storage adapter and persist the event
     try {
-      const adapter = await StorageAdapterFactory.getStorageAdapter(event);
+      const adapter = await StorageAdapterFactory.getStorageAdapter(
+        event,
+        apiKeyId,
+      );
       await adapter.add();
     } catch (error) {
       throw EventError.serializationError(

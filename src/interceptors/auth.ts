@@ -1,20 +1,25 @@
 import { type Interceptor } from "@connectrpc/connect";
-import jwt, { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
-import { userContextKey } from "../context/auth";
-import { authSchema, type AuthSchemaType } from "../zod/auth";
+import { apiKeyContextKey } from "../context/auth";
 import { AuthError, AuthErrorType } from "../errors/auth";
 import { logger } from "../errors/logger";
+import { apiKeyCache } from "../utils/apiKeyCache";
+import { getPostgresDB } from "../storage/db/postgres/db";
+import { apiKeysTable } from "../storage/db/postgres/schema";
+import { eq } from "drizzle-orm";
+import { hashAPIKey } from "../utils/hashAPIKey";
 
-const no_auth = ["/auth.v1.AuthService/SignJWT"];
+const no_auth: string[] = []; // No endpoints bypass authentication
 
-export function authInterceptor(secret: string): Interceptor {
+export function authInterceptor(): Interceptor {
   return (next) => async (req) => {
+    // Check if endpoint is whitelisted (currently none)
     for (const path of no_auth) {
       if (req.url.endsWith(path)) {
         return await next(req);
       }
     }
 
+    // Log endpoint for debugging
     try {
       let split = req.url.split("/");
       console.log(`=> ${split[split.length - 2]}/${split[split.length - 1]}`);
@@ -47,58 +52,112 @@ export function authInterceptor(secret: string): Interceptor {
         throw error;
       }
 
-      const token = authorization.slice("Bearer ".length);
+      const apiKey = authorization.slice("Bearer ".length).trim();
 
-      // Verify JWT signature and decode
-      let decoded: unknown;
-      try {
-        decoded = jwt.verify(token, secret);
-      } catch (err) {
-        let error: AuthError;
-        if (err instanceof TokenExpiredError) {
-          error = AuthError.expiredToken(err);
-          logger.logError(AuthErrorType.EXPIRED_TOKEN, error.message, err, {
-            expiredAt: err.expiredAt?.toISOString(),
-          });
-        } else if (err instanceof JsonWebTokenError) {
-          error = AuthError.invalidToken(err);
-          logger.logError(AuthErrorType.INVALID_TOKEN, error.message, err, {
-            tokenLength: token.length,
-          });
-        } else {
-          error = AuthError.unknown(err instanceof Error ? err : undefined);
-          logger.logError(
-            AuthErrorType.UNKNOWN,
-            error.message,
-            err instanceof Error ? err : undefined,
-            { endpoint: req.url },
-          );
-        }
+      // Validate API key format
+      if (!apiKey.startsWith("scrn_") || apiKey.length !== 37) {
+        const error = AuthError.invalidAPIKey("Invalid API key format");
+        logger.logError(
+          AuthErrorType.INVALID_API_KEY,
+          error.message,
+          undefined,
+          { endpoint: req.url },
+        );
         throw error;
       }
 
-      // Validate payload structure against schema
-      let payload: AuthSchemaType;
+      // Hash the API key for lookup
+      const apiKeyHash = hashAPIKey(apiKey);
+
+      // Check cache first (using hash as key)
+      const cached = apiKeyCache.get(apiKeyHash);
+      if (cached) {
+        console.log(`[Cache HIT] API Key ID: ${cached.id}`);
+        req.contextValues.set(apiKeyContextKey, cached.id);
+        return await next(req);
+      }
+
+      console.log(`[Cache MISS] Querying database for API key`);
+
+      // Query database for API key by hash
+      let apiKeyRecord;
       try {
-        payload = authSchema.parse(decoded);
+        const db = getPostgresDB();
+        const result = await db
+          .select({
+            id: apiKeysTable.id,
+            expiresAt: apiKeysTable.expiresAt,
+            revoked: apiKeysTable.revoked,
+          })
+          .from(apiKeysTable)
+          .where(eq(apiKeysTable.key, apiKeyHash))
+          .limit(1);
+
+        apiKeyRecord = result[0];
       } catch (err) {
-        const error = AuthError.malformedPayload(
+        const error = AuthError.databaseError(
           err instanceof Error ? err : undefined,
         );
         logger.logError(
-          AuthErrorType.MALFORMED_PAYLOAD,
+          AuthErrorType.DATABASE_ERROR,
           error.message,
           err instanceof Error ? err : undefined,
+          { endpoint: req.url },
+        );
+        throw error;
+      }
+
+      // Check if API key exists
+      if (!apiKeyRecord) {
+        const error = AuthError.invalidAPIKey("API key not found");
+        logger.logError(
+          AuthErrorType.INVALID_API_KEY,
+          error.message,
+          undefined,
+          { endpoint: req.url },
+        );
+        throw error;
+      }
+
+      // Check if API key is revoked
+      if (apiKeyRecord.revoked) {
+        const error = AuthError.revokedAPIKey();
+        logger.logError(
+          AuthErrorType.REVOKED_API_KEY,
+          error.message,
+          undefined,
+          { apiKeyId: apiKeyRecord.id },
+        );
+        throw error;
+      }
+
+      // Check if API key has expired
+      const now = new Date();
+      const expiresAt = new Date(apiKeyRecord.expiresAt);
+      if (now > expiresAt) {
+        const error = AuthError.expiredAPIKey();
+        logger.logError(
+          AuthErrorType.EXPIRED_API_KEY,
+          error.message,
+          undefined,
           {
-            decodedKeys: Object.keys(decoded as Record<string, unknown>),
-            expectedKeys: ["id", "roles", "iat"],
+            apiKeyId: apiKeyRecord.id,
+            expiresAt: apiKeyRecord.expiresAt,
           },
         );
         throw error;
       }
 
-      // Attach user info to context for use in handlers
-      req.contextValues.set(userContextKey, payload);
+      // Store in cache (using hash as key)
+      apiKeyCache.set(apiKeyHash, {
+        id: apiKeyRecord.id,
+        expiresAt: apiKeyRecord.expiresAt,
+      });
+
+      console.log(`[DB] Valid API Key ID: ${apiKeyRecord.id}`);
+
+      // Attach API key ID to context for use in handlers
+      req.contextValues.set(apiKeyContextKey, apiKeyRecord.id);
     } catch (err) {
       // Re-throw AuthError as-is, wrap other errors
       if (err instanceof AuthError || (err as any)?.type in AuthErrorType) {
@@ -109,7 +168,7 @@ export function authInterceptor(secret: string): Interceptor {
         AuthErrorType.UNKNOWN,
         error.message,
         err instanceof Error ? err : undefined,
-        { endpoint: (err as any)?.url || "unknown" },
+        { endpoint: req.url },
       );
       throw error;
     }
