@@ -46,7 +46,7 @@ export class TestDatabase {
   async clearAllTables(): Promise<void> {
     const db = this.getDB();
     // Clear in reverse order of foreign key dependencies
-    await db.delete(schema.serverlessFunctionCallEventsTable);
+    await db.delete(schema.sdkCallEventsTable);
     await db.delete(schema.eventsTable);
     await db.delete(schema.usersTable);
   }
@@ -85,12 +85,9 @@ export class TestDatabase {
     return result;
   }
 
-  async seedServerlessFunctionCallEvent(
-    eventId: string,
-    debitAmount: number,
-  ): Promise<void> {
+  async seedSDKCallEvent(eventId: string, debitAmount: number): Promise<void> {
     const db = this.getDB();
-    await db.insert(schema.serverlessFunctionCallEventsTable).values({
+    await db.insert(schema.sdkCallEventsTable).values({
       id: eventId,
       debitAmount,
     });
@@ -114,12 +111,12 @@ export class TestDatabase {
     return events[0] || null;
   }
 
-  async getServerlessFunctionCallEvent(eventId: string): Promise<any> {
+  async getSDKCallEvent(eventId: string): Promise<any> {
     const db = this.getDB();
     const events = await db
       .select()
-      .from(schema.serverlessFunctionCallEventsTable)
-      .where(eq(schema.serverlessFunctionCallEventsTable.id, eventId));
+      .from(schema.sdkCallEventsTable)
+      .where(eq(schema.sdkCallEventsTable.id, eventId));
     return events[0] || null;
   }
 
@@ -135,11 +132,9 @@ export class TestDatabase {
     return result.length;
   }
 
-  async countServerlessFunctionCallEvents(): Promise<number> {
+  async countSDKCallEvents(): Promise<number> {
     const db = this.getDB();
-    const result = await db
-      .select()
-      .from(schema.serverlessFunctionCallEventsTable);
+    const result = await db.select().from(schema.sdkCallEventsTable);
     return result.length;
   }
 }

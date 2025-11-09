@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { ServerlessFunctionCallEvent } from "../../../events/ServerlessFunctionCallEvent";
+import { SDKCall } from "../../../events/SDKCall";
 import { DateTime } from "luxon";
-import type { ServerlessFunctionCallEventType } from "../../../interface/event/Event";
+import type { SDKCallEventType } from "../../../interface/event/Event";
 
-describe("ServerlessFunctionCallEvent", () => {
+describe("SDKCall", () => {
   let userId: string;
   let debitAmount: number;
 
@@ -14,7 +14,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
   describe("constructor and initialization", () => {
     it("should create event with userId and debitAmount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -22,17 +22,17 @@ describe("ServerlessFunctionCallEvent", () => {
       expect(event.data.debitAmount).toBe(debitAmount);
     });
 
-    it("should set type to SERVERLESS_FUNCTION_CALL", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+    it("should set type to SDK_CALL", () => {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
-      expect(event.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(event.type).toBe("SDK_CALL");
     });
 
     it("should set reported_timestamp to current UTC time", () => {
       const beforeCreation = DateTime.utc();
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
       const afterCreation = DateTime.utc();
@@ -47,7 +47,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should initialize with zero debit amount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 0,
       });
 
@@ -55,7 +55,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should initialize with negative debit amount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: -50,
       });
 
@@ -63,7 +63,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should initialize with large debit amount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 999999.99,
       });
 
@@ -71,7 +71,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle very small debit amounts", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 0.01,
       });
 
@@ -80,7 +80,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle very large user IDs", () => {
       const longUserId = "u".repeat(1000);
-      const event = new ServerlessFunctionCallEvent(longUserId, {
+      const event = new SDKCall(longUserId, {
         debitAmount,
       });
 
@@ -89,7 +89,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle empty user ID", () => {
-      const event = new ServerlessFunctionCallEvent("", {
+      const event = new SDKCall("", {
         debitAmount,
       });
 
@@ -98,7 +98,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle UUID user IDs", () => {
       const uuidUserId = "12345678-1234-1234-1234-123456789012";
-      const event = new ServerlessFunctionCallEvent(uuidUserId, {
+      const event = new SDKCall(uuidUserId, {
         debitAmount,
       });
 
@@ -107,7 +107,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle email user IDs", () => {
       const emailUserId = "user@example.com";
-      const event = new ServerlessFunctionCallEvent(emailUserId, {
+      const event = new SDKCall(emailUserId, {
         debitAmount,
       });
 
@@ -116,7 +116,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle user IDs with special characters", () => {
       const specialUserId = "user!@#$%^&*()_+-=[]{}|;:,.<>?";
-      const event = new ServerlessFunctionCallEvent(specialUserId, {
+      const event = new SDKCall(specialUserId, {
         debitAmount,
       });
 
@@ -125,7 +125,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle user IDs with unicode characters", () => {
       const unicodeUserId = "user_中文_العربية";
-      const event = new ServerlessFunctionCallEvent(unicodeUserId, {
+      const event = new SDKCall(unicodeUserId, {
         debitAmount,
       });
 
@@ -134,21 +134,21 @@ describe("ServerlessFunctionCallEvent", () => {
   });
 
   describe("type property", () => {
-    it("should have constant type SERVERLESS_FUNCTION_CALL", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+    it("should have constant type SDK_CALL", () => {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
-      expect(event.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(event.type).toBe("SDK_CALL");
     });
 
     it("should have constant type property set at initialization", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
       // Type is constant and cannot be modified
-      expect(event.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(event.type).toBe("SDK_CALL");
 
       // Attempting to modify type (readonly at compile time)
       const beforeModification = event.type;
@@ -156,22 +156,22 @@ describe("ServerlessFunctionCallEvent", () => {
 
       // In strict mode, readonly prevents modification; in loose mode it might change
       // The important thing is the type constant is set correctly initially
-      expect(beforeModification).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(beforeModification).toBe("SDK_CALL");
     });
 
     it("should match interface event type", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
-      const eventType: ServerlessFunctionCallEventType = event;
-      expect(eventType.type).toBe("SERVERLESS_FUNCTION_CALL");
+      const eventType: SDKCallEventType = event;
+      expect(eventType.type).toBe("SDK_CALL");
     });
   });
 
   describe("reported_timestamp property", () => {
     it("should set reported_timestamp to DateTime UTC", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -179,7 +179,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should set reported_timestamp with correct zone", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -187,10 +187,10 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should have consistent timestamps for sequential creations", () => {
-      const event1 = new ServerlessFunctionCallEvent(userId, {
+      const event1 = new SDKCall(userId, {
         debitAmount,
       });
-      const event2 = new ServerlessFunctionCallEvent(userId, {
+      const event2 = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -203,7 +203,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should allow modification of reported_timestamp", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -214,7 +214,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should preserve reported_timestamp through serialization", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -227,7 +227,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
   describe("data property", () => {
     it("should have debitAmount in data", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 250,
       });
 
@@ -236,7 +236,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should allow modification of debitAmount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -246,7 +246,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle debitAmount of 0", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 0,
       });
 
@@ -254,7 +254,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle decimal debitAmount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 123.45,
       });
 
@@ -262,7 +262,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle very precise decimal values", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 0.0001,
       });
 
@@ -270,7 +270,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle negative debitAmount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: -100,
       });
 
@@ -278,7 +278,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle Infinity", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: Infinity,
       });
 
@@ -286,7 +286,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle NaN", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: NaN,
       });
 
@@ -296,7 +296,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
   describe("serialize() method", () => {
     it("should return object with SQL property", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -306,17 +306,17 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should include event type in serialized data", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
       const serialized = event.serialize();
 
-      expect(serialized.SQL.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(serialized.SQL.type).toBe("SDK_CALL");
     });
 
     it("should include userId in serialized data", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -326,7 +326,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should include reported_timestamp in serialized data", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -337,7 +337,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should include data with debitAmount in serialized data", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -348,7 +348,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should return new SQL object each time (but same data reference)", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -362,7 +362,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should reflect changes in event when re-serialized", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -376,7 +376,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should reflect userId changes when re-serialized", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -391,7 +391,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle serialization with zero debit amount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 0,
       });
 
@@ -401,7 +401,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle serialization with negative debit amount", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: -100,
       });
 
@@ -412,7 +412,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle serialization with very large debit amount", () => {
       const largeAmount = 999999999.99;
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: largeAmount,
       });
 
@@ -423,21 +423,21 @@ describe("ServerlessFunctionCallEvent", () => {
   });
 
   describe("interface compliance", () => {
-    it("should implement ServerlessFunctionCallEventType interface", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+    it("should implement SDKCallEventType interface", () => {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
-      const interfaceEvent: ServerlessFunctionCallEventType = event;
+      const interfaceEvent: SDKCallEventType = event;
 
-      expect(interfaceEvent.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(interfaceEvent.type).toBe("SDK_CALL");
       expect(interfaceEvent.userId).toBe(userId);
       expect(interfaceEvent.reported_timestamp).toBeInstanceOf(DateTime);
       expect(interfaceEvent.data.debitAmount).toBe(debitAmount);
     });
 
     it("should have readonly userId property as per interface", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -447,7 +447,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should have readonly reported_timestamp property as per interface", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -458,7 +458,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should have readonly data property as per interface", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -468,7 +468,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should have serialize method as per interface", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -477,11 +477,11 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should work as EventType generic", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
-      // Test that it satisfies EventType<"SERVERLESS_FUNCTION_CALL">
+      // Test that it satisfies EventType<"SDK_CALL">
       const serialized = event.serialize();
       expect(serialized.SQL.type).toBe(event.type);
       expect(serialized.SQL.userId).toBe(event.userId);
@@ -493,7 +493,7 @@ describe("ServerlessFunctionCallEvent", () => {
   describe("edge cases and boundaries", () => {
     it("should handle multiple rapid event creations", () => {
       const events = Array.from({ length: 100 }, (_, i) => {
-        return new ServerlessFunctionCallEvent(`user-${i}`, {
+        return new SDKCall(`user-${i}`, {
           debitAmount: i * 10,
         });
       });
@@ -506,13 +506,13 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle creation with same userId multiple times", () => {
-      const event1 = new ServerlessFunctionCallEvent(userId, {
+      const event1 = new SDKCall(userId, {
         debitAmount: 100,
       });
-      const event2 = new ServerlessFunctionCallEvent(userId, {
+      const event2 = new SDKCall(userId, {
         debitAmount: 200,
       });
-      const event3 = new ServerlessFunctionCallEvent(userId, {
+      const event3 = new SDKCall(userId, {
         debitAmount: 300,
       });
 
@@ -524,10 +524,10 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should maintain separate state across multiple instances", () => {
-      const event1 = new ServerlessFunctionCallEvent("user-1", {
+      const event1 = new SDKCall("user-1", {
         debitAmount: 100,
       });
-      const event2 = new ServerlessFunctionCallEvent("user-2", {
+      const event2 = new SDKCall("user-2", {
         debitAmount: 200,
       });
 
@@ -538,7 +538,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle whitespace in user ID", () => {
-      const event = new ServerlessFunctionCallEvent(" user-123 ", {
+      const event = new SDKCall(" user-123 ", {
         debitAmount,
       });
 
@@ -546,7 +546,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle numeric user IDs as strings", () => {
-      const event = new ServerlessFunctionCallEvent("12345", {
+      const event = new SDKCall("12345", {
         debitAmount,
       });
 
@@ -556,7 +556,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle very precise decimal debit amounts", () => {
       const preciseAmount = 0.000000001;
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: preciseAmount,
       });
 
@@ -565,8 +565,8 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should handle duplicate role references in data object", () => {
       const dataObject = { debitAmount: 100 };
-      const event1 = new ServerlessFunctionCallEvent(userId, dataObject);
-      const event2 = new ServerlessFunctionCallEvent(userId, dataObject);
+      const event1 = new SDKCall(userId, dataObject);
+      const event2 = new SDKCall(userId, dataObject);
 
       // Both should reference same data object initially
       expect(event1.data).toBe(dataObject);
@@ -578,7 +578,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle timestamp changes between serializations", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -599,7 +599,7 @@ describe("ServerlessFunctionCallEvent", () => {
   describe("performance and memory", () => {
     it("should create event synchronously", () => {
       const start = performance.now();
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
       const duration = performance.now() - start;
@@ -609,7 +609,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should serialize event synchronously", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -622,7 +622,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should handle large number of serializations", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -632,12 +632,12 @@ describe("ServerlessFunctionCallEvent", () => {
 
       expect(serializations).toHaveLength(1000);
       serializations.forEach((serialized) => {
-        expect(serialized.SQL.type).toBe("SERVERLESS_FUNCTION_CALL");
+        expect(serialized.SQL.type).toBe("SDK_CALL");
       });
     });
 
     it("should not leak memory with repeated modifications", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -652,7 +652,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
   describe("data immutability concerns", () => {
     it("should allow modification of userId after creation", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -663,7 +663,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should allow modification of debitAmount after creation", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -673,7 +673,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should allow modification of reported_timestamp after creation", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -684,7 +684,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should preserve modifications in serialization", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -700,19 +700,19 @@ describe("ServerlessFunctionCallEvent", () => {
 
   describe("type assertions", () => {
     it("should be assignable to EventType", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
       // Should compile and run without errors
       const anyEvent: any = event;
-      expect(anyEvent.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(anyEvent.type).toBe("SDK_CALL");
       expect(anyEvent.userId).toBe(userId);
       expect(anyEvent.serialize).toBeDefined();
     });
 
     it("should have all required properties for storage", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount,
       });
 
@@ -727,7 +727,7 @@ describe("ServerlessFunctionCallEvent", () => {
     });
 
     it("should be compatible with database storage format", () => {
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 250.75,
       });
 
@@ -754,7 +754,7 @@ describe("ServerlessFunctionCallEvent", () => {
       ];
 
       testIds.forEach((id) => {
-        const event = new ServerlessFunctionCallEvent(id, {
+        const event = new SDKCall(id, {
           debitAmount: 100,
         });
         expect(event.userId).toBe(id);
@@ -765,7 +765,7 @@ describe("ServerlessFunctionCallEvent", () => {
       const amounts = [0, 1, -1, 0.1, -0.1, 999999.99, Infinity, -Infinity];
 
       amounts.forEach((amount) => {
-        const event = new ServerlessFunctionCallEvent(userId, {
+        const event = new SDKCall(userId, {
           debitAmount: amount,
         });
         expect(event.data.debitAmount).toBe(amount);
@@ -774,7 +774,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should accept data object with only debitAmount", () => {
       const data = { debitAmount: 100 };
-      const event = new ServerlessFunctionCallEvent(userId, data);
+      const event = new SDKCall(userId, data);
 
       expect(event.data).toBe(data);
       expect(event.data.debitAmount).toBe(100);
@@ -782,7 +782,7 @@ describe("ServerlessFunctionCallEvent", () => {
 
     it("should maintain reference to passed data object", () => {
       const data = { debitAmount: 100 };
-      const event = new ServerlessFunctionCallEvent(userId, data);
+      const event = new SDKCall(userId, data);
 
       data.debitAmount = 200;
       expect(event.data.debitAmount).toBe(200);

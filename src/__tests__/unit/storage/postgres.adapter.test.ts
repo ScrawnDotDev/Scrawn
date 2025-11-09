@@ -20,7 +20,7 @@ describe("PostgresAdapter", () => {
 
     // Create mock event
     mockEvent = {
-      type: "SERVERLESS_FUNCTION_CALL",
+      type: "SDK_CALL",
       userId: "test-user-123",
       reported_timestamp: DateTime.utc(),
       data: {
@@ -28,11 +28,12 @@ describe("PostgresAdapter", () => {
       },
       serialize: vi.fn(() => ({
         SQL: {
-          type: "SERVERLESS_FUNCTION_CALL",
+          type: "SDK_CALL",
           userId: "test-user-123",
           reported_timestamp: DateTime.utc(),
           data: {
             debitAmount: 100,
+            sdkCallType: "RAW",
           },
         },
       })),
@@ -48,7 +49,7 @@ describe("PostgresAdapter", () => {
   describe("initialization", () => {
     it("should create adapter with correct name", () => {
       const adapter = new PostgresAdapter(mockEvent);
-      expect(adapter.name).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(adapter.name).toBe("SDK_CALL");
     });
 
     it("should set event property correctly", () => {
@@ -63,11 +64,10 @@ describe("PostgresAdapter", () => {
     });
   });
 
-  describe("add() - SERVERLESS_FUNCTION_CALL event", () => {
+  describe("add() - SDK_CALL event", () => {
     it("should execute transaction with correct event data", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -79,18 +79,7 @@ describe("PostgresAdapter", () => {
 
     it("should handle duplicate user error gracefully", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = {
-          insert: vi.fn().mockReturnThis(),
-          values: vi
-            .fn()
-            .mockRejectedValueOnce(
-              new Error("duplicate key value violates unique constraint"),
-            )
-            .mockReturnThis()
-            .mockReturnThis(),
-          returning: vi.fn().mockResolvedValue([{ id: "event-id-123" }]),
-        };
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -119,21 +108,21 @@ describe("PostgresAdapter", () => {
         ...mockEvent,
         serialize: vi.fn(() => ({
           SQL: {
-            type: "SERVERLESS_FUNCTION_CALL",
+            type: "SDK_CALL",
             userId: "test-user-123",
             reported_timestamp: {
-              toSQL: vi.fn(() => null),
+              toISO: vi.fn(() => null),
             },
             data: {
               debitAmount: 100,
+              sdkCallType: "RAW",
             },
           },
         })),
       };
 
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(eventWithBadTimestamp);
@@ -143,19 +132,13 @@ describe("PostgresAdapter", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        // Errors from within transaction are wrapped in TRANSACTION_FAILED
         expect((error as any).type).toBe("TRANSACTION_FAILED");
       }
     });
 
     it("should throw StorageError when event ID is not returned", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = {
-          insert: vi.fn().mockReturnThis(),
-          values: vi.fn().mockReturnThis(),
-          returning: vi.fn().mockResolvedValue([]),
-        };
-        return callback(txn);
+        return callback(createMockTransactionWithEmptyReturning());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -165,15 +148,13 @@ describe("PostgresAdapter", () => {
         expect.fail("Should have thrown StorageError");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        // Errors from within transaction are wrapped in TRANSACTION_FAILED
         expect((error as any).type).toBe("TRANSACTION_FAILED");
       }
     });
 
     it("should serialize event before processing", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -199,13 +180,7 @@ describe("PostgresAdapter", () => {
 
     it("should wrap StorageError.constraintViolation from user insert", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = {
-          insert: vi.fn().mockReturnThis(),
-          values: vi
-            .fn()
-            .mockRejectedValueOnce(new Error("some constraint error")),
-        };
-        return callback(txn);
+        return callback(createMockTransactionWithUserInsertError());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -225,19 +200,19 @@ describe("PostgresAdapter", () => {
         data: { debitAmount: 0 },
         serialize: vi.fn(() => ({
           SQL: {
-            type: "SERVERLESS_FUNCTION_CALL",
+            type: "SDK_CALL",
             userId: "test-user-123",
             reported_timestamp: DateTime.utc(),
             data: {
               debitAmount: 0,
+              sdkCallType: "RAW",
             },
           },
         })),
       };
 
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(zeroDebitEvent);
@@ -252,19 +227,19 @@ describe("PostgresAdapter", () => {
         data: { debitAmount: 999999.99 },
         serialize: vi.fn(() => ({
           SQL: {
-            type: "SERVERLESS_FUNCTION_CALL",
+            type: "SDK_CALL",
             userId: "test-user-123",
             reported_timestamp: DateTime.utc(),
             data: {
               debitAmount: 999999.99,
+              sdkCallType: "RAW",
             },
           },
         })),
       };
 
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(largeDebitEvent);
@@ -279,19 +254,19 @@ describe("PostgresAdapter", () => {
         data: { debitAmount: -50 },
         serialize: vi.fn(() => ({
           SQL: {
-            type: "SERVERLESS_FUNCTION_CALL",
+            type: "SDK_CALL",
             userId: "test-user-123",
             reported_timestamp: DateTime.utc(),
             data: {
               debitAmount: -50,
+              sdkCallType: "RAW",
             },
           },
         })),
       };
 
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(negativeDebitEvent);
@@ -315,17 +290,16 @@ describe("PostgresAdapter", () => {
           userId,
           serialize: vi.fn(() => ({
             SQL: {
-              type: "SERVERLESS_FUNCTION_CALL",
+              type: "SDK_CALL",
               userId,
               reported_timestamp: DateTime.utc(),
-              data: { debitAmount: 100 },
+              data: { debitAmount: 100, sdkCallType: "RAW" },
             },
           })),
         };
 
         mockDB.transaction.mockImplementation(async (callback: any) => {
-          const txn = createMockTransaction();
-          return callback(txn);
+          return callback(createMockTransaction());
         });
 
         const adapter = new PostgresAdapter(eventWithUserId);
@@ -350,17 +324,16 @@ describe("PostgresAdapter", () => {
           reported_timestamp: timestamp,
           serialize: vi.fn(() => ({
             SQL: {
-              type: "SERVERLESS_FUNCTION_CALL",
+              type: "SDK_CALL",
               userId: "test-user-123",
               reported_timestamp: timestamp,
-              data: { debitAmount: 100 },
+              data: { debitAmount: 100, sdkCallType: "RAW" },
             },
           })),
         };
 
         mockDB.transaction.mockImplementation(async (callback: any) => {
-          const txn = createMockTransaction();
-          return callback(txn);
+          return callback(createMockTransaction());
         });
 
         const adapter = new PostgresAdapter(eventWithTimestamp);
@@ -372,15 +345,7 @@ describe("PostgresAdapter", () => {
 
     it("should handle non-duplicate constraint errors in user insert", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = {
-          insert: vi.fn().mockReturnThis(),
-          values: vi
-            .fn()
-            .mockRejectedValueOnce(
-              new Error("foreign key constraint violation"),
-            ),
-        };
-        return callback(txn);
+        return callback(createMockTransactionWithUserInsertError());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -390,7 +355,6 @@ describe("PostgresAdapter", () => {
         expect.fail("Should have thrown StorageError");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        // The error gets wrapped in TRANSACTION_FAILED by outer try-catch
         expect((error as any).type).toBe("TRANSACTION_FAILED");
       }
     });
@@ -435,8 +399,7 @@ describe("PostgresAdapter", () => {
   describe("transaction behavior", () => {
     it("should use database transaction for atomicity", async () => {
       mockDB.transaction.mockImplementation(async (callback: any) => {
-        const txn = createMockTransaction();
-        return callback(txn);
+        return callback(createMockTransaction());
       });
 
       const adapter = new PostgresAdapter(mockEvent);
@@ -462,11 +425,58 @@ describe("PostgresAdapter", () => {
   });
 });
 
-// Helper function to create mock transaction
+// Mock transaction factory that supports method chaining for Drizzle ORM
 function createMockTransaction() {
-  return {
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
+  const valuedBuilder = {
+    onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
     returning: vi.fn().mockResolvedValue([{ id: "event-id-123" }]),
+  };
+
+  const insertBuilder = {
+    values: vi.fn().mockReturnValue(valuedBuilder),
+  };
+
+  return {
+    insert: vi.fn().mockReturnValue(insertBuilder),
+  };
+}
+
+// Mock transaction that fails on user insert
+function createMockTransactionWithUserInsertError() {
+  let firstInsertCall = true;
+
+  const valuedBuilder = {
+    onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+    returning: vi.fn().mockResolvedValue([{ id: "event-id-123" }]),
+  };
+
+  const insertBuilder = {
+    values: vi.fn(function () {
+      if (firstInsertCall) {
+        firstInsertCall = false;
+        throw new Error("some constraint error");
+      }
+      return valuedBuilder;
+    }),
+  };
+
+  return {
+    insert: vi.fn().mockReturnValue(insertBuilder),
+  };
+}
+
+// Mock transaction that returns empty array from returning()
+function createMockTransactionWithEmptyReturning() {
+  const valuedBuilderWithEmpty = {
+    onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+    returning: vi.fn().mockResolvedValue([]),
+  };
+
+  const insertBuilder = {
+    values: vi.fn().mockReturnValue(valuedBuilderWithEmpty),
+  };
+
+  return {
+    insert: vi.fn().mockReturnValue(insertBuilder),
   };
 }

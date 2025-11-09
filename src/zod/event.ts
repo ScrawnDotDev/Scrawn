@@ -5,26 +5,21 @@ const BaseEvent = z.object({
   userId: z.uuid(),
 });
 
-const ServerlessEvent = BaseEvent.extend({
-  type: z.literal(1).transform(() => "SERVERLESS_FUNCTION_CALL"),
-  data: z.object({
-    value: z.object({
-      debitAmount: z.number(),
-    }),
-  }).transform((obj) => obj.value),
+const SDKCallEvent = BaseEvent.extend({
+  type: z.literal(1).transform(() => "SDK_CALL") as z.ZodType<"SDK_CALL">,
+  data: z
+    .object({
+      case: z.literal("sdkCall"),
+      value: z.object({
+        sdkCallType: z.union([
+          z.literal(1).transform(() => "RAW") as z.ZodType<"RAW">,
+          z.literal(2).transform(() => "MIDDLEWARE_CALL") as z.ZodType<"MIDDLEWARE_CALL">,
+        ]),
+        debitAmount: z.number(),
+      }),
+    })
+    .transform((obj) => obj.value),
 });
 
-// JUST FOR DEMO PURPOSES
-const SDKEvent = BaseEvent.extend({
-  type: z.literal("SDK_CALL"),
-  data: z.object({
-    functionName: z.string(),
-    duration: z.number(),
-  }),
-});
-
-export const eventSchema = z.discriminatedUnion("type", [
-  ServerlessEvent,
-  SDKEvent,
-]);
-type EventSchemaType = z.infer<typeof eventSchema>;
+export const eventSchema = z.discriminatedUnion("type", [SDKCallEvent]);
+export type EventSchemaType = z.infer<typeof eventSchema>;

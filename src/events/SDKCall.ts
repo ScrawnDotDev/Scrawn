@@ -1,15 +1,14 @@
-import type { ServerlessFunctionCallEventType } from "../interface/event/Event";
+import type { SDKCallEventType } from "../interface/event/Event";
 import { DateTime } from "luxon";
+import type { SDKCallEventData } from "../interface/event/Event";
 
-export class ServerlessFunctionCallEvent
-  implements ServerlessFunctionCallEventType
-{
+export class SDKCall implements SDKCallEventType {
   public reported_timestamp: DateTime;
-  public readonly type = "SERVERLESS_FUNCTION_CALL" as const;
+  public readonly type = "SDK_CALL" as const;
 
   constructor(
     public userId: string,
-    public data: { debitAmount: number },
+    public data: SDKCallEventData,
   ) {
     this.reported_timestamp = DateTime.utc();
   }

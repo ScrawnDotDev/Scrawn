@@ -9,19 +9,26 @@ service EventService {
 
 enum EventType {
   EVENT_TYPE_UNSPECIFIED = 0;
-  SERVERLESS_FUNCTION_CALL = 1;
+  SDK_CALL = 1;
+}
+
+enum SDKCallType {
+    SDKCallType_UNSPECIFIED = 0;
+    RAW = 1;
+    MIDDLEWARE_CALL = 2;
 }
 
 message RegisterEventRequest {
     EventType type = 1;
     string userId = 2;
     oneof data {
-        ServerlessFunctionCallEvent serverlessFunctionCallEvent = 3;
+        SDKCall sdkCall = 3;
     }
 }
 
-message ServerlessFunctionCallEvent {
-    float debitAmount = 1;
+message SDKCall {
+    SDKCallType sdkCallType = 1;
+    float debitAmount = 2;
 }
 
 message RegisterEventResponse {

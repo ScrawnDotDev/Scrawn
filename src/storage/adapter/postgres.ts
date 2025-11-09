@@ -4,7 +4,7 @@ import { getPostgresDB } from "../db/postgres/db";
 import {
   usersTable,
   eventsTable,
-  serverlessFunctionCallEventsTable,
+  sdkCallEventsTable,
 } from "../db/postgres/schema";
 import { StorageError } from "../../errors/storage";
 
@@ -14,7 +14,7 @@ export class PostgresAdapter implements StorageAdapterType {
   event: EventType;
 
   constructor(event: EventType) {
-    this.name = "SERVERLESS_FUNCTION_CALL";
+    this.name = "SDK_CALL";
     this.connectionObject = getPostgresDB();
     this.event = event;
   }
@@ -23,7 +23,7 @@ export class PostgresAdapter implements StorageAdapterType {
     console.log(`Storing event in PostgreSQL: ${this.event.serialize()}`);
 
     switch (this.event.type) {
-      case "SERVERLESS_FUNCTION_CALL":
+      case "SDK_CALL":
         const { SQL: event_data } = this.event.serialize();
 
         try {
@@ -32,11 +32,11 @@ export class PostgresAdapter implements StorageAdapterType {
               try {
                 await txn.insert(usersTable).values({
                   id: event_data.userId,
-                });
+                }).onConflictDoNothing();
               } catch (e) {
                 if (
                   e instanceof Error &&
-                  e.message.includes("duplicate key value")
+                  e.message.includes('Failed query: insert into "users" ("id")')
                 ) {
                   // User already exists, ignore the error
                 } else {
@@ -47,7 +47,8 @@ export class PostgresAdapter implements StorageAdapterType {
                 }
               }
 
-              let reported_timestamp = event_data.reported_timestamp.toSQL();
+              let reported_timestamp = event_data.reported_timestamp.toISO();
+              console.log("---------->", reported_timestamp);
 
               if (!reported_timestamp) {
                 throw StorageError.invalidData(
@@ -69,8 +70,9 @@ export class PostgresAdapter implements StorageAdapterType {
                 );
               }
 
-              await txn.insert(serverlessFunctionCallEventsTable).values({
+              await txn.insert(sdkCallEventsTable).values({
                 id: eventID.id,
+                type: event_data.data.sdkCallType,
                 debitAmount: event_data.data.debitAmount,
               });
             },
@@ -80,7 +82,7 @@ export class PostgresAdapter implements StorageAdapterType {
             throw e;
           }
           throw StorageError.transactionFailed(
-            "Transaction failed while storing SERVERLESS_FUNCTION_CALL event",
+            "Transaction failed while storing SDK_CALL event",
             e instanceof Error ? e : undefined,
           );
         }

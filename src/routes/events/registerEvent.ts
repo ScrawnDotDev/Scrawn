@@ -6,7 +6,7 @@ import { RegisterEventResponseSchema } from "../../gen/event/v1/event_pb";
 import { create } from "@bufbuild/protobuf";
 import { eventSchema } from "../../zod/event";
 import { type EventType } from "../../interface/event/Event";
-import { ServerlessFunctionCallEvent } from "../../events/ServerlessFunctionCallEvent";
+import { SDKCall } from "../../events/SDKCall";
 import { EventError } from "../../errors/event";
 import { ZodError } from "zod";
 import { StorageAdapterFactory } from "../../factory";
@@ -37,11 +37,8 @@ export async function registerEvent(
 
     try {
       switch (eventSkeleton.type) {
-        case "SERVERLESS_FUNCTION_CALL":
-          event = new ServerlessFunctionCallEvent(
-            eventSkeleton.userId,
-            eventSkeleton.data,
-          );
+        case "SDK_CALL":
+          event = new SDKCall(eventSkeleton.userId, eventSkeleton.data);
           break;
         default:
           throw EventError.unsupportedEventType(eventSkeleton.type);

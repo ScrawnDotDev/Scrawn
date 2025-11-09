@@ -1,6 +1,8 @@
 import type { DateTime } from "luxon";
+import { type EventSchemaType } from "../../zod/event";
 
-type ServerlessFunctionCallEventData = {
+export type SDKCallEventData = {
+  sdkCallType: EventSchemaType["data"]["sdkCallType"];
   debitAmount: number;
 };
 
@@ -8,7 +10,7 @@ type ServerlessFunctionCallEventData = {
  * Mapping of event types to their data structures
  */
 type EventDataMap = {
-  SERVERLESS_FUNCTION_CALL: ServerlessFunctionCallEventData;
+  SDK_CALL: SDKCallEventData;
 };
 
 type EventStorageAdapterMap<
@@ -40,7 +42,6 @@ export interface EventType<
 }
 
 /**
- * Serverless Function Call Event
+ * SDK Call Event
  */
-export interface ServerlessFunctionCallEventType
-  extends EventType<"SERVERLESS_FUNCTION_CALL"> {}
+export interface SDKCallEventType extends EventType<"SDK_CALL"> {}

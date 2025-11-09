@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file event/v1/event.proto.
  */
 export const file_event_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEinwEKFFJlZ2lzdGVyRXZlbnRSZXF1ZXN0EiEKBHR5cGUYASABKA4yEy5ldmVudC52MS5FdmVudFR5cGUSDgoGdXNlcklkGAIgASgJEkwKG3NlcnZlcmxlc3NGdW5jdGlvbkNhbGxFdmVudBgDIAEoCzIlLmV2ZW50LnYxLlNlcnZlcmxlc3NGdW5jdGlvbkNhbGxFdmVudEgAQgYKBGRhdGEiMgobU2VydmVybGVzc0Z1bmN0aW9uQ2FsbEV2ZW50EhMKC2RlYml0QW1vdW50GAEgASgCIicKFVJlZ2lzdGVyRXZlbnRSZXNwb25zZRIOCgZyYW5kb20YASABKAkqRQoJRXZlbnRUeXBlEhoKFkVWRU5UX1RZUEVfVU5TUEVDSUZJRUQQABIcChhTRVJWRVJMRVNTX0ZVTkNUSU9OX0NBTEwQATJiCgxFdmVudFNlcnZpY2USUgoNUmVnaXN0ZXJFdmVudBIeLmV2ZW50LnYxLlJlZ2lzdGVyRXZlbnRSZXF1ZXN0Gh8uZXZlbnQudjEuUmVnaXN0ZXJFdmVudFJlc3BvbnNlIgBiBnByb3RvMw");
+  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIkoKB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRITCgtkZWJpdEFtb3VudBgCIAEoAiInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJKjUKCUV2ZW50VHlwZRIaChZFVkVOVF9UWVBFX1VOU1BFQ0lGSUVEEAASDAoIU0RLX0NBTEwQASpICgtTREtDYWxsVHlwZRIbChdTREtDYWxsVHlwZV9VTlNQRUNJRklFRBAAEgcKA1JBVxABEhMKD01JRERMRVdBUkVfQ0FMTBACMmIKDEV2ZW50U2VydmljZRJSCg1SZWdpc3RlckV2ZW50Eh4uZXZlbnQudjEuUmVnaXN0ZXJFdmVudFJlcXVlc3QaHy5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVzcG9uc2UiAGIGcHJvdG8z");
 
 /**
  * @generated from message event.v1.RegisterEventRequest
@@ -31,10 +31,10 @@ export type RegisterEventRequest = Message<"event.v1.RegisterEventRequest"> & {
    */
   data: {
     /**
-     * @generated from field: event.v1.ServerlessFunctionCallEvent serverlessFunctionCallEvent = 3;
+     * @generated from field: event.v1.SDKCall sdkCall = 3;
      */
-    value: ServerlessFunctionCallEvent;
-    case: "serverlessFunctionCallEvent";
+    value: SDKCall;
+    case: "sdkCall";
   } | { case: undefined; value?: undefined };
 };
 
@@ -46,20 +46,25 @@ export const RegisterEventRequestSchema: GenMessage<RegisterEventRequest> = /*@_
   messageDesc(file_event_v1_event, 0);
 
 /**
- * @generated from message event.v1.ServerlessFunctionCallEvent
+ * @generated from message event.v1.SDKCall
  */
-export type ServerlessFunctionCallEvent = Message<"event.v1.ServerlessFunctionCallEvent"> & {
+export type SDKCall = Message<"event.v1.SDKCall"> & {
   /**
-   * @generated from field: float debitAmount = 1;
+   * @generated from field: event.v1.SDKCallType sdkCallType = 1;
+   */
+  sdkCallType: SDKCallType;
+
+  /**
+   * @generated from field: float debitAmount = 2;
    */
   debitAmount: number;
 };
 
 /**
- * Describes the message event.v1.ServerlessFunctionCallEvent.
- * Use `create(ServerlessFunctionCallEventSchema)` to create a new message.
+ * Describes the message event.v1.SDKCall.
+ * Use `create(SDKCallSchema)` to create a new message.
  */
-export const ServerlessFunctionCallEventSchema: GenMessage<ServerlessFunctionCallEvent> = /*@__PURE__*/
+export const SDKCallSchema: GenMessage<SDKCall> = /*@__PURE__*/
   messageDesc(file_event_v1_event, 1);
 
 /**
@@ -89,9 +94,9 @@ export enum EventType {
   EVENT_TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: SERVERLESS_FUNCTION_CALL = 1;
+   * @generated from enum value: SDK_CALL = 1;
    */
-  SERVERLESS_FUNCTION_CALL = 1,
+  SDK_CALL = 1,
 }
 
 /**
@@ -99,6 +104,32 @@ export enum EventType {
  */
 export const EventTypeSchema: GenEnum<EventType> = /*@__PURE__*/
   enumDesc(file_event_v1_event, 0);
+
+/**
+ * @generated from enum event.v1.SDKCallType
+ */
+export enum SDKCallType {
+  /**
+   * @generated from enum value: SDKCallType_UNSPECIFIED = 0;
+   */
+  SDKCallType_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: RAW = 1;
+   */
+  RAW = 1,
+
+  /**
+   * @generated from enum value: MIDDLEWARE_CALL = 2;
+   */
+  MIDDLEWARE_CALL = 2,
+}
+
+/**
+ * Describes the enum event.v1.SDKCallType.
+ */
+export const SDKCallTypeSchema: GenEnum<SDKCallType> = /*@__PURE__*/
+  enumDesc(file_event_v1_event, 1);
 
 /**
  * @generated from service event.v1.EventService

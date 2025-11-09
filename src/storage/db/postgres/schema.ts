@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { decimal, pgTable, uuid, timestamp } from "drizzle-orm/pg-core";
+import { decimal, pgTable, uuid, timestamp, text } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey(),
@@ -27,12 +27,10 @@ export const eventsRelation = relations(eventsTable, ({ one }) => ({
   }),
 }));
 
-export const serverlessFunctionCallEventsTable = pgTable(
-  "serverless_function_call_events",
-  {
-    id: uuid("id")
-      .references(() => eventsTable.id)
-      .primaryKey(),
-    debitAmount: decimal("debit_amount", { mode: "number" }).notNull(),
-  },
-);
+export const sdkCallEventsTable = pgTable("sdk_call_events", {
+  id: uuid("id")
+    .references(() => eventsTable.id)
+    .primaryKey(),
+  type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
+  debitAmount: decimal("debit_amount", { mode: "number" }).notNull(),
+});

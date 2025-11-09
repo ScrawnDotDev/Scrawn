@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterEach, afterAll } from "vitest";
 import { PostgresAdapter } from "../../../storage/adapter/postgres";
-import { ServerlessFunctionCallEvent } from "../../../events/ServerlessFunctionCallEvent";
+import { SDKCall } from "../../../events/SDKCall";
 import { StorageError, StorageErrorType } from "../../../errors/storage";
 import {
   createTestDatabase,
@@ -80,7 +80,7 @@ describe("PostgresAdapter Integration Tests", () => {
   });
 
   describe("Basic event storage", () => {
-    it("should store a complete SERVERLESS_FUNCTION_CALL event", async () => {
+    it("should store a complete SDK_CALL event", async () => {
       if (!dbConnected) {
         console.log("⏭️  Skipping - database not connected");
         return;
@@ -89,7 +89,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 100;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const adapter = new PostgresAdapter(event);
 
       await adapter.add();
@@ -104,8 +104,8 @@ describe("PostgresAdapter Integration Tests", () => {
       expect(eventCount).toBe(1);
 
       // Verify serverless function call event was created
-      const sfceCount = await testDB.countServerlessFunctionCallEvents();
-      expect(sfceCount).toBe(1);
+      const sdkceCount = await testDB.countSDKCalls();
+      expect(sdkceCount).toBe(1);
     });
 
     it("should store debit amounts with correct precision", async () => {
@@ -114,18 +114,18 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 250.75;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const adapter = new PostgresAdapter(event);
 
       await adapter.add();
 
       const db = testDB.getDB();
-      const sfcEvents = await db
+      const sdkceEvents = await db
         .select()
-        .from(schema.serverlessFunctionCallEventsTable);
+        .from(schema.sdkCallEventsTable);
 
-      expect(sfcEvents).toHaveLength(1);
-      expect(Number(sfcEvents[0].debitAmount)).toBe(debitAmount);
+      expect(sdkceEvents).toHaveLength(1);
+      expect(Number(sdkceEvents[0].debitAmount)).toBe(debitAmount);
     });
 
     it("should handle zero debit amount", async () => {
@@ -134,14 +134,14 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 0;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const adapter = new PostgresAdapter(event);
 
       await adapter.add();
 
       expect(await testDB.countUsers()).toBe(1);
       expect(await testDB.countEvents()).toBe(1);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(1);
+      expect(await testDB.countSDKCalls()).toBe(1);
     });
 
     it("should handle large debit amounts", async () => {
@@ -150,7 +150,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 999999.99;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const adapter = new PostgresAdapter(event);
 
       await adapter.add();
@@ -165,7 +165,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = -50.5;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const adapter = new PostgresAdapter(event);
 
       await adapter.add();
@@ -180,18 +180,18 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 123.456789;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const adapter = new PostgresAdapter(event);
 
       await adapter.add();
 
       const db = testDB.getDB();
-      const sfcEvents = await db
+      const sdkceEvents = await db
         .select()
-        .from(schema.serverlessFunctionCallEventsTable);
+        .from(schema.sdkCallEventsTable);
 
-      expect(sfcEvents).toHaveLength(1);
-      expect(Number(sfcEvents[0].debitAmount)).toBeCloseTo(debitAmount, 5);
+      expect(sdkceEvents).toHaveLength(1);
+      expect(Number(sdkceEvents[0].debitAmount)).toBeCloseTo(debitAmount, 5);
     });
   });
 
@@ -202,7 +202,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
 
       // First event
-      const event1 = new ServerlessFunctionCallEvent(userId, {
+      const event1 = new SDKCall(userId, {
         debitAmount: 100,
       });
       await new PostgresAdapter(event1).add();
@@ -210,7 +210,7 @@ describe("PostgresAdapter Integration Tests", () => {
       expect(await testDB.countUsers()).toBe(1);
 
       // Second event with same user
-      const event2 = new ServerlessFunctionCallEvent(userId, {
+      const event2 = new SDKCall(userId, {
         debitAmount: 200,
       });
       await new PostgresAdapter(event2).add();
@@ -219,7 +219,7 @@ describe("PostgresAdapter Integration Tests", () => {
       expect(await testDB.countUsers()).toBe(1);
       // But we should have 2 events
       expect(await testDB.countEvents()).toBe(2);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(2);
+      expect(await testDB.countSDKCalls()).toBe(2);
     });
 
     it("should not throw error when inserting duplicate user", async () => {
@@ -231,7 +231,7 @@ describe("PostgresAdapter Integration Tests", () => {
       await testDB.seedUser(userId);
 
       // Insert event for existing user - should not throw
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
       const adapter = new PostgresAdapter(event);
@@ -245,7 +245,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
 
       const promises = Array.from({ length: 5 }, (_, i) => {
-        const event = new ServerlessFunctionCallEvent(userId, {
+        const event = new SDKCall(userId, {
           debitAmount: (i + 1) * 50,
         });
         return new PostgresAdapter(event).add();
@@ -255,7 +255,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       expect(await testDB.countUsers()).toBe(1);
       expect(await testDB.countEvents()).toBe(5);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(5);
+      expect(await testDB.countSDKCalls()).toBe(5);
     });
   });
 
@@ -270,7 +270,7 @@ describe("PostgresAdapter Integration Tests", () => {
       ];
 
       for (const userId of userIds) {
-        const event = new ServerlessFunctionCallEvent(userId, {
+        const event = new SDKCall(userId, {
           debitAmount: 100,
         });
         await new PostgresAdapter(event).add();
@@ -278,7 +278,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       expect(await testDB.countUsers()).toBe(3);
       expect(await testDB.countEvents()).toBe(3);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(3);
+      expect(await testDB.countSDKCalls()).toBe(3);
 
       // Verify each user exists
       for (const userId of userIds) {
@@ -294,10 +294,10 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId2 = generateTestUserId();
 
       await new PostgresAdapter(
-        new ServerlessFunctionCallEvent(userId1, { debitAmount: 100 }),
+        new SDKCall(userId1, { debitAmount: 100 }),
       ).add();
       await new PostgresAdapter(
-        new ServerlessFunctionCallEvent(userId2, { debitAmount: 200 }),
+        new SDKCall(userId2, { debitAmount: 200 }),
       ).add();
 
       const user1 = await testDB.getUser(userId1);
@@ -316,17 +316,17 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 150;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       await new PostgresAdapter(event).add();
 
       // All three inserts should have completed
       const userCount = await testDB.countUsers();
       const eventCount = await testDB.countEvents();
-      const sfceCount = await testDB.countServerlessFunctionCallEvents();
+      const sdkceCount = await testDB.countSDKCalls();
 
       expect(userCount).toBe(1);
       expect(eventCount).toBe(1);
-      expect(sfceCount).toBe(1);
+      expect(sdkceCount).toBe(1);
 
       // Verify referential integrity
       const user = await testDB.getUser(userId);
@@ -337,7 +337,7 @@ describe("PostgresAdapter Integration Tests", () => {
       if (!dbConnected) return;
 
       const userId = generateTestUserId();
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -361,7 +361,7 @@ describe("PostgresAdapter Integration Tests", () => {
       if (!dbConnected) return;
 
       const userId = generateTestUserId();
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -386,10 +386,10 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 123.45;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       const serialized = event.serialize();
 
-      expect(serialized.SQL.type).toBe("SERVERLESS_FUNCTION_CALL");
+      expect(serialized.SQL.type).toBe("SDK_CALL");
       expect(serialized.SQL.userId).toBe(userId);
       expect(serialized.SQL.data.debitAmount).toBe(debitAmount);
 
@@ -431,7 +431,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       const promises = userIds.map((userId) =>
         new PostgresAdapter(
-          new ServerlessFunctionCallEvent(userId, { debitAmount: 100 }),
+          new SDKCall(userId, { debitAmount: 100 }),
         ).add(),
       );
 
@@ -439,7 +439,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       expect(await testDB.countUsers()).toBe(5);
       expect(await testDB.countEvents()).toBe(5);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(5);
+      expect(await testDB.countSDKCalls()).toBe(5);
     });
 
     it("should handle concurrent inserts for same user", async () => {
@@ -449,7 +449,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       const promises = Array.from({ length: 3 }, (_, i) =>
         new PostgresAdapter(
-          new ServerlessFunctionCallEvent(userId, {
+          new SDKCall(userId, {
             debitAmount: (i + 1) * 10,
           }),
         ).add(),
@@ -459,7 +459,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       expect(await testDB.countUsers()).toBe(1);
       expect(await testDB.countEvents()).toBe(3);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(3);
+      expect(await testDB.countSDKCalls()).toBe(3);
     });
   });
 
@@ -470,7 +470,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userId = generateTestUserId();
       const debitAmount = 175.75;
 
-      const event = new ServerlessFunctionCallEvent(userId, { debitAmount });
+      const event = new SDKCall(userId, { debitAmount });
       await new PostgresAdapter(event).add();
 
       // Retrieve and verify
@@ -490,7 +490,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       for (let i = 0; i < operationCount; i++) {
         const userId = generateTestUserId();
-        const event = new ServerlessFunctionCallEvent(userId, {
+        const event = new SDKCall(userId, {
           debitAmount: 100 + i,
         });
         await new PostgresAdapter(event).add();
@@ -506,7 +506,7 @@ describe("PostgresAdapter Integration Tests", () => {
       if (!dbConnected) return;
 
       const userId = generateTestUserId();
-      const event = new ServerlessFunctionCallEvent(userId, {
+      const event = new SDKCall(userId, {
         debitAmount: 100,
       });
 
@@ -525,7 +525,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       for (let i = 0; i < transactionCount; i++) {
         const userId = generateTestUserId();
-        const event = new ServerlessFunctionCallEvent(userId, {
+        const event = new SDKCall(userId, {
           debitAmount: i * 10,
         });
         await new PostgresAdapter(event).add();
@@ -533,7 +533,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       expect(await testDB.countUsers()).toBe(transactionCount);
       expect(await testDB.countEvents()).toBe(transactionCount);
-      expect(await testDB.countServerlessFunctionCallEvents()).toBe(
+      expect(await testDB.countSDKCalls()).toBe(
         transactionCount,
       );
     });

@@ -21,10 +21,10 @@ export const createMockTransaction = () => {
 };
 
 /**
- * Creates a mock event data object for ServerlessFunctionCallEvent
+ * Creates a mock event data object for SDKCall
  * Simulates the serialized POSTGRES format
  */
-export const createMockServerlessFunctionCallEventData = (overrides?: {
+export const createMockSDKCallEventData = (overrides?: {
   userId?: string;
   debitAmount?: number;
   timestamp?: DateTime;
@@ -32,11 +32,12 @@ export const createMockServerlessFunctionCallEventData = (overrides?: {
   const timestamp = overrides?.timestamp || DateTime.utc();
 
   return {
-    type: "SERVERLESS_FUNCTION_CALL" as const,
+    type: "SDK_CALL" as const,
     userId: overrides?.userId || "test-user-123",
     reported_timestamp: timestamp,
     data: {
-      debitAmount: overrides?.debitAmount !== undefined ? overrides.debitAmount : 100,
+      debitAmount:
+        overrides?.debitAmount !== undefined ? overrides.debitAmount : 100,
     },
   };
 };
@@ -87,7 +88,9 @@ export const createNotNullViolationError = (column: string = "debitAmount") => {
 /**
  * Helper to simulate a PostgreSQL connection error
  */
-export const createConnectionError = (type: "refused" | "notfound" = "refused") => {
+export const createConnectionError = (
+  type: "refused" | "notfound" = "refused",
+) => {
   if (type === "refused") {
     return new Error("ECONNREFUSED: Connection refused");
   }

@@ -16,7 +16,7 @@ export class StorageAdapterFactory {
    */
   public static async getStorageAdapter(event: EventType) {
     switch (event.type) {
-      case "SERVERLESS_FUNCTION_CALL": {
+      case "SDK_CALL": {
         return new PostgresAdapter(event);
       }
       default: {
