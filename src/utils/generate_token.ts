@@ -11,7 +11,7 @@ if (!JWT_SECRET) {
 // Generate a token that expires in 1 year
 const payload = {
   id: randomUUID(),
-  roles: ["sdk"],
+  roles: ["dashboard"],
   iat: Math.floor(Date.now() / 1000),
 };
 

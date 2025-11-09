@@ -8,5 +8,5 @@ export interface StorageAdapterType {
   connectionObject: unknown;
   event: EventType;
 
-  add(): Promise<void>;
+  add(): Promise<{ id: string } | void>;
 }

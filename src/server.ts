@@ -3,8 +3,10 @@ import type { ConnectRouter } from "@connectrpc/connect";
 import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { createValidateInterceptor } from "@connectrpc/validate";
 import { EventService } from "./gen/event/v1/event_pb.ts";
+import { AuthService } from "./gen/auth/v1/auth_pb.ts";
 import { authInterceptor } from "./interceptors/auth.ts";
 import { registerEvent } from "./routes/events/registerEvent.ts";
+import { createAPIKey } from "./routes/auth/createAPIKey.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -23,10 +25,14 @@ getPostgresDB(DATABASE_URL);
 const handler = connectNodeAdapter({
   interceptors: [createValidateInterceptor(), authInterceptor(JWT_SECRET)],
   routes: (router: ConnectRouter) => {
-
     // EventService implementation
     router.service(EventService, {
       registerEvent,
+    });
+
+    // AuthService implementation
+    router.service(AuthService, {
+      createAPIKey,
     });
   },
 });

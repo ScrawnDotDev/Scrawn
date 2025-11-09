@@ -1,4 +1,4 @@
 import { createContextKey } from "@connectrpc/connect";
-import { type UserPayload } from "../types/auth";
+import type { AuthSchemaType } from "../zod/auth";
 
-export const userContextKey = createContextKey<UserPayload | null>(null);
+export const userContextKey = createContextKey<AuthSchemaType | null>(null);

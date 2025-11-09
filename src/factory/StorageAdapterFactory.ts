@@ -19,6 +19,9 @@ export class StorageAdapterFactory {
       case "SDK_CALL": {
         return new PostgresAdapter(event);
       }
+      case "ADD_KEY": {
+        return new PostgresAdapter(event);
+      }
       default: {
         throw new Error(`Unknown event type: ${event}`);
       }

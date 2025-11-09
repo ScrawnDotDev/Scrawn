@@ -1,8 +1,7 @@
 import { type Interceptor } from "@connectrpc/connect";
 import jwt, { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 import { userContextKey } from "../context/auth";
-import { type UserPayload } from "../types/auth";
-import { authSchema } from "../zod/auth";
+import { authSchema, type AuthSchemaType } from "../zod/auth";
 import { AuthError, AuthErrorType } from "../errors/auth";
 import { logger } from "../errors/logger";
 
@@ -79,9 +78,9 @@ export function authInterceptor(secret: string): Interceptor {
       }
 
       // Validate payload structure against schema
-      let payload: UserPayload;
+      let payload: AuthSchemaType;
       try {
-        payload = authSchema.parse(decoded) as UserPayload;
+        payload = authSchema.parse(decoded);
       } catch (err) {
         const error = AuthError.malformedPayload(
           err instanceof Error ? err : undefined,
