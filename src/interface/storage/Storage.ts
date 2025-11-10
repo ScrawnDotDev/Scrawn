@@ -9,4 +9,5 @@ export interface StorageAdapterType {
   event: EventType;
 
   add(): Promise<{ id: string } | void>;
+  price(): Promise<number>;
 }

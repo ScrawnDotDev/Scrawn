@@ -14,9 +14,11 @@ const SDKCallEvent = BaseEvent.extend({
       value: z.object({
         sdkCallType: z.union([
           z.literal(1).transform(() => "RAW") as z.ZodType<"RAW">,
-          z.literal(2).transform(() => "MIDDLEWARE_CALL") as z.ZodType<"MIDDLEWARE_CALL">,
+          z
+            .literal(2)
+            .transform(() => "MIDDLEWARE_CALL") as z.ZodType<"MIDDLEWARE_CALL">,
         ]),
-        debitAmount: z.number(),
+        debitAmount: z.number().transform((val) => Math.floor(val * 100)),
       }),
     })
     .transform((obj) => obj.value),

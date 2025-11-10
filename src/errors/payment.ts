@@ -8,6 +8,10 @@ export enum PaymentErrorType {
   MISSING_API_KEY = "MISSING_API_KEY",
   MISSING_STORE_ID = "MISSING_STORE_ID",
   MISSING_VARIANT_ID = "MISSING_VARIANT_ID",
+  INVALID_CHECKOUT_RESPONSE = "INVALID_CHECKOUT_RESPONSE",
+  PRICE_CALCULATION_FAILED = "PRICE_CALCULATION_FAILED",
+  STORAGE_ADAPTER_FAILED = "STORAGE_ADAPTER_FAILED",
+  CONFIGURATION_ERROR = "CONFIGURATION_ERROR",
   UNKNOWN = "UNKNOWN",
 }
 
@@ -40,18 +44,25 @@ export class PaymentError extends ConnectError {
     });
   }
 
-  static checkoutCreationFailed(details?: string, originalError?: Error): PaymentError {
+  static checkoutCreationFailed(
+    details?: string,
+    originalError?: Error,
+  ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.CHECKOUT_CREATION_FAILED,
-      message: details
-        ? `Failed to create checkout link: ${details}`
-        : "Failed to create checkout link",
+      message:
+        details !== undefined
+          ? `Failed to create checkout link: ${details}`
+          : "Failed to create checkout link",
       code: Code.Internal,
       originalError,
     });
   }
 
-  static validationFailed(details: string, originalError?: Error): PaymentError {
+  static validationFailed(
+    details: string,
+    originalError?: Error,
+  ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.VALIDATION_FAILED,
       message: `Payment validation failed: ${details}`,
@@ -60,7 +71,10 @@ export class PaymentError extends ConnectError {
     });
   }
 
-  static lemonSqueezyApiError(details?: string, originalError?: Error): PaymentError {
+  static lemonSqueezyApiError(
+    details?: string,
+    originalError?: Error,
+  ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.LEMON_SQUEEZY_API_ERROR,
       message: details
@@ -93,6 +107,62 @@ export class PaymentError extends ConnectError {
     return new PaymentError({
       type: PaymentErrorType.MISSING_VARIANT_ID,
       message: "Lemon Squeezy variant ID is not configured",
+      code: Code.FailedPrecondition,
+      originalError,
+    });
+  }
+
+  static invalidCheckoutResponse(
+    details?: string,
+    originalError?: Error,
+  ): PaymentError {
+    return new PaymentError({
+      type: PaymentErrorType.INVALID_CHECKOUT_RESPONSE,
+      message: details
+        ? `Invalid checkout response: ${details}`
+        : "Invalid checkout response from payment provider",
+      code: Code.Internal,
+      originalError,
+    });
+  }
+
+  static priceCalculationFailed(
+    userId?: string,
+    originalError?: Error,
+  ): PaymentError {
+    return new PaymentError({
+      type: PaymentErrorType.PRICE_CALCULATION_FAILED,
+      message: userId
+        ? `Failed to calculate price for user: ${userId}`
+        : "Failed to calculate checkout price",
+      code: Code.Internal,
+      originalError,
+    });
+  }
+
+  static storageAdapterFailed(
+    details?: string,
+    originalError?: Error,
+  ): PaymentError {
+    return new PaymentError({
+      type: PaymentErrorType.STORAGE_ADAPTER_FAILED,
+      message: details
+        ? `Storage adapter error: ${details}`
+        : "Failed to retrieve data from storage",
+      code: Code.Internal,
+      originalError,
+    });
+  }
+
+  static configurationError(
+    details?: string,
+    originalError?: Error,
+  ): PaymentError {
+    return new PaymentError({
+      type: PaymentErrorType.CONFIGURATION_ERROR,
+      message: details
+        ? `Payment configuration error: ${details}`
+        : "Payment system is not configured correctly",
       code: Code.FailedPrecondition,
       originalError,
     });
