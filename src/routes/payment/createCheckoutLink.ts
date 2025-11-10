@@ -267,10 +267,11 @@ export async function createCheckoutLink(
       error &&
       typeof error === "object" &&
       "type" in error &&
+      "name" in error &&
       error.name === "PaymentError"
     ) {
       console.error(
-        `[CreateCheckoutLink] PaymentError - Type: ${(error as PaymentError).type}, Message: ${(error as Error).message}`,
+        `[CreateCheckoutLink] PaymentError - Type: ${(error as PaymentError).type}, Message: ${(error as PaymentError).message}`,
       );
       throw error;
     }
