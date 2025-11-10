@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { USER_ID_CONFIG } from "../config/identifiers";
 
 const BaseEvent = z.object({
   type: z.number(), // overwritten later by discriminators
-  userId: z.uuid(),
+  userId: USER_ID_CONFIG.validator,
 });
 
 const SDKCallEvent = BaseEvent.extend({

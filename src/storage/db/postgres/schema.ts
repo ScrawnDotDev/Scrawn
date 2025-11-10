@@ -7,9 +7,10 @@ import {
   text,
   boolean,
 } from "drizzle-orm/pg-core";
+import { USER_ID_CONFIG } from "../../../config/identifiers";
 
 export const usersTable = pgTable("users", {
-  id: uuid("id").primaryKey(),
+  id: USER_ID_CONFIG.dbType("id").primaryKey(),
 });
 
 export const usersRelation = relations(usersTable, ({ many }) => ({
@@ -43,7 +44,7 @@ export const eventsTable = pgTable("events", {
     withTimezone: true,
     mode: "string",
   }).notNull(),
-  userId: uuid("user_id")
+  userId: USER_ID_CONFIG.dbType("user_id")
     .references(() => usersTable.id)
     .notNull(),
   api_keyId: uuid("api_key_id")

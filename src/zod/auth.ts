@@ -1,12 +1,8 @@
 import { z } from "zod";
-
-// More lenient UUID validation that accepts the format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-// without strict version/variant bit validation
-const uuidRegex =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+import { USER_ID_CONFIG } from "../config/identifiers";
 
 export const authSchema = z.object({
-  id: z.string().regex(uuidRegex, "Invalid UUID format"),
+  id: USER_ID_CONFIG.validator,
   roles: z.array(z.string()),
   iat: z.number().int(),
 });

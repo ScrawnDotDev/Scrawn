@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import { type EventSchemaType } from "../../zod/event";
+import { type UserId } from "../../config/identifiers";
 
 export type SDKCallEventData = {
   sdkCallType: EventSchemaType["data"]["sdkCallType"];
@@ -32,7 +33,7 @@ type BaseEventMetadata<T extends keyof EventDataMap> = {
 
 type EventMetadataMap = {
   ADD_KEY: BaseEventMetadata<"ADD_KEY">;
-  SDK_CALL: BaseEventMetadata<"SDK_CALL"> & { userId: string };
+  SDK_CALL: BaseEventMetadata<"SDK_CALL"> & { userId: UserId };
 };
 
 type EventStorageAdapterMap<Type extends keyof EventDataMap> = {
@@ -62,7 +63,7 @@ export interface EventType<
  * SDK Call Event
  */
 export interface SDKCallEventType extends EventType<"SDK_CALL"> {
-  readonly userId: string;
+  readonly userId: UserId;
 }
 
 /**

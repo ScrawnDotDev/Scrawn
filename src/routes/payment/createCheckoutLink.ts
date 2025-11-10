@@ -74,7 +74,7 @@ export async function createCheckoutLink(
           customPrice: 30010,
           checkoutData: {
             custom: {
-              user_id: validatedData.userId,
+              user_id: String(validatedData.userId),
             },
           },
         },

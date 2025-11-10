@@ -1,13 +1,14 @@
 import type { SDKCallEventType } from "../interface/event/Event";
 import { DateTime } from "luxon";
 import type { SDKCallEventData, EventUnion } from "../interface/event/Event";
+import { type UserId } from "../config/identifiers";
 
 export class SDKCall implements SDKCallEventType {
   public reported_timestamp: DateTime;
   public readonly type = "SDK_CALL" as const;
 
   constructor(
-    public userId: string,
+    public userId: UserId,
     public data: EventUnion<"SDK_CALL">,
   ) {
     this.reported_timestamp = DateTime.utc();
