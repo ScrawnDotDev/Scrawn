@@ -19,15 +19,16 @@ import {
 import { StorageAdapterFactory } from "../../factory";
 import { RequestPayment } from "../../events/RequestPayment";
 
-const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
-const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_STORE_ID;
-const LEMON_SQUEEZY_VARIANT_ID = process.env.LEMON_SQUEEZY_VARIANT_ID;
-
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
   context: HandlerContext,
 ): Promise<CreateCheckoutLinkResponse> {
   try {
+    // Read environment configuration
+    const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
+    const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_STORE_ID;
+    const LEMON_SQUEEZY_VARIANT_ID = process.env.LEMON_SQUEEZY_VARIANT_ID;
+
     // Validate environment configuration
     if (!LEMON_SQUEEZY_API_KEY) {
       throw PaymentError.missingApiKey();
@@ -97,7 +98,13 @@ export async function createCheckoutLink(
         error,
       );
 
-      if (error instanceof PaymentError) {
+      // Use duck typing instead of instanceof to work with mocked modules
+      if (
+        error &&
+        typeof error === "object" &&
+        "type" in error &&
+        (error as any).name === "PaymentError"
+      ) {
         throw error;
       }
 
@@ -255,9 +262,15 @@ export async function createCheckoutLink(
     }
 
     // Re-throw PaymentError as-is
-    if (error instanceof PaymentError) {
+    // Use duck typing instead of instanceof to work with mocked modules
+    if (
+      error &&
+      typeof error === "object" &&
+      "type" in error &&
+      error.name === "PaymentError"
+    ) {
       console.error(
-        `[CreateCheckoutLink] PaymentError - Type: ${error.type}, Message: ${error.message}`,
+        `[CreateCheckoutLink] PaymentError - Type: ${(error as PaymentError).type}, Message: ${(error as Error).message}`,
       );
       throw error;
     }

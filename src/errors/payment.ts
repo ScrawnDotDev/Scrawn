@@ -50,9 +50,10 @@ export class PaymentError extends ConnectError {
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.CHECKOUT_CREATION_FAILED,
-      message: details
-        ? `Failed to create checkout link: ${details}`
-        : "Failed to create checkout link",
+      message:
+        details !== undefined
+          ? `Failed to create checkout link: ${details}`
+          : "Failed to create checkout link",
       code: Code.Internal,
       originalError,
     });

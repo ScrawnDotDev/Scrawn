@@ -7,4 +7,6 @@ export const createCheckoutLinkSchema = z.object({
     .uuid("User ID must be a valid UUID"),
 });
 
-export type CreateCheckoutLinkSchemaType = z.infer<typeof createCheckoutLinkSchema>;
+export type CreateCheckoutLinkSchemaType = z.infer<
+  typeof createCheckoutLinkSchema
+>;

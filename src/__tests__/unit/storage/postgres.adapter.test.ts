@@ -95,11 +95,13 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
+        expect((error as any).type).toBe("TRANSACTION_FAILED");
       }
     });
 
@@ -130,12 +132,13 @@ describe("PostgresAdapter", () => {
         "test-api-key-id",
       );
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        expect((error as any).type).toBe("TRANSACTION_FAILED");
+        expect((error as any).type).toBe("INVALID_TIMESTAMP");
       }
     });
 
@@ -146,12 +149,13 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown StorageError");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        expect((error as any).type).toBe("TRANSACTION_FAILED");
+        expect((error as any).type).toBe("EMPTY_RESULT");
       }
     });
 
@@ -172,9 +176,10 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
         expect((error as any).type).toBe("TRANSACTION_FAILED");
@@ -188,12 +193,13 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown StorageError");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        expect((error as any).type).toBe("TRANSACTION_FAILED");
+        expect((error as any).type).toBe("USER_INSERT_FAILED");
       }
     });
 
@@ -359,12 +365,13 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown StorageError");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
-        expect((error as any).type).toBe("TRANSACTION_FAILED");
+        expect((error as any).type).toBe("USER_INSERT_FAILED");
       }
     });
   });
@@ -386,9 +393,10 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(unknownEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown");
       } catch (error) {
         expect(isStorageError(error)).toBe(true);
         expect((error as any).type).toBe("UNKNOWN_EVENT_TYPE");
@@ -412,10 +420,12 @@ describe("PostgresAdapter", () => {
 
       const adapter = new PostgresAdapter(unknownEvent, "test-api-key-id");
 
+      await expect(adapter.add()).rejects.toThrow();
+
       try {
         await adapter.add();
-        expect.fail("Should have thrown StorageError");
       } catch (error) {
+        expect(isStorageError(error)).toBe(true);
         expect((error as StorageError).message).toContain("SOME_NEW_EVENT");
       }
     });

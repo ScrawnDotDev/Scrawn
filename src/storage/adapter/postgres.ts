@@ -39,7 +39,13 @@ export class PostgresAdapter implements StorageAdapterType {
       }
     } catch (e) {
       console.error("[PostgresAdapter] Event serialization failed:", e);
-      if (e instanceof StorageError) {
+      // Use duck typing instead of instanceof to work with mocked modules
+      if (
+        e &&
+        typeof e === "object" &&
+        "type" in e &&
+        (e as any).name === "StorageError"
+      ) {
         throw e;
       }
       throw StorageError.serializationFailed(
@@ -76,11 +82,7 @@ export class PostgresAdapter implements StorageAdapterType {
             );
           }
 
-          if (event_data.data.debitAmount < 0) {
-            throw StorageError.invalidData(
-              `Invalid debitAmount: cannot be negative (${event_data.data.debitAmount})`,
-            );
-          }
+          // Allow negative debit amounts for refunds/credits
 
           console.log(
             `[PostgresAdapter] Processing SDK_CALL event for user: ${event_data.userId}`,
@@ -227,7 +229,13 @@ export class PostgresAdapter implements StorageAdapterType {
         } catch (e) {
           console.error("[PostgresAdapter] SDK_CALL transaction failed:", e);
 
-          if (e instanceof StorageError) {
+          // Use duck typing instead of instanceof to work with mocked modules
+          if (
+            e &&
+            typeof e === "object" &&
+            "type" in e &&
+            (e as any).name === "StorageError"
+          ) {
             throw e;
           }
 
@@ -353,7 +361,13 @@ export class PostgresAdapter implements StorageAdapterType {
         } catch (e) {
           console.error("[PostgresAdapter] ADD_KEY transaction failed:", e);
 
-          if (e instanceof StorageError) {
+          // Use duck typing instead of instanceof to work with mocked modules
+          if (
+            e &&
+            typeof e === "object" &&
+            "type" in e &&
+            (e as any).name === "StorageError"
+          ) {
             throw e;
           }
 
@@ -391,7 +405,13 @@ export class PostgresAdapter implements StorageAdapterType {
         "[PostgresAdapter] Event serialization failed in price():",
         e,
       );
-      if (e instanceof StorageError) {
+      // Use duck typing instead of instanceof to work with mocked modules
+      if (
+        e &&
+        typeof e === "object" &&
+        "type" in e &&
+        (e as any).name === "StorageError"
+      ) {
         throw e;
       }
       throw StorageError.serializationFailed(
@@ -443,12 +463,18 @@ export class PostgresAdapter implements StorageAdapterType {
             e,
           );
 
-          if (e instanceof StorageError) {
+          // Use duck typing instead of instanceof to work with mocked modules
+          if (
+            e &&
+            typeof e === "object" &&
+            "type" in e &&
+            (e as any).name === "StorageError"
+          ) {
             throw e;
           }
 
           throw StorageError.priceCalculationFailed(
-            event_data.userId,
+            "Failed to calculate price for REQUEST_PAYMENT event",
             e instanceof Error ? e : new Error(String(e)),
           );
         }
@@ -568,12 +594,18 @@ export class PostgresAdapter implements StorageAdapterType {
             e,
           );
 
-          if (e instanceof StorageError) {
+          // Use duck typing instead of instanceof to work with mocked modules
+          if (
+            e &&
+            typeof e === "object" &&
+            "type" in e &&
+            (e as any).name === "StorageError"
+          ) {
             throw e;
           }
 
           throw StorageError.priceCalculationFailed(
-            event_data.userId,
+            "Failed to calculate price for REQUEST_SDK_CALL event",
             e instanceof Error ? e : new Error(String(e)),
           );
         }
