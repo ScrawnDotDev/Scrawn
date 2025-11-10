@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
-  decimal,
+  integer,
   pgTable,
   uuid,
   timestamp,
@@ -67,5 +67,5 @@ export const sdkCallEventsTable = pgTable("sdk_call_events", {
     .references(() => eventsTable.id)
     .primaryKey(),
   type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
-  debitAmount: decimal("debit_amount", { mode: "number" }).notNull(),
+  debitAmount: integer("debit_amount").notNull(),
 });

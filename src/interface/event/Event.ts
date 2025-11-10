@@ -12,12 +12,18 @@ export type AddKeyEventData = {
   expiresAt: string;
 };
 
+export type RequestPaymentEventData = null;
+
+export type RequestSDKCallEventData = null;
+
 /**
  * Mapping of event types to their data structures
  */
 type EventDataMap = {
   SDK_CALL: SDKCallEventData;
   ADD_KEY: AddKeyEventData;
+  REQUEST_PAYMENT: RequestPaymentEventData;
+  REQUEST_SDK_CALL: RequestSDKCallEventData;
 };
 
 export type EventUnion<T extends keyof EventDataMap> = {
@@ -33,6 +39,8 @@ type BaseEventMetadata<T extends keyof EventDataMap> = {
 type EventMetadataMap = {
   ADD_KEY: BaseEventMetadata<"ADD_KEY">;
   SDK_CALL: BaseEventMetadata<"SDK_CALL"> & { userId: string };
+  REQUEST_PAYMENT: BaseEventMetadata<"REQUEST_PAYMENT"> & { userId: string };
+  REQUEST_SDK_CALL: BaseEventMetadata<"REQUEST_SDK_CALL"> & { userId: string };
 };
 
 type EventStorageAdapterMap<Type extends keyof EventDataMap> = {
@@ -69,3 +77,17 @@ export interface SDKCallEventType extends EventType<"SDK_CALL"> {
  * Add Key Event
  */
 export interface AddKeyEventType extends EventType<"ADD_KEY"> {}
+
+/**
+ * Payment Request Event
+ */
+export interface RequestPaymentEventType extends EventType<"REQUEST_PAYMENT"> {
+  readonly userId: string;
+}
+
+/**
+ * SDK Call Request Event
+ */
+export interface RequestSDKCallEventType extends EventType<"REQUEST_SDK_CALL"> {
+  readonly userId: string;
+}

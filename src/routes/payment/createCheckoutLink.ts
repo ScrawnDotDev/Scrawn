@@ -16,6 +16,8 @@ import {
   lemonSqueezySetup,
   createCheckout,
 } from "@lemonsqueezy/lemonsqueezy.js";
+import { StorageAdapterFactory } from "../../factory";
+import { RequestPayment } from "../../events/RequestPayment";
 
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
 const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -64,6 +66,12 @@ export async function createCheckoutLink(
       },
     });
 
+    let custom_price = await (
+      await StorageAdapterFactory.getStorageAdapter(
+        new RequestPayment(validatedData.userId, null),
+      )
+    ).price();
+
     // Create checkout session
     let checkoutResponse;
     try {
@@ -71,7 +79,7 @@ export async function createCheckoutLink(
         LEMON_SQUEEZY_STORE_ID,
         LEMON_SQUEEZY_VARIANT_ID,
         {
-          customPrice: 30010,
+          customPrice: custom_price,
           checkoutData: {
             custom: {
               user_id: validatedData.userId,
@@ -79,7 +87,6 @@ export async function createCheckoutLink(
           },
         },
       );
-
     } catch (error) {
       console.error("[CreateCheckoutLink] Lemon Squeezy API call failed:");
       console.error("Error details:", error);

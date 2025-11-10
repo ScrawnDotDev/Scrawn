@@ -8,6 +8,9 @@ import {
   apiKeysTable,
 } from "../db/postgres/schema";
 import { StorageError } from "../../errors/storage";
+import { RequestSDKCall } from "../../events/RequestSDKCall";
+import { StorageAdapterFactory } from "../../factory";
+import { eq, sum } from "drizzle-orm";
 
 export class PostgresAdapter implements StorageAdapterType {
   name: string;
@@ -142,6 +145,47 @@ export class PostgresAdapter implements StorageAdapterType {
 
       default:
         throw StorageError.unknownEventType(this.event.type);
+    }
+  }
+
+  async price(): Promise<number> {
+    const { SQL } = this.event.serialize();
+    const event_data = SQL;
+
+    switch (event_data.type) {
+      case "REQUEST_PAYMENT": {
+        return await (
+          await StorageAdapterFactory.getStorageAdapter(
+            new RequestSDKCall(event_data.userId, null),
+          )
+        ).price();
+      }
+      case "REQUEST_SDK_CALL": {
+        try {
+          let smth = await this.connectionObject
+            .select({
+              price: sum(sdkCallEventsTable.debitAmount),
+            })
+            .from(sdkCallEventsTable)
+            .leftJoin(eventsTable, eq(sdkCallEventsTable.id, eventsTable.id))
+            .where(eq(eventsTable.userId, event_data.userId))
+            .groupBy(eventsTable.userId);
+
+          if (!smth[0] || !smth[0].price) {
+            throw new Error("Failed to fetch price or smth");
+          }
+
+          return parseInt(smth[0]?.price);
+        } catch (e) {
+          throw StorageError.queryFailed(
+            "Failed to query SDK_CALL event for pricing",
+            e instanceof Error ? e : undefined,
+          );
+        }
+      }
+      default: {
+        throw StorageError.unknownEventType(this.event.type);
+      }
     }
   }
 }
