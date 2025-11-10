@@ -15,7 +15,7 @@ export type AddKeyEventData = {
 /**
  * Mapping of event types to their data structures
  */
-export type EventDataMap = {
+type EventDataMap = {
   SDK_CALL: SDKCallEventData;
   ADD_KEY: AddKeyEventData;
 };
@@ -41,7 +41,7 @@ type EventStorageAdapterMap<Type extends keyof EventDataMap> = {
   }[Type];
 };
 
-export type EventStorageAdapterUnion<T extends keyof EventDataMap> = {
+type EventStorageAdapterUnion<T extends keyof EventDataMap> = {
   [K in keyof EventDataMap]: EventStorageAdapterMap<K>;
 }[T];
 

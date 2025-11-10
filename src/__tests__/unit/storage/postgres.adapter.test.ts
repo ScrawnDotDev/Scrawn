@@ -48,17 +48,17 @@ describe("PostgresAdapter", () => {
 
   describe("initialization", () => {
     it("should create adapter with correct name", () => {
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       expect(adapter.name).toBe("SDK_CALL");
     });
 
     it("should set event property correctly", () => {
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       expect(adapter.event).toBe(mockEvent);
     });
 
     it("should initialize connectionObject from getPostgresDB", () => {
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       expect(adapter.connectionObject).toBe(mockDB);
       expect(getPostgresDB).toHaveBeenCalled();
     });
@@ -70,7 +70,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       await adapter.add();
 
       expect(mockEvent.serialize).toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
       // Should succeed - duplicate user is silently ignored
       await expect(adapter.add()).resolves.not.toThrow();
@@ -93,7 +93,7 @@ describe("PostgresAdapter", () => {
         new Error("unique constraint violation"),
       );
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -125,7 +125,10 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(eventWithBadTimestamp);
+      const adapter = new PostgresAdapter(
+        eventWithBadTimestamp,
+        "test-api-key-id",
+      );
 
       try {
         await adapter.add();
@@ -141,7 +144,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransactionWithEmptyReturning());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -157,7 +160,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       await adapter.add();
 
       expect(mockEvent.serialize).toHaveBeenCalled();
@@ -167,7 +170,7 @@ describe("PostgresAdapter", () => {
       const dbError = new Error("database connection failed");
       mockDB.transaction.mockRejectedValue(dbError);
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -183,7 +186,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransactionWithUserInsertError());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -215,7 +218,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(zeroDebitEvent);
+      const adapter = new PostgresAdapter(zeroDebitEvent, "test-api-key-id");
       await adapter.add();
 
       expect(mockDB.transaction).toHaveBeenCalled();
@@ -242,7 +245,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(largeDebitEvent);
+      const adapter = new PostgresAdapter(largeDebitEvent, "test-api-key-id");
       await adapter.add();
 
       expect(mockDB.transaction).toHaveBeenCalled();
@@ -269,7 +272,10 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(negativeDebitEvent);
+      const adapter = new PostgresAdapter(
+        negativeDebitEvent,
+        "test-api-key-id",
+      );
       await adapter.add();
 
       expect(mockDB.transaction).toHaveBeenCalled();
@@ -302,7 +308,7 @@ describe("PostgresAdapter", () => {
           return callback(createMockTransaction());
         });
 
-        const adapter = new PostgresAdapter(eventWithUserId);
+        const adapter = new PostgresAdapter(eventWithUserId, "test-api-key-id");
         await adapter.add();
 
         expect(mockDB.transaction).toHaveBeenCalled();
@@ -336,7 +342,10 @@ describe("PostgresAdapter", () => {
           return callback(createMockTransaction());
         });
 
-        const adapter = new PostgresAdapter(eventWithTimestamp);
+        const adapter = new PostgresAdapter(
+          eventWithTimestamp,
+          "test-api-key-id",
+        );
         await adapter.add();
 
         expect(mockDB.transaction).toHaveBeenCalled();
@@ -348,7 +357,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransactionWithUserInsertError());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -365,9 +374,17 @@ describe("PostgresAdapter", () => {
       const unknownEvent = {
         ...mockEvent,
         type: "UNKNOWN_EVENT_TYPE",
+        serialize: vi.fn(() => ({
+          SQL: {
+            type: "UNKNOWN_EVENT_TYPE",
+            userId: "test-user-123",
+            reported_timestamp: DateTime.utc(),
+            data: {},
+          },
+        })),
       };
 
-      const adapter = new PostgresAdapter(unknownEvent);
+      const adapter = new PostgresAdapter(unknownEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -383,9 +400,17 @@ describe("PostgresAdapter", () => {
       const unknownEvent = {
         ...mockEvent,
         type: "SOME_NEW_EVENT",
+        serialize: vi.fn(() => ({
+          SQL: {
+            type: "SOME_NEW_EVENT",
+            userId: "test-user-123",
+            reported_timestamp: DateTime.utc(),
+            data: {},
+          },
+        })),
       };
 
-      const adapter = new PostgresAdapter(unknownEvent);
+      const adapter = new PostgresAdapter(unknownEvent, "test-api-key-id");
 
       try {
         await adapter.add();
@@ -402,7 +427,7 @@ describe("PostgresAdapter", () => {
         return callback(createMockTransaction());
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       await adapter.add();
 
       expect(mockDB.transaction).toHaveBeenCalledWith(expect.any(Function));
@@ -416,7 +441,7 @@ describe("PostgresAdapter", () => {
         return callback(receivedTxn);
       });
 
-      const adapter = new PostgresAdapter(mockEvent);
+      const adapter = new PostgresAdapter(mockEvent, "test-api-key-id");
       await adapter.add();
 
       expect(receivedTxn).not.toBeNull();

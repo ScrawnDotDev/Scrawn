@@ -4,9 +4,11 @@ import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { createValidateInterceptor } from "@connectrpc/validate";
 import { EventService } from "./gen/event/v1/event_pb.ts";
 import { AuthService } from "./gen/auth/v1/auth_pb.ts";
+import { PaymentService } from "./gen/payment/v1/payment_pb.ts";
 import { authInterceptor } from "./interceptors/auth.ts";
 import { registerEvent } from "./routes/events/registerEvent.ts";
 import { createAPIKey } from "./routes/auth/createAPIKey.ts";
+import { createCheckoutLink } from "./routes/payment/createCheckoutLink.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -33,6 +35,11 @@ const handler = connectNodeAdapter({
     // AuthService implementation
     router.service(AuthService, {
       createAPIKey,
+    });
+
+    // PaymentService implementation
+    router.service(PaymentService, {
+      createCheckoutLink,
     });
   },
 });

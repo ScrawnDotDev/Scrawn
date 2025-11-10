@@ -9,7 +9,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "start": "bun run src/server.ts",
-    "init_key": "bun run src/utils/generateInitialAPIKey.ts"
+    "init_key": "bun run src/utils/generateInitialAPIKey.ts",
+    "ls:stores": "bun run src/utils/lemonsqueezy/listStores.ts",
+    "ls:variants": "bun run src/utils/lemonsqueezy/listVariants.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -28,6 +30,7 @@
     "@connectrpc/connect": "^2.1.0",
     "@connectrpc/connect-node": "^2.1.0",
     "@connectrpc/validate": "^0.2.0",
+    "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@libsql/client": "^0.15.15",
     "@types/luxon": "^3.7.1",
     "buf": "bufbuild/buf",

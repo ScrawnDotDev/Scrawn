@@ -10,3 +10,6 @@ export type { EventErrorContext } from "./event";
 export { StorageError, StorageErrorType } from "./storage";
 export type { StorageErrorContext } from "./storage";
 
+// Payment errors
+export { PaymentError, PaymentErrorType } from "./payment";
+export type { PaymentErrorContext } from "./payment";
