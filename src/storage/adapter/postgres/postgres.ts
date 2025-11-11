@@ -5,6 +5,7 @@ import { StorageError } from "../../../errors/storage";
 import {
   handleAddSdkCall,
   handleAddKey,
+  handleAddPayment,
   handlePriceRequestPayment,
   handlePriceRequestSdkCall,
 } from "./handlers";
@@ -61,6 +62,10 @@ export class PostgresAdapter implements StorageAdapterType {
 
       case "ADD_KEY": {
         return await handleAddKey(event_data);
+      }
+
+      case "PAYMENT": {
+        return await handleAddPayment(event_data, this.apiKeyId);
       }
 
       default: {

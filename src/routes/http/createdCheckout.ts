@@ -1,14 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import crypto from "node:crypto";
 import { lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
-import { getPostgresDB } from "../../storage/db/postgres/db.ts";
-import {
-  usersTable,
-  eventsTable,
-  paymentEventsTable,
-} from "../../storage/db/postgres/schema.ts";
-import { DateTime } from "luxon";
-import { eq } from "drizzle-orm";
+import { Payment } from "../../events/RawEvents/Payment.ts";
+import { PostgresAdapter } from "../../storage/adapter/postgres/postgres.ts";
+import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
 
 const LEMON_SQUEEZY_WEBHOOK_SECRET = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
@@ -181,49 +176,19 @@ export async function handleLemonSqueezyWebhook(
       `[Webhook] Processing payment for user ${userId}, amount: ${creditAmount}`,
     );
 
-    // Store the payment event in the database
-    const db = getPostgresDB();
-
+    // Create and store the payment event
     try {
-      await db.transaction(async (tx) => {
-        // Ensure user exists
-        const existingUsers = await tx
-          .select()
-          .from(usersTable)
-          .where((usersTable) => eq(usersTable.id, userId))
-          .limit(1);
+      const paymentEvent = new Payment(userId, { creditAmount });
+      const adapter = await StorageAdapterFactory.getStorageAdapter(
+        paymentEvent,
+        apiKeyId,
+      );
 
-        if (existingUsers.length === 0) {
-          console.log(`[Webhook] Creating new user: ${userId}`);
-          await tx.insert(usersTable).values({
-            id: userId,
-          });
-        }
+      await adapter.add();
 
-        // Create event record (without api_key since this is a webhook)
-        const [eventRecord] = await tx
-          .insert(eventsTable)
-          .values({
-            reported_timestamp: DateTime.utc().toISO(),
-            userId: userId,
-            api_keyId: apiKeyId, // Webhook events don't have an API key
-          })
-          .returning({ id: eventsTable.id });
-
-        if (!eventRecord) {
-          throw new Error("Failed to create event record");
-        }
-
-        // Create payment event record
-        await tx.insert(paymentEventsTable).values({
-          id: eventRecord.id,
-          creditAmount: creditAmount,
-        });
-
-        console.log(
-          `[Webhook] Payment event stored successfully for user ${userId}`,
-        );
-      });
+      console.log(
+        `[Webhook] Payment event stored successfully for user ${userId}`,
+      );
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Webhook processed successfully" }));
