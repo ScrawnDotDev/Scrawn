@@ -1,29 +1,37 @@
 import type {
   CreateCheckoutLinkRequest,
   CreateCheckoutLinkResponse,
-} from "../../gen/payment/v1/payment_pb";
-import { CreateCheckoutLinkResponseSchema } from "../../gen/payment/v1/payment_pb";
+} from "../../../gen/payment/v1/payment_pb";
+import { CreateCheckoutLinkResponseSchema } from "../../../gen/payment/v1/payment_pb";
 import { create } from "@bufbuild/protobuf";
 import {
   createCheckoutLinkSchema,
   type CreateCheckoutLinkSchemaType,
-} from "../../zod/payment";
-import { PaymentError } from "../../errors/payment";
-import { AuthError } from "../../errors/auth";
+} from "../../../zod/payment";
+import { PaymentError } from "../../../errors/payment";
+import { AuthError } from "../../../errors/auth";
 import { ZodError } from "zod";
 import type { HandlerContext } from "@connectrpc/connect";
 import {
   lemonSqueezySetup,
   createCheckout,
 } from "@lemonsqueezy/lemonsqueezy.js";
-import { StorageAdapterFactory } from "../../factory";
-import { RequestPayment } from "../../events/RequestEvents/RequestPayment";
+import { StorageAdapterFactory } from "../../../factory";
+import { RequestPayment } from "../../../events/RequestEvents/RequestPayment";
+import { apiKeyContextKey } from "../../../context/auth";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
   context: HandlerContext,
 ): Promise<CreateCheckoutLinkResponse> {
   try {
+    const apiKeyId = context.values.get(apiKeyContextKey);
+    if (!apiKeyId) {
+      throw AuthError.invalidAPIKey("API key ID not found in context");
+    }
+
+    console.log(`[RegisterEvent] Authenticated with API Key ID: ${apiKeyId}`);
+
     // Read environment configuration
     const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
     const LEMON_SQUEEZY_STORE_ID = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -126,6 +134,7 @@ export async function createCheckoutLink(
           checkoutData: {
             custom: {
               user_id: String(validatedData.userId),
+              api_key_id: String(apiKeyId),
             },
           },
         },

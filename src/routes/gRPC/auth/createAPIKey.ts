@@ -1,19 +1,19 @@
 import type {
   CreateAPIKeyRequest,
   CreateAPIKeyResponse,
-} from "../../gen/auth/v1/auth_pb";
-import { CreateAPIKeyResponseSchema } from "../../gen/auth/v1/auth_pb";
+} from "../../../gen/auth/v1/auth_pb";
+import { CreateAPIKeyResponseSchema } from "../../../gen/auth/v1/auth_pb";
 import { create } from "@bufbuild/protobuf";
-import { createAPIKeySchema } from "../../zod/apikey";
-import { APIKeyError } from "../../errors/apikey";
-import { AuthError } from "../../errors/auth";
+import { createAPIKeySchema } from "../../../zod/apikey";
+import { APIKeyError } from "../../../errors/apikey";
+import { AuthError } from "../../../errors/auth";
 import { ZodError } from "zod";
-import { generateAPIKey } from "../../utils/generateAPIKey";
-import { StorageAdapterFactory } from "../../factory";
-import { AddKey } from "../../events/RawEvents/AddKey";
+import { generateAPIKey } from "../../../utils/generateAPIKey";
+import { StorageAdapterFactory } from "../../../factory";
+import { AddKey } from "../../../events/RawEvents/AddKey";
 import type { HandlerContext } from "@connectrpc/connect";
-import { apiKeyContextKey } from "../../context/auth";
-import { hashAPIKey } from "../../utils/hashAPIKey";
+import { apiKeyContextKey } from "../../../context/auth";
+import { hashAPIKey } from "../../../utils/hashAPIKey";
 
 export async function createAPIKey(
   req: CreateAPIKeyRequest,

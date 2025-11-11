@@ -1,18 +1,18 @@
 import type {
   RegisterEventRequest,
   RegisterEventResponse,
-} from "../../gen/event/v1/event_pb";
-import { RegisterEventResponseSchema } from "../../gen/event/v1/event_pb";
+} from "../../../gen/event/v1/event_pb";
+import { RegisterEventResponseSchema } from "../../../gen/event/v1/event_pb";
 import { create } from "@bufbuild/protobuf";
-import { eventSchema } from "../../zod/event";
-import { type EventType } from "../../interface/event/Event";
-import { SDKCall } from "../../events/RawEvents/SDKCall";
-import { EventError } from "../../errors/event";
-import { AuthError } from "../../errors/auth";
+import { eventSchema } from "../../../zod/event";
+import { type EventType } from "../../../interface/event/Event";
+import { SDKCall } from "../../../events/RawEvents/SDKCall";
+import { EventError } from "../../../errors/event";
+import { AuthError } from "../../../errors/auth";
 import { ZodError } from "zod";
-import { StorageAdapterFactory } from "../../factory";
+import { StorageAdapterFactory } from "../../../factory";
 import type { HandlerContext } from "@connectrpc/connect";
-import { apiKeyContextKey } from "../../context/auth";
+import { apiKeyContextKey } from "../../../context/auth";
 
 export async function registerEvent(
   req: RegisterEventRequest,

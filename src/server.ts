@@ -6,10 +6,11 @@ import { EventService } from "./gen/event/v1/event_pb.ts";
 import { AuthService } from "./gen/auth/v1/auth_pb.ts";
 import { PaymentService } from "./gen/payment/v1/payment_pb.ts";
 import { authInterceptor } from "./interceptors/auth.ts";
-import { registerEvent } from "./routes/events/registerEvent.ts";
-import { createAPIKey } from "./routes/auth/createAPIKey.ts";
-import { createCheckoutLink } from "./routes/payment/createCheckoutLink.ts";
+import { registerEvent } from "./routes/gRPC/events/registerEvent.ts";
+import { createAPIKey } from "./routes/gRPC/auth/createAPIKey.ts";
+import { createCheckoutLink } from "./routes/gRPC/payment/createCheckoutLink.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
+import { handleLemonSqueezyWebhook as createCheckout } from "./routes/http/createdCheckout.ts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const HMAC_SECRET = process.env.HMAC_SECRET;
@@ -24,7 +25,7 @@ if (!HMAC_SECRET) {
 
 getPostgresDB(DATABASE_URL);
 
-const handler = connectNodeAdapter({
+const grpcHandler = connectNodeAdapter({
   interceptors: [createValidateInterceptor(), authInterceptor()],
   routes: (router: ConnectRouter) => {
     // EventService implementation
@@ -44,5 +45,24 @@ const handler = connectNodeAdapter({
   },
 });
 
-http.createServer(handler).listen(8000);
+// Create a combined handler for both gRPC and HTTP webhooks
+const requestHandler = (
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+) => {
+  // Handle webhook endpoint
+  if (
+    req.url === "/webhooks/lemonsqueezy/createdCheckout" &&
+    req.method === "POST"
+  ) {
+    createCheckout(req, res);
+    return;
+  }
+
+  // Handle all other requests as gRPC
+  grpcHandler(req, res);
+};
+
+http.createServer(requestHandler).listen(8000);
 console.log("Server listening on http://localhost:8000");
+console.log("Webhook endpoint: http://localhost:8000/webhooks/lemonsqueezy");
