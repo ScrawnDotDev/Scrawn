@@ -107,7 +107,7 @@ describe("createCheckoutLinkSchema", () => {
         const userIdIssue = result.error.issues.find(
           (issue) => issue.path[0] === "userId",
         );
-        expect(userIdIssue?.message).toContain("User ID is required");
+        expect(userIdIssue?.message).toContain("Invalid UUID");
       }
     });
 
@@ -177,7 +177,7 @@ describe("createCheckoutLinkSchema", () => {
         const userIdIssue = result.error.issues.find(
           (issue) => issue.path[0] === "userId",
         );
-        expect(userIdIssue?.message).toContain("must be a valid UUID");
+        expect(userIdIssue?.message).toContain("Invalid UUID");
       }
     });
 
@@ -343,7 +343,7 @@ describe("createCheckoutLinkSchema", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const message = result.error.issues[0].message;
-        expect(message).toBe("User ID is required");
+        expect(message).toBe("Invalid UUID");
       }
     });
 
@@ -355,7 +355,7 @@ describe("createCheckoutLinkSchema", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         const message = result.error.issues[0].message;
-        expect(message).toBe("User ID must be a valid UUID");
+        expect(message).toBe("Invalid UUID");
       }
     });
 

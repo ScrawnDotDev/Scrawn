@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterEach, afterAll } from "vitest";
-import { PostgresAdapter } from "../../../storage/adapter/postgres";
-import { SDKCall } from "../../../events/SDKCall";
+import { PostgresAdapter } from "../../../storage/adapter/postgres/postgres";
+import { SDKCall } from "../../../events/RawEvents/SDKCall";
 import { StorageError, StorageErrorType } from "../../../errors/storage";
 import {
   createTestDatabase,
@@ -120,9 +120,7 @@ describe("PostgresAdapter Integration Tests", () => {
       await adapter.add();
 
       const db = testDB.getDB();
-      const sdkceEvents = await db
-        .select()
-        .from(schema.sdkCallEventsTable);
+      const sdkceEvents = await db.select().from(schema.sdkCallEventsTable);
 
       expect(sdkceEvents).toHaveLength(1);
       expect(Number(sdkceEvents[0].debitAmount)).toBe(debitAmount);
@@ -186,9 +184,7 @@ describe("PostgresAdapter Integration Tests", () => {
       await adapter.add();
 
       const db = testDB.getDB();
-      const sdkceEvents = await db
-        .select()
-        .from(schema.sdkCallEventsTable);
+      const sdkceEvents = await db.select().from(schema.sdkCallEventsTable);
 
       expect(sdkceEvents).toHaveLength(1);
       expect(Number(sdkceEvents[0].debitAmount)).toBeCloseTo(debitAmount, 5);
@@ -430,9 +426,7 @@ describe("PostgresAdapter Integration Tests", () => {
       const userIds = Array.from({ length: 5 }, () => generateTestUserId());
 
       const promises = userIds.map((userId) =>
-        new PostgresAdapter(
-          new SDKCall(userId, { debitAmount: 100 }),
-        ).add(),
+        new PostgresAdapter(new SDKCall(userId, { debitAmount: 100 })).add(),
       );
 
       await Promise.all(promises);
@@ -533,9 +527,7 @@ describe("PostgresAdapter Integration Tests", () => {
 
       expect(await testDB.countUsers()).toBe(transactionCount);
       expect(await testDB.countEvents()).toBe(transactionCount);
-      expect(await testDB.countSDKCalls()).toBe(
-        transactionCount,
-      );
+      expect(await testDB.countSDKCalls()).toBe(transactionCount);
     });
   });
 });

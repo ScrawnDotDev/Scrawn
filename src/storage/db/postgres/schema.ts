@@ -38,6 +38,10 @@ export const apiKeysTable = pgTable("api_keys", {
   }),
 });
 
+export const apiKeysRelation = relations(apiKeysTable, ({ many }) => ({
+  events: many(eventsTable),
+}));
+
 export const eventsTable = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
   reported_timestamp: timestamp("reported_timestamp", {
@@ -61,6 +65,14 @@ export const eventsRelation = relations(eventsTable, ({ one }) => ({
     fields: [eventsTable.api_keyId],
     references: [apiKeysTable.id],
   }),
+  sdkCallEvent: one(sdkCallEventsTable, {
+    fields: [eventsTable.id],
+    references: [sdkCallEventsTable.id],
+  }),
+  paymentEvent: one(paymentEventsTable, {
+    fields: [eventsTable.id],
+    references: [paymentEventsTable.id],
+  }),
 }));
 
 export const sdkCallEventsTable = pgTable("sdk_call_events", {
@@ -70,3 +82,30 @@ export const sdkCallEventsTable = pgTable("sdk_call_events", {
   type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
   debitAmount: integer("debit_amount").notNull(),
 });
+
+export const sdkCallEventsRelation = relations(
+  sdkCallEventsTable,
+  ({ one }) => ({
+    event: one(eventsTable, {
+      fields: [sdkCallEventsTable.id],
+      references: [eventsTable.id],
+    }),
+  }),
+);
+
+export const paymentEventsTable = pgTable("payment_events", {
+  id: uuid("id")
+    .references(() => eventsTable.id)
+    .primaryKey(),
+  creditAmount: integer("credit_amount").notNull(),
+});
+
+export const paymentEventsRelation = relations(
+  paymentEventsTable,
+  ({ one }) => ({
+    event: one(eventsTable, {
+      fields: [paymentEventsTable.id],
+      references: [eventsTable.id],
+    }),
+  }),
+);

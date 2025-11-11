@@ -48,7 +48,7 @@ describe("createCheckoutLink", () => {
       } catch (error) {
         expect(isPaymentError(error)).toBe(true);
         expect((error as any).type).toBe("VALIDATION_FAILED");
-        expect((error as any).message).toContain("must be a valid UUID");
+        expect((error as any).message).toContain("Invalid UUID");
       }
     });
 

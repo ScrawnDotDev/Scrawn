@@ -31,7 +31,7 @@ export type EventUnion<T extends keyof EventDataMap> = {
   [K in keyof EventDataMap]: EventDataMap[K];
 }[T];
 
-type BaseEventMetadata<T extends keyof EventDataMap> = {
+export type BaseEventMetadata<T extends keyof EventDataMap> = {
   type: T;
   reported_timestamp: DateTime;
   data: EventDataMap[T];

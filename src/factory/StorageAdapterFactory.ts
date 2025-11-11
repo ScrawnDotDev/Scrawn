@@ -1,5 +1,5 @@
 import type { EventType } from "../interface/event/Event.ts";
-import { PostgresAdapter } from "../storage/adapter/postgres.ts";
+import { PostgresAdapter } from "../storage/adapter/postgres/postgres.ts";
 
 /**
  * StorageAdapterFactory - Facade for the new SQL adapter factory

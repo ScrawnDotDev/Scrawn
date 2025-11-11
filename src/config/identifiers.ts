@@ -3,10 +3,10 @@ import { uuid, bigint, integer } from "drizzle-orm/pg-core";
 
 /**
  * Configuration for identifier types used throughout the application.
- * 
+ *
  * ⚠️ IMPORTANT: Choose your ID type BEFORE running migrations.
  * Changing this after migration requires clearing the database.
- * 
+ *
  * Available options:
  * - uuid: String-based UUIDs (e.g., "550e8400-e29b-41d4-a716-446655440000")
  * - bigint: Large integers (e.g., 9007199254740991n)
@@ -16,7 +16,7 @@ import { uuid, bigint, integer } from "drizzle-orm/pg-core";
 const ID_CONFIGS = {
   uuid: {
     dbType: uuid,
-    validator: z.uuid(),
+    validator: z.string().uuid({ message: "Invalid UUID" }),
   },
   bigint: {
     dbType: bigint,

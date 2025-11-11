@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DateTime } from "luxon";
-import { PostgresAdapter } from "../../../storage/adapter/postgres";
+import { PostgresAdapter } from "../../../storage/adapter/postgres/postgres";
 import { StorageError } from "../../../errors/storage";
 import { isStorageError } from "../../helpers/error";
 

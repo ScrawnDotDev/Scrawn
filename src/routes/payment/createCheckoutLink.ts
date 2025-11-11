@@ -17,7 +17,7 @@ import {
   createCheckout,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import { StorageAdapterFactory } from "../../factory";
-import { RequestPayment } from "../../events/RequestPayment";
+import { RequestPayment } from "../../events/RequestEvents/RequestPayment";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,

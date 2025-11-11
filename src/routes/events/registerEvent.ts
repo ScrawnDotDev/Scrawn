@@ -6,7 +6,7 @@ import { RegisterEventResponseSchema } from "../../gen/event/v1/event_pb";
 import { create } from "@bufbuild/protobuf";
 import { eventSchema } from "../../zod/event";
 import { type EventType } from "../../interface/event/Event";
-import { SDKCall } from "../../events/SDKCall";
+import { SDKCall } from "../../events/RawEvents/SDKCall";
 import { EventError } from "../../errors/event";
 import { AuthError } from "../../errors/auth";
 import { ZodError } from "zod";

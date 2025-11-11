@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { SDKCall } from "../../../events/SDKCall";
+import { SDKCall } from "../../../events/RawEvents/SDKCall";
 import { DateTime } from "luxon";
 import type { SDKCallEventType } from "../../../interface/event/Event";
 

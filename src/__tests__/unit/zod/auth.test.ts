@@ -5,7 +5,7 @@ describe("authSchema", () => {
   describe("valid payloads", () => {
     it("should validate a correct payload", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin", "user"],
         iat: 1688132800,
       };
@@ -20,7 +20,7 @@ describe("authSchema", () => {
 
     it("should validate payload with single role", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: 1688132800,
       };
@@ -32,7 +32,7 @@ describe("authSchema", () => {
 
     it("should validate payload with empty roles array", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: [],
         iat: 1688132800,
       };
@@ -44,7 +44,7 @@ describe("authSchema", () => {
 
     it("should validate payload with multiple roles", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin", "moderator", "user", "viewer"],
         iat: 1688132800,
       };
@@ -71,7 +71,7 @@ describe("authSchema", () => {
 
     it("should validate payload with large iat value", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: 9999999999,
       };
@@ -83,7 +83,7 @@ describe("authSchema", () => {
 
     it("should validate payload with zero iat", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: 0,
       };
@@ -95,7 +95,7 @@ describe("authSchema", () => {
 
     it("should validate payload with special role names", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin:write", "user:read", "moderator-super", "viewer_basic"],
         iat: 1688132800,
       };
@@ -120,7 +120,7 @@ describe("authSchema", () => {
 
     it("should reject payload missing roles", () => {
       const invalidPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         iat: 1688132800,
       };
 
@@ -131,7 +131,7 @@ describe("authSchema", () => {
 
     it("should reject payload missing iat", () => {
       const invalidPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
       };
 
@@ -262,7 +262,7 @@ describe("authSchema", () => {
   describe("invalid payloads - UUID validation", () => {
     it("should reject invalid UUID format (too short)", () => {
       const invalidPayload = {
-        id: "12345678-1234-1234-1234-12345678901",
+        id: "12345678-1234-4234-a234-12345678901",
         roles: ["admin"],
         iat: 1688132800,
       };
@@ -298,7 +298,7 @@ describe("authSchema", () => {
 
     it("should reject UUID with invalid characters", () => {
       const invalidPayload = {
-        id: "12345678-1234-1234-1234-12345678901G",
+        id: "12345678-1234-4234-a234-12345678901G",
         roles: ["admin"],
         iat: 1688132800,
       };
@@ -312,7 +312,7 @@ describe("authSchema", () => {
   describe("extra fields handling", () => {
     it("should strip extra fields not in schema", () => {
       const payloadWithExtra = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: 1688132800,
         extra: "field",
@@ -330,7 +330,7 @@ describe("authSchema", () => {
 
     it("should only contain id, roles, and iat properties", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: 1688132800,
       };
@@ -375,7 +375,7 @@ describe("authSchema", () => {
 
     it("should return success: true for valid payload with safeParse", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: 1688132800,
       };
@@ -398,22 +398,21 @@ describe("authSchema", () => {
 
   describe("edge cases", () => {
     it("should handle negative iat values", () => {
-      const payloadWithNegativeIat = {
-        id: "12345678-1234-1234-1234-123456789012",
+      const validPayload = {
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin"],
         iat: -1,
       };
 
-      const result = authSchema.safeParse(payloadWithNegativeIat);
+      const result = authSchema.safeParse(validPayload);
 
       expect(result.success).toBe(true);
     });
 
     it("should handle very long role names", () => {
-      const longRoleName = "a".repeat(1000);
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
-        roles: [longRoleName],
+        id: "12345678-1234-4234-a234-123456789012",
+        roles: ["admin", "a".repeat(1000)],
         iat: 1688132800,
       };
 
@@ -423,10 +422,9 @@ describe("authSchema", () => {
     });
 
     it("should handle many roles", () => {
-      const manyRoles = Array.from({ length: 100 }, (_, i) => `role${i}`);
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
-        roles: manyRoles,
+        id: "12345678-1234-4234-a234-123456789012",
+        roles: Array.from({ length: 100 }, (_, i) => `role${i}`),
         iat: 1688132800,
       };
 
@@ -440,7 +438,7 @@ describe("authSchema", () => {
 
     it("should handle roles with unicode characters", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: ["admin", "ユーザー", "管理者", "مدير"],
         iat: 1688132800,
       };
@@ -452,7 +450,7 @@ describe("authSchema", () => {
 
     it("should handle roles with whitespace", () => {
       const validPayload = {
-        id: "12345678-1234-1234-1234-123456789012",
+        id: "12345678-1234-4234-a234-123456789012",
         roles: [
           "admin",
           "super user",

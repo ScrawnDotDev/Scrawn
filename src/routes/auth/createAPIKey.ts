@@ -10,7 +10,7 @@ import { AuthError } from "../../errors/auth";
 import { ZodError } from "zod";
 import { generateAPIKey } from "../../utils/generateAPIKey";
 import { StorageAdapterFactory } from "../../factory";
-import { AddKey } from "../../events/AddKey";
+import { AddKey } from "../../events/RawEvents/AddKey";
 import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../../context/auth";
 import { hashAPIKey } from "../../utils/hashAPIKey";
