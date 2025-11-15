@@ -5,14 +5,8 @@ import { Payment } from "../../events/RawEvents/Payment.ts";
 import { PostgresAdapter } from "../../storage/adapter/postgres/postgres.ts";
 import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
 
-const LEMON_SQUEEZY_WEBHOOK_SECRET = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
+// Initialize Lemon Squeezy SDK if API key is available
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
-
-if (!LEMON_SQUEEZY_WEBHOOK_SECRET) {
-  console.warn(
-    "LEMON_SQUEEZY_WEBHOOK_SECRET is not set - webhook signature verification will fail",
-  );
-}
 
 if (!LEMON_SQUEEZY_API_KEY) {
   console.warn(
@@ -107,6 +101,10 @@ export async function handleLemonSqueezyWebhook(
 
     // Verify webhook signature
     const signature = req.headers["x-signature"] as string | undefined;
+
+    // Read webhook secret at runtime for testability
+    const LEMON_SQUEEZY_WEBHOOK_SECRET =
+      process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
 
     if (!LEMON_SQUEEZY_WEBHOOK_SECRET) {
       console.error("[Webhook] Webhook secret not configured");

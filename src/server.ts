@@ -63,6 +63,6 @@ const requestHandler = (
   grpcHandler(req, res);
 };
 
-http.createServer(requestHandler).listen(8000);
-console.log("Server listening on http://localhost:8000");
-console.log("Webhook endpoint: http://localhost:8000/webhooks/lemonsqueezy");
+http.createServer(requestHandler).listen(8069);
+console.log("Server listening on http://localhost:8069");
+console.log("Webhook endpoint: http://localhost:8069/webhooks/lemonsqueezy");

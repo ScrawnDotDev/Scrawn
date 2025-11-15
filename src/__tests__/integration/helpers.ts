@@ -47,6 +47,7 @@ export class TestDatabase {
     const db = this.getDB();
     // Clear in reverse order of foreign key dependencies
     await db.delete(schema.sdkCallEventsTable);
+    await db.delete(schema.paymentEventsTable);
     await db.delete(schema.eventsTable);
     await db.delete(schema.usersTable);
   }
@@ -89,7 +90,16 @@ export class TestDatabase {
     const db = this.getDB();
     await db.insert(schema.sdkCallEventsTable).values({
       id: eventId,
+      type: "RAW",
       debitAmount,
+    });
+  }
+
+  async seedPaymentEvent(eventId: string, creditAmount: number): Promise<void> {
+    const db = this.getDB();
+    await db.insert(schema.paymentEventsTable).values({
+      id: eventId,
+      creditAmount,
     });
   }
 
@@ -136,6 +146,30 @@ export class TestDatabase {
     const db = this.getDB();
     const result = await db.select().from(schema.sdkCallEventsTable);
     return result.length;
+  }
+
+  async getPaymentEvent(eventId: string): Promise<any> {
+    const db = this.getDB();
+    const events = await db
+      .select()
+      .from(schema.paymentEventsTable)
+      .where(eq(schema.paymentEventsTable.id, eventId));
+    return events[0] || null;
+  }
+
+  async countPaymentEvents(): Promise<number> {
+    const db = this.getDB();
+    const result = await db.select().from(schema.paymentEventsTable);
+    return result.length;
+  }
+
+  // Alias for consistency
+  async countSDKCalls(): Promise<number> {
+    return this.countSDKCallEvents();
+  }
+
+  async countPayments(): Promise<number> {
+    return this.countPaymentEvents();
   }
 }
 
