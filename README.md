@@ -9,7 +9,7 @@ Scrawn backend provides gRPC services for:
 - **Authentication** - API key management
 - **Payment processing** - Checkout link generation via Lemon Squeezy
 
-Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endpoint usage, visit the [Scrawn Docs](https://docs.scrawn.dev).
+Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endpoint usage, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
 
 ## Prerequisites
 
@@ -72,4 +72,4 @@ The server will start on `http://localhost:8069`
 
 ## Documentation
 
-For complete gRPC API documentation, endpoint details, and integration guides, visit [docs.scrawn.dev](https://docs.scrawn.dev).
+For complete gRPC API documentation, endpoint details, and integration guides, check [API references.](https://scrawn.vercel.app/docs/api-reference).
