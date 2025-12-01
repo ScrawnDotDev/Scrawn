@@ -1,20 +1,20 @@
 import { createHmac } from "crypto";
 
-const HMAC_SECRET = process.env.HMAC_SECRET;
-
-if (!HMAC_SECRET) {
-  throw new Error("HMAC_SECRET environment variable is not set");
-}
-
-// Type assertion after validation
-const SECRET: string = HMAC_SECRET;
-
 /**
  * Hash an API key using HMAC-SHA256
  * @param apiKey - The plaintext API key to hash
  * @returns The HMAC-SHA256 hash as a hex string
  */
 export function hashAPIKey(apiKey: string): string {
+  const HMAC_SECRET = process.env.HMAC_SECRET;
+
+  if (!HMAC_SECRET) {
+    throw new Error("HMAC_SECRET environment variable is not set");
+  }
+
+  // Type assertion after validation
+  const SECRET: string = HMAC_SECRET;
+
   return createHmac("sha256", SECRET).update(apiKey).digest("hex");
 }
 
