@@ -32,11 +32,6 @@ describe("authInterceptor", () => {
   } as any);
   vi.spyOn(hashModule, "hashAPIKey").mockReturnValue("mocked-hash");
 
-  beforeAll(() => {
-    // Set up environment variable required by hashAPIKey
-    process.env.HMAC_SECRET = "test-secret-key-for-testing";
-  });
-
   it("Ignores no_auth endpoints", async () => {
     const next = vi.fn().mockResolvedValue("next called");
     const req = {
