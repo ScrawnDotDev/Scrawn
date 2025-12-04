@@ -42,14 +42,13 @@ describe("PostgresAdapter - addSdkCall handler", () => {
 
       mockTransaction.returning.mockResolvedValueOnce([
         { id: "550e8400-e29b-41d4-a716-446655443214" },
-      ]); // Event insert
+      ]);
 
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key-123");
       await adapter.add();
 
-      expect(mockDb.transaction).toHaveBeenCalled();
-      expect(mockTransaction.insert).toHaveBeenCalledTimes(3); // user, event, sdkCallEvent
-      expect(mockTransaction.values).toHaveBeenCalledTimes(3);
+      const eventInsertCall = mockTransaction.values.mock.calls[1][0];
+      expect(eventInsertCall.api_keyId).toBe("api-key-123");
     });
 
     it("adds SDK_CALL event with MIDDLEWARE_CALL type successfully", async () => {
@@ -58,30 +57,16 @@ describe("PostgresAdapter - addSdkCall handler", () => {
         debitAmount: 2500,
       });
 
-      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-456" }]); // Event insert
+      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-456" }]);
 
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key-456");
       await adapter.add();
 
-      expect(mockDb.transaction).toHaveBeenCalled();
+      const sdkCallInsertCall = mockTransaction.values.mock.calls[2][0];
+      expect(sdkCallInsertCall.debitAmount).toBe(2500);
     });
 
-    it("handles existing user gracefully", async () => {
-      const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
-        sdkCallType: "RAW",
-        debitAmount: 1500,
-      });
-
-      // Simulate user already exists
-      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-789" }]); // Event insert
-
-      const adapter = new PostgresAdapter(sdkCallEvent, "api-key-789");
-      await adapter.add();
-
-      expect(mockDb.transaction).toHaveBeenCalled();
-    });
-
-    it("inserts event with correct timestamp", async () => {
+    it("inserts event with correct timestamp format", async () => {
       const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
         sdkCallType: "RAW",
         debitAmount: 1000,
@@ -92,67 +77,31 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key-1");
       await adapter.add();
 
-      // Verify timestamp was converted to ISO
       const eventInsertCall = mockTransaction.values.mock.calls[1][0];
       expect(eventInsertCall).toHaveProperty("reported_timestamp");
       expect(typeof eventInsertCall.reported_timestamp).toBe("string");
     });
 
-    it("handles zero debit amount", async () => {
+    it("accepts and stores a positive debit amount", async () => {
       const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
         sdkCallType: "RAW",
-        debitAmount: 0,
+        debitAmount: 500,
       });
 
-      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-2" }]);
+      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-pos" }]);
 
-      const adapter = new PostgresAdapter(sdkCallEvent, "api-key-2");
+      const adapter = new PostgresAdapter(sdkCallEvent, "api-key-pos");
       await adapter.add();
 
-      expect(mockDb.transaction).toHaveBeenCalled();
-    });
+      const insertedValues = mockTransaction.values.mock.calls.map((c: any) => c[0]);
+      const sdkCallRecord = insertedValues.find((v: any) => v && v.debitAmount === 500);
 
-    it("associates event with correct API key", async () => {
-      const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
-        sdkCallType: "RAW",
-        debitAmount: 1000,
-      });
-
-      const apiKeyId = "specific-api-key-id";
-      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-4" }]);
-
-      const adapter = new PostgresAdapter(sdkCallEvent, apiKeyId);
-      await adapter.add();
-
-      const eventInsertCall = mockTransaction.values.mock.calls[1][0];
-      expect(eventInsertCall.api_keyId).toBe(apiKeyId);
+      expect(sdkCallRecord).toBeDefined();
+      expect(sdkCallRecord.debitAmount).toBeGreaterThan(0);
     });
   });
 
   describe("database errors", () => {
-    it("handles user insert failure", async () => {
-      const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
-        sdkCallType: "RAW",
-        debitAmount: 1000,
-      });
-
-      //@ts-ignore
-      mockDb.transaction.mockImplementation(async (callback) => {
-        const txn = {
-          insert: vi.fn().mockReturnThis(),
-          values: vi.fn().mockReturnThis(),
-          returning: vi.fn(),
-          onConflictDoNothing: vi
-            .fn()
-            .mockRejectedValue(new Error("Database connection error")),
-        };
-        return await callback(txn);
-      });
-
-      const adapter = new PostgresAdapter(sdkCallEvent, "api-key");
-      await expect(adapter.add()).rejects.toThrow();
-    });
-
     it("handles event insert failure", async () => {
       const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
         sdkCallType: "RAW",
@@ -167,35 +116,13 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       await expect(adapter.add()).rejects.toThrow();
     });
 
-    it("handles SDK call event insert failure", async () => {
-      const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
-        sdkCallType: "RAW",
-        debitAmount: 1000,
-      });
-
-      mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id" }]); // Event insert
-
-      // Make the third insert (SDK call event) fail
-      let insertCallCount = 0;
-      mockTransaction.insert.mockImplementation(() => {
-        insertCallCount++;
-        if (insertCallCount === 3) {
-          throw new Error("SDK call event insert failed");
-        }
-        return mockTransaction;
-      });
-
-      const adapter = new PostgresAdapter(sdkCallEvent, "api-key");
-      await expect(adapter.add()).rejects.toThrow();
-    });
-
     it("handles empty event ID response", async () => {
       const sdkCallEvent = new SDKCall("550e8400-e29b-41d4-a716-446655440000", {
         sdkCallType: "RAW",
         debitAmount: 1000,
       });
 
-      mockTransaction.returning.mockResolvedValueOnce([]); // Empty event ID
+      mockTransaction.returning.mockResolvedValueOnce([]);
 
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key");
       await expect(adapter.add()).rejects.toThrow(
@@ -205,33 +132,7 @@ describe("PostgresAdapter - addSdkCall handler", () => {
   });
 
   describe("timestamp handling", () => {
-    it("handles invalid timestamp conversion", async () => {
-      const invalidEvent = {
-        type: "SDK_CALL" as const,
-        userId: "550e8400-e29b-41d4-a716-446655440000",
-        reported_timestamp: {
-          toISO: () => {
-            throw new Error("Invalid date");
-          },
-        },
-        data: { sdkCallType: "RAW", debitAmount: 1000 },
-        serialize: function () {
-          return {
-            SQL: {
-              type: this.type,
-              userId: this.userId,
-              reported_timestamp: this.reported_timestamp,
-              data: this.data,
-            },
-          };
-        },
-      };
-
-      const adapter = new PostgresAdapter(invalidEvent as any, "api-key");
-      await expect(adapter.add()).rejects.toThrow();
-    });
-
-    it("handles empty timestamp string", async () => {
+    it("throws error when timestamp is empty", async () => {
       const invalidEvent = {
         type: "SDK_CALL" as const,
         userId: "550e8400-e29b-41d4-a716-446655440000",

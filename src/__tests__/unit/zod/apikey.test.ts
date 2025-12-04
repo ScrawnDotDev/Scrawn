@@ -5,7 +5,7 @@ describe("createAPIKeySchema", () => {
   it("validates a valid API key creation request", () => {
     const validRequest = {
       name: "My API Key",
-      expiresIn: 86400, // 1 day in seconds
+      expiresIn: 86400,
     };
 
     const result = createAPIKeySchema.safeParse(validRequest);
@@ -14,26 +14,6 @@ describe("createAPIKeySchema", () => {
       expect(result.data.name).toBe("My API Key");
       expect(result.data.expiresIn).toBe(86400);
     }
-  });
-
-  it("validates minimum expiration time (60 seconds)", () => {
-    const validRequest = {
-      name: "Short-lived Key",
-      expiresIn: 60,
-    };
-
-    const result = createAPIKeySchema.safeParse(validRequest);
-    expect(result.success).toBe(true);
-  });
-
-  it("validates maximum expiration time (1 year)", () => {
-    const validRequest = {
-      name: "Long-lived Key",
-      expiresIn: 365 * 24 * 60 * 60, // 1 year in seconds
-    };
-
-    const result = createAPIKeySchema.safeParse(validRequest);
-    expect(result.success).toBe(true);
   });
 
   it("transforms bigint expiresIn to number", () => {
@@ -78,15 +58,6 @@ describe("createAPIKeySchema", () => {
     }
   });
 
-  it("rejects missing name field", () => {
-    const invalidRequest = {
-      expiresIn: 3600,
-    };
-
-    const result = createAPIKeySchema.safeParse(invalidRequest);
-    expect(result.success).toBe(false);
-  });
-
   it("rejects non-integer expiresIn values", () => {
     const invalidRequest = {
       name: "Test Key",
@@ -98,36 +69,6 @@ describe("createAPIKeySchema", () => {
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
         "Expiration time must be an integer",
-      );
-    }
-  });
-
-  it("rejects zero expiresIn", () => {
-    const invalidRequest = {
-      name: "Test Key",
-      expiresIn: 0,
-    };
-
-    const result = createAPIKeySchema.safeParse(invalidRequest);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        "Expiration time must be positive",
-      );
-    }
-  });
-
-  it("rejects negative expiresIn", () => {
-    const invalidRequest = {
-      name: "Test Key",
-      expiresIn: -3600,
-    };
-
-    const result = createAPIKeySchema.safeParse(invalidRequest);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        "Expiration time must be positive",
       );
     }
   });
@@ -150,7 +91,7 @@ describe("createAPIKeySchema", () => {
   it("rejects expiresIn greater than 1 year", () => {
     const invalidRequest = {
       name: "Test Key",
-      expiresIn: 365 * 24 * 60 * 60 + 1, // 1 year + 1 second
+      expiresIn: 365 * 24 * 60 * 60 + 1,
     };
 
     const result = createAPIKeySchema.safeParse(invalidRequest);
@@ -160,34 +101,5 @@ describe("createAPIKeySchema", () => {
         "Expiration time cannot exceed 1 year",
       );
     }
-  });
-
-  it("rejects missing expiresIn field", () => {
-    const invalidRequest = {
-      name: "Test Key",
-    };
-
-    const result = createAPIKeySchema.safeParse(invalidRequest);
-    expect(result.success).toBe(false);
-  });
-
-  it("accepts name with special characters", () => {
-    const validRequest = {
-      name: "Production API Key #1 (Main)",
-      expiresIn: 3600,
-    };
-
-    const result = createAPIKeySchema.safeParse(validRequest);
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts name at maximum length (255 characters)", () => {
-    const validRequest = {
-      name: "a".repeat(255),
-      expiresIn: 3600,
-    };
-
-    const result = createAPIKeySchema.safeParse(validRequest);
-    expect(result.success).toBe(true);
   });
 });

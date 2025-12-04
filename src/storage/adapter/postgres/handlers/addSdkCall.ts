@@ -111,6 +111,19 @@ export async function handleAddSdkCall(
       // Insert SDK call event
       try {
         const sdkData = event_data;
+
+        // Validate debit amount is not negative
+        const debitAmount = sdkData.data?.debitAmount;
+        if (typeof debitAmount === "number" && debitAmount < 0) {
+          console.error(
+            `[PostgresAdapter] Invalid SDK call debit amount for event ID ${eventID.id}: ${debitAmount}`,
+          );
+          throw StorageError.insertFailed(
+            `Negative debit amount not allowed for SDK call (event ID ${eventID.id})`,
+            new Error(`debitAmount ${debitAmount} is negative`),
+          );
+        }
+
         await txn.insert(sdkCallEventsTable).values({
           id: eventID.id,
           type: sdkData.data.sdkCallType,

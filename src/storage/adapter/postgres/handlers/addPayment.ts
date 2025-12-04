@@ -17,9 +17,20 @@ export async function handleAddPayment(
   const connectionObject = getPostgresDB();
 
   try {
-    if (event_data.data.creditAmount <= 0) {
+    const creditAmount = event_data?.data?.creditAmount;
+
+    // Ensure creditAmount is a finite number and positive
+    if (
+      creditAmount === undefined ||
+      creditAmount === null ||
+      typeof creditAmount !== "number" ||
+      !Number.isFinite(creditAmount) ||
+      creditAmount <= 0
+    ) {
       throw StorageError.invalidData(
-        `Invalid creditAmount: must be positive, got ${event_data.data.creditAmount}`,
+        `Invalid creditAmount: must be a positive finite number, got ${String(
+          creditAmount,
+        )}`,
       );
     }
 
