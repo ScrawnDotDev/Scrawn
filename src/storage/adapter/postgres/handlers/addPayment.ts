@@ -17,21 +17,6 @@ export async function handleAddPayment(
   const connectionObject = getPostgresDB();
 
   try {
-    // Validate event data structure
-    if (!event_data.userId) {
-      throw StorageError.invalidData("Missing userId in PAYMENT event data");
-    }
-
-    if (!event_data.data) {
-      throw StorageError.invalidData("Missing data field in PAYMENT event");
-    }
-
-    if (typeof event_data.data.creditAmount !== "number") {
-      throw StorageError.invalidData(
-        `Invalid creditAmount type: expected number, got ${typeof event_data.data.creditAmount}`,
-      );
-    }
-
     if (event_data.data.creditAmount <= 0) {
       throw StorageError.invalidData(
         `Invalid creditAmount: must be positive, got ${event_data.data.creditAmount}`,
@@ -125,12 +110,6 @@ export async function handleAddPayment(
 
       if (!eventID) {
         throw StorageError.emptyResult("Event insert returned no ID");
-      }
-
-      if (!eventID.id) {
-        throw StorageError.emptyResult(
-          "Event insert returned object without id field",
-        );
       }
 
       console.log(`[PostgresAdapter] Event inserted with ID: ${eventID.id}`);
