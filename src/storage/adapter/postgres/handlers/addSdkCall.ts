@@ -17,32 +17,21 @@ export async function handleAddSdkCall(
   const connectionObject = getPostgresDB();
 
   try {
-    // Validate event data structure
-    if (!event_data.userId) {
-      throw StorageError.invalidData("Missing userId in SDK_CALL event data");
-    }
-
-    if (!event_data.data) {
-      throw StorageError.invalidData("Missing data field in SDK_CALL event");
-    }
-
-    if (!event_data.data.sdkCallType) {
-      throw StorageError.invalidData(
-        "Missing sdkCallType in SDK_CALL event data",
-      );
-    }
-
-    if (typeof event_data.data.debitAmount !== "number") {
-      throw StorageError.invalidData(
-        `Invalid debitAmount type: expected number, got ${typeof event_data.data.debitAmount}`,
-      );
-    }
-
-    // Allow negative debit amounts for refunds/credits
-
     console.log(
       `[PostgresAdapter] Processing SDK_CALL event for user: ${event_data.userId}`,
     );
+
+    // Validate debit amount is not negative
+    const debitAmount = event_data.data.debitAmount;
+    if (typeof debitAmount === "number" && debitAmount < 0) {
+      console.error(
+        `[PostgresAdapter] Invalid SDK call debit amount for user ${event_data.userId}: ${debitAmount}`,
+      );
+      throw StorageError.insertFailed(
+        `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
+        new Error(`debitAmount ${debitAmount} is negative`),
+      );
+    }
 
     await connectionObject.transaction(async (txn) => {
       // Insert user if not exists
@@ -103,17 +92,6 @@ export async function handleAddSdkCall(
         );
       }
 
-      // Validate API key ID
-      if (!apiKeyId) {
-        throw StorageError.missingApiKeyId();
-      }
-
-      if (typeof apiKeyId !== "string" || apiKeyId.trim().length === 0) {
-        throw StorageError.invalidData(
-          `Invalid API key ID format: ${typeof apiKeyId}`,
-        );
-      }
-
       // Insert event
       let eventID;
       try {
@@ -140,17 +118,12 @@ export async function handleAddSdkCall(
         throw StorageError.emptyResult("Event insert returned no ID");
       }
 
-      if (!eventID.id) {
-        throw StorageError.emptyResult(
-          "Event insert returned object without id field",
-        );
-      }
-
       console.log(`[PostgresAdapter] Event inserted with ID: ${eventID.id}`);
 
       // Insert SDK call event
       try {
         const sdkData = event_data;
+
         await txn.insert(sdkCallEventsTable).values({
           id: eventID.id,
           type: sdkData.data.sdkCallType,

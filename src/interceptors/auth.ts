@@ -8,11 +8,10 @@ import { apiKeysTable } from "../storage/db/postgres/schema";
 import { eq } from "drizzle-orm";
 import { hashAPIKey } from "../utils/hashAPIKey";
 
-const no_auth: string[] = []; // No endpoints bypass authentication
+export const no_auth: string[] = [] as const; // No endpoints bypass authentication
 
 export function authInterceptor(): Interceptor {
   return (next) => async (req) => {
-    // Check if endpoint is whitelisted (currently none)
     for (const path of no_auth) {
       if (req.url.endsWith(path)) {
         return await next(req);

@@ -1,6 +1,6 @@
 import type { SDKCallEventType } from "../../interface/event/Event";
 import { DateTime } from "luxon";
-import type { SDKCallEventData, EventUnion } from "../../interface/event/Event";
+import type { EventUnion } from "../../interface/event/Event";
 import { type UserId } from "../../config/identifiers";
 
 export class SDKCall implements SDKCallEventType {

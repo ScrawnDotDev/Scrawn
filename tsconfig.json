@@ -25,6 +25,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  },
-  "exclude": ["src/__tests__"]
+  }
+  // "exclude": ["src/__tests__"]
 }
