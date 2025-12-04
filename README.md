@@ -11,6 +11,9 @@ Scrawn backend provides gRPC services for:
 
 Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endpoint usage, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
 
+## Railway Quickstart
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/o22nR_?referralCode=jdhNLd&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) (latest version)
