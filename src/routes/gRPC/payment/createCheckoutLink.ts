@@ -19,6 +19,9 @@ import {
 import { StorageAdapterFactory } from "../../../factory";
 import { RequestPayment } from "../../../events/RequestEvents/RequestPayment";
 import { apiKeyContextKey } from "../../../context/auth";
+import { logger } from "../../../errors/logger";
+
+const OPERATION = "CreateCheckoutLink";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
@@ -30,7 +33,9 @@ export async function createCheckoutLink(
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
 
-    console.log(`[RegisterEvent] Authenticated with API Key ID: ${apiKeyId}`);
+    logger.logOperationInfo(OPERATION, "authenticated", "Request authenticated", {
+      apiKeyId,
+    });
 
     // Read environment configuration
     const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
@@ -71,8 +76,20 @@ export async function createCheckoutLink(
     lemonSqueezySetup({
       apiKey: LEMON_SQUEEZY_API_KEY,
       onError: (error) => {
-        console.error("[LemonSqueezy SDK Error]", error);
+        logger.logOperationError(
+          OPERATION,
+          "lemon_squeezy_sdk",
+          "LEMON_SQUEEZY_SDK_ERROR",
+          "Lemon Squeezy SDK error",
+          error as Error,
+          {},
+        );
       },
+    });
+
+    logger.logOperationInfo(OPERATION, "validated", "Request validated", {
+      userId: validatedData.userId,
+      apiKeyId,
     });
 
     // Get custom price from storage
@@ -101,9 +118,13 @@ export async function createCheckoutLink(
         );
       }
     } catch (error) {
-      console.error(
-        `[CreateCheckoutLink] Failed to get price for user ${validatedData.userId}:`,
-        error,
+      logger.logOperationError(
+        OPERATION,
+        "fetch_price",
+        "PRICE_CALCULATION_FAILED",
+        "Failed to calculate price",
+        error as Error,
+        { userId: validatedData.userId, apiKeyId },
       );
 
       // Use duck typing instead of instanceof to work with mocked modules
@@ -121,6 +142,12 @@ export async function createCheckoutLink(
         error as Error,
       );
     }
+
+    logger.logOperationInfo(OPERATION, "price_resolved", "Price calculated", {
+      userId: validatedData.userId,
+      price: custom_price,
+      apiKeyId,
+    });
 
     // Create checkout session
     // Create checkout session with detailed error context
@@ -140,13 +167,6 @@ export async function createCheckoutLink(
         },
       );
     } catch (error) {
-      console.error("[CreateCheckoutLink] Lemon Squeezy API call failed:");
-      console.error("User ID:", validatedData.userId);
-      console.error("Custom Price:", custom_price);
-      console.error("Store ID:", LEMON_SQUEEZY_STORE_ID);
-      console.error("Variant ID:", LEMON_SQUEEZY_VARIANT_ID);
-      console.error("Error details:", error);
-
       let errorMessage = "Unknown error";
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -156,6 +176,21 @@ export async function createCheckoutLink(
         errorMessage = String(error.message);
       }
 
+      logger.logOperationError(
+        OPERATION,
+        "create_checkout",
+        "LEMON_SQUEEZY_API_ERROR",
+        "Lemon Squeezy API call failed",
+        error instanceof Error ? error : new Error(errorMessage),
+        {
+          userId: validatedData.userId,
+          apiKeyId,
+          price: custom_price,
+          storeId: LEMON_SQUEEZY_STORE_ID,
+          variantId: LEMON_SQUEEZY_VARIANT_ID,
+        },
+      );
+
       throw PaymentError.lemonSqueezyApiError(
         errorMessage,
         error instanceof Error ? error : new Error(String(error)),
@@ -164,19 +199,12 @@ export async function createCheckoutLink(
 
     // Validate response from Lemon Squeezy with comprehensive checks
     if (!checkoutResponse) {
-      console.error(
-        "[CreateCheckoutLink] Received null or undefined checkout response",
-      );
       throw PaymentError.invalidCheckoutResponse(
         "Checkout response is null or undefined",
       );
     }
 
     if (checkoutResponse.error) {
-      console.error(
-        "[CreateCheckoutLink] Checkout response contains error:",
-        checkoutResponse.error,
-      );
       const errorMsg =
         checkoutResponse.error?.message ||
         JSON.stringify(checkoutResponse.error);
@@ -185,30 +213,18 @@ export async function createCheckoutLink(
 
     // Validate response structure
     if (!checkoutResponse.data) {
-      console.error(
-        "[CreateCheckoutLink] Missing 'data' field in checkout response:",
-        checkoutResponse,
-      );
       throw PaymentError.invalidCheckoutResponse(
         "Missing 'data' field in checkout response",
       );
     }
 
     if (!checkoutResponse.data.data) {
-      console.error(
-        "[CreateCheckoutLink] Missing nested 'data' field in checkout response:",
-        checkoutResponse,
-      );
       throw PaymentError.invalidCheckoutResponse(
         "Missing nested 'data' field in checkout response",
       );
     }
 
     if (!checkoutResponse.data.data.attributes) {
-      console.error(
-        "[CreateCheckoutLink] Missing 'attributes' field in checkout response:",
-        checkoutResponse,
-      );
       throw PaymentError.invalidCheckoutResponse(
         "Missing 'attributes' field in checkout response",
       );
@@ -216,20 +232,12 @@ export async function createCheckoutLink(
 
     const checkoutUrl = checkoutResponse.data.data.attributes.url;
     if (!checkoutUrl) {
-      console.error(
-        "[CreateCheckoutLink] Missing checkout URL in response attributes:",
-        checkoutResponse.data.data.attributes,
-      );
       throw PaymentError.invalidCheckoutResponse(
         "No checkout URL found in response attributes",
       );
     }
 
     if (typeof checkoutUrl !== "string" || checkoutUrl.trim().length === 0) {
-      console.error(
-        "[CreateCheckoutLink] Invalid checkout URL format:",
-        checkoutUrl,
-      );
       throw PaymentError.invalidCheckoutResponse(
         `Invalid checkout URL format: ${typeof checkoutUrl}`,
       );
@@ -239,36 +247,37 @@ export async function createCheckoutLink(
     try {
       new URL(checkoutUrl);
     } catch (urlError) {
-      console.error(
-        "[CreateCheckoutLink] Checkout URL is not a valid URL:",
-        checkoutUrl,
-      );
       throw PaymentError.invalidCheckoutResponse(
         `Checkout URL is not a valid URL: ${checkoutUrl}`,
         urlError instanceof Error ? urlError : undefined,
       );
     }
 
-    console.log(
-      `[CreateCheckoutLink] Successfully created checkout URL for user ${validatedData.userId}`,
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "Checkout link created successfully",
+      { userId: validatedData.userId, apiKeyId, checkoutUrl },
     );
-    console.log(`[CreateCheckoutLink] Checkout URL: ${checkoutUrl}`);
 
     return create(CreateCheckoutLinkResponseSchema, {
       checkoutLink: checkoutUrl,
     });
   } catch (error) {
-    console.error("=== CreateCheckoutLink Error ===");
-    console.error("Error type:", error?.constructor?.name);
-    console.error(
-      "Error message:",
-      error instanceof Error ? error.message : String(error),
-    );
-    console.error("Full error:", error);
+    const apiKeyId = context.values.get(apiKeyContextKey);
 
-    if (error instanceof Error && error.stack) {
-      console.error("Stack trace:", error.stack);
-    }
+    logger.logOperationError(
+      OPERATION,
+      "failed",
+      error instanceof PaymentError
+        ? error.type
+        : error instanceof AuthError
+          ? error.type
+          : "UNKNOWN",
+      "CreateCheckoutLink handler failed",
+      error instanceof Error ? error : undefined,
+      { apiKeyId },
+    );
 
     // Re-throw PaymentError as-is
     // Use duck typing instead of instanceof to work with mocked modules
@@ -279,24 +288,15 @@ export async function createCheckoutLink(
       "name" in error &&
       error.name === "PaymentError"
     ) {
-      console.error(
-        `[CreateCheckoutLink] PaymentError - Type: ${(error as PaymentError).type}, Message: ${(error as PaymentError).message}`,
-      );
       throw error;
     }
 
     // Re-throw AuthError as-is
     if (error instanceof AuthError) {
-      console.error(
-        `[CreateCheckoutLink] AuthError - Message: ${error.message}`,
-      );
       throw error;
     }
 
     // Wrap unexpected errors with context
-    console.error(
-      "[CreateCheckoutLink] Unexpected error occurred, wrapping in PaymentError.unknown",
-    );
     throw PaymentError.unknown(
       error instanceof Error ? error : new Error(String(error)),
     );

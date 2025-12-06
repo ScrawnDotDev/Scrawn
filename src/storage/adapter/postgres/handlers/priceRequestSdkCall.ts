@@ -4,6 +4,9 @@ import { StorageError } from "../../../../errors/storage";
 import { eq, sum } from "drizzle-orm";
 import { type BaseEventMetadata } from "../../../../interface/event/Event";
 import { type UserId } from "../../../../config/identifiers";
+import { logger } from "../../../../errors/logger";
+
+const OPERATION = "PriceRequestSdkCall";
 
 export async function handlePriceRequestSdkCall(
   event_data: BaseEventMetadata<"REQUEST_SDK_CALL"> & {
@@ -28,8 +31,11 @@ export async function handlePriceRequestSdkCall(
       );
     }
 
-    console.log(
-      `[PostgresAdapter] Querying price for REQUEST_SDK_CALL, user: ${event_data.userId}`,
+    logger.logOperationInfo(
+      OPERATION,
+      "start",
+      "Querying price for REQUEST_SDK_CALL",
+      { userId: event_data.userId },
     );
 
     let result;
@@ -43,10 +49,6 @@ export async function handlePriceRequestSdkCall(
         .where(eq(eventsTable.userId, event_data.userId))
         .groupBy(eventsTable.userId);
     } catch (e) {
-      console.error(
-        `[PostgresAdapter] Database query failed for user ${event_data.userId}:`,
-        e,
-      );
       throw StorageError.queryFailed(
         `Failed to query SDK_CALL events for user ${event_data.userId}`,
         e instanceof Error ? e : new Error(String(e)),
@@ -54,27 +56,23 @@ export async function handlePriceRequestSdkCall(
     }
 
     if (!result) {
-      console.error(
-        `[PostgresAdapter] Query returned null/undefined for user ${event_data.userId}`,
-      );
       throw StorageError.emptyResult(
         `Price query returned null for user ${event_data.userId}`,
       );
     }
 
     if (!Array.isArray(result)) {
-      console.error(
-        `[PostgresAdapter] Query result is not an array for user ${event_data.userId}:`,
-        result,
-      );
       throw StorageError.queryFailed(
         `Query result is not an array for user ${event_data.userId}`,
       );
     }
 
     if (result.length === 0 || !result[0]) {
-      console.warn(
-        `[PostgresAdapter] No SDK call events found for user ${event_data.userId}, returning 0`,
+      logger.logOperationInfo(
+        OPERATION,
+        "no_events",
+        "No SDK call events found, returning 0",
+        { userId: event_data.userId },
       );
       return 0;
     }
@@ -82,8 +80,11 @@ export async function handlePriceRequestSdkCall(
     const priceValue = result[0].price;
 
     if (priceValue === null || priceValue === undefined) {
-      console.warn(
-        `[PostgresAdapter] Price is null/undefined for user ${event_data.userId}, returning 0`,
+      logger.logOperationInfo(
+        OPERATION,
+        "null_price",
+        "Price is null/undefined, returning 0",
+        { userId: event_data.userId },
       );
       return 0;
     }
@@ -92,10 +93,6 @@ export async function handlePriceRequestSdkCall(
     try {
       parsedPrice = parseInt(priceValue);
     } catch (e) {
-      console.error(
-        `[PostgresAdapter] Failed to parse price value '${priceValue}' for user ${event_data.userId}:`,
-        e,
-      );
       throw StorageError.priceCalculationFailed(
         event_data.userId,
         new Error(`Failed to parse price value: ${priceValue}`),
@@ -110,22 +107,21 @@ export async function handlePriceRequestSdkCall(
     }
 
     if (parsedPrice < 0) {
-      console.warn(
-        `[PostgresAdapter] Negative price calculated for user ${event_data.userId}: ${parsedPrice}`,
-      );
+      logger.logWarning("Negative price calculated", {
+        userId: event_data.userId,
+        price: parsedPrice,
+      });
     }
 
-    console.log(
-      `[PostgresAdapter] Price calculated for user ${event_data.userId}: ${parsedPrice}`,
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "Price calculated successfully",
+      { userId: event_data.userId, price: parsedPrice },
     );
 
     return parsedPrice;
   } catch (e) {
-    console.error(
-      `[PostgresAdapter] Failed to calculate price for REQUEST_SDK_CALL:`,
-      e,
-    );
-
     // Use duck typing instead of instanceof to work with mocked modules
     if (
       e &&

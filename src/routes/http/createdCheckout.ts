@@ -4,19 +4,27 @@ import { lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
 import { Payment } from "../../events/RawEvents/Payment.ts";
 import { PostgresAdapter } from "../../storage/adapter/postgres/postgres.ts";
 import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
+import { logger } from "../../errors/logger.ts";
+
+const OPERATION = "LemonSqueezyWebhook";
 
 // Initialize Lemon Squeezy SDK if API key is available
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
 
 if (!LEMON_SQUEEZY_API_KEY) {
-  console.warn(
-    "LEMON_SQUEEZY_API_KEY is not set - Lemon Squeezy SDK not configured",
-  );
+  logger.logWarning("LEMON_SQUEEZY_API_KEY not set - SDK not configured", {});
 } else {
   lemonSqueezySetup({
     apiKey: LEMON_SQUEEZY_API_KEY,
     onError: (error) => {
-      console.error("[LemonSqueezy SDK Error in webhook handler]", error);
+      logger.logOperationError(
+        OPERATION,
+        "lemon_squeezy_sdk",
+        "LEMON_SQUEEZY_SDK_ERROR",
+        "Lemon Squeezy SDK error in webhook handler",
+        error as Error,
+        {},
+      );
     },
   });
 }
@@ -54,7 +62,6 @@ function verifyWebhookSignature(
   secret: string,
 ): boolean {
   if (!signature) {
-    console.error("[Webhook] No signature provided");
     return false;
   }
 
@@ -65,7 +72,14 @@ function verifyWebhookSignature(
 
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
   } catch (error) {
-    console.error("[Webhook] Signature verification error:", error);
+    logger.logOperationError(
+      OPERATION,
+      "signature_verification",
+      "SIGNATURE_VERIFICATION_ERROR",
+      "Signature verification error",
+      error as Error,
+      {},
+    );
     return false;
   }
 }
@@ -96,6 +110,8 @@ export async function handleLemonSqueezyWebhook(
   res: ServerResponse,
 ): Promise<void> {
   try {
+    logger.logOperationInfo(OPERATION, "start", "Processing webhook request", {});
+
     // Read the raw body
     const rawBody = await readBody(req);
 
@@ -107,7 +123,14 @@ export async function handleLemonSqueezyWebhook(
       process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
 
     if (!LEMON_SQUEEZY_WEBHOOK_SECRET) {
-      console.error("[Webhook] Webhook secret not configured");
+      logger.logOperationError(
+        OPERATION,
+        "config",
+        "MISSING_WEBHOOK_SECRET",
+        "Webhook secret not configured",
+        undefined,
+        {},
+      );
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Webhook secret not configured" }));
       return;
@@ -120,18 +143,39 @@ export async function handleLemonSqueezyWebhook(
     );
 
     if (!isValid) {
-      console.error("[Webhook] Invalid signature");
+      logger.logOperationError(
+        OPERATION,
+        "validate_signature",
+        "INVALID_SIGNATURE",
+        "Invalid webhook signature",
+        undefined,
+        {},
+      );
       res.writeHead(401, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Invalid signature" }));
       return;
     }
+
+    logger.logOperationInfo(
+      OPERATION,
+      "signature_validated",
+      "Signature validated successfully",
+      {},
+    );
 
     // Parse the payload
     let payload: LemonSqueezyWebhookPayload;
     try {
       payload = JSON.parse(rawBody);
     } catch (error) {
-      console.error("[Webhook] Invalid JSON payload:", error);
+      logger.logOperationError(
+        OPERATION,
+        "parse_payload",
+        "INVALID_JSON",
+        "Invalid JSON payload",
+        error as Error,
+        {},
+      );
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Invalid JSON payload" }));
       return;
@@ -139,29 +183,51 @@ export async function handleLemonSqueezyWebhook(
 
     // Handle only order-created events
     if (payload.meta.event_name !== "order_created") {
-      console.log(`[Webhook] Ignoring event: ${payload.meta.event_name}`);
+      logger.logOperationInfo(
+        OPERATION,
+        "ignored_event",
+        "Ignoring non-order_created event",
+        { eventName: payload.meta.event_name },
+      );
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Event ignored" }));
       return;
     }
 
-    console.log("[Webhook] Processing order_created event");
+    logger.logOperationInfo(
+      OPERATION,
+      "processing",
+      "Processing order_created event",
+      {},
+    );
 
     // Extract user ID from custom data
     const userId = payload.meta.custom_data?.user_id;
     const apiKeyId = payload.meta.custom_data?.api_key_id;
 
-    console.log(JSON.stringify(payload.meta));
-
     if (!userId) {
-      console.error("[Webhook] No user_id in custom_data");
+      logger.logOperationError(
+        OPERATION,
+        "validate_payload",
+        "MISSING_USER_ID",
+        "Missing user_id in webhook payload",
+        undefined,
+        {},
+      );
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Missing user_id in webhook payload" }));
       return;
     }
 
     if (!apiKeyId) {
-      console.error("[Webhook] No apiKeyId in custom_data");
+      logger.logOperationError(
+        OPERATION,
+        "validate_payload",
+        "MISSING_API_KEY_ID",
+        "Missing apiKeyId in webhook payload",
+        undefined,
+        { userId },
+      );
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Missing apiKeyId in webhook payload" }));
       return;
@@ -170,8 +236,11 @@ export async function handleLemonSqueezyWebhook(
     // Extract payment amount (convert from cents to the integer format used in DB)
     const creditAmount = Math.round(payload.data.attributes.total);
 
-    console.log(
-      `[Webhook] Processing payment for user ${userId}, amount: ${creditAmount}`,
+    logger.logOperationInfo(
+      OPERATION,
+      "payment_data",
+      "Processing payment",
+      { userId, apiKeyId, creditAmount },
     );
 
     // Create and store the payment event
@@ -184,19 +253,36 @@ export async function handleLemonSqueezyWebhook(
 
       await adapter.add();
 
-      console.log(
-        `[Webhook] Payment event stored successfully for user ${userId}`,
+      logger.logOperationInfo(
+        OPERATION,
+        "completed",
+        "Payment event stored successfully",
+        { userId, apiKeyId, creditAmount },
       );
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Webhook processed successfully" }));
     } catch (dbError) {
-      console.error("[Webhook] Database error:", dbError);
+      logger.logOperationError(
+        OPERATION,
+        "database",
+        "DATABASE_ERROR",
+        "Database error while storing payment",
+        dbError as Error,
+        { userId, apiKeyId },
+      );
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Database error" }));
     }
   } catch (error) {
-    console.error("[Webhook] Unexpected error:", error);
+    logger.logOperationError(
+      OPERATION,
+      "failed",
+      "UNEXPECTED_ERROR",
+      "Unexpected error in webhook handler",
+      error as Error,
+      {},
+    );
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Internal server error" }));
   }

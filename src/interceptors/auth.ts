@@ -18,12 +18,14 @@ export function authInterceptor(): Interceptor {
       }
     }
 
-    // Log endpoint for debugging
+    // Extract endpoint for context
+    let endpoint = req.url;
     try {
-      let split = req.url.split("/");
-      console.log(`=> ${split[split.length - 2]}/${split[split.length - 1]}`);
+      const split = req.url.split("/");
+      endpoint = `${split[split.length - 2]}/${split[split.length - 1]}`;
+      logger.logDebug(`Processing request to ${endpoint}`, { endpoint: req.url });
     } catch (e) {
-      console.error("=> could not parse endpoint for logging", req.url);
+      logger.logDebug("Could not parse endpoint for logging", { url: req.url });
     }
 
     try {
@@ -71,12 +73,12 @@ export function authInterceptor(): Interceptor {
       // Check cache first (using hash as key)
       const cached = apiKeyCache.get(apiKeyHash);
       if (cached) {
-        console.log(`[Cache HIT] API Key ID: ${cached.id}`);
+        logger.logDebug("Cache hit for API key", { apiKeyId: cached.id });
         req.contextValues.set(apiKeyContextKey, cached.id);
         return await next(req);
       }
 
-      console.log(`[Cache MISS] Querying database for API key`);
+      logger.logDebug("Cache miss, querying database", {});
 
       // Query database for API key by hash
       let apiKeyRecord;
@@ -153,7 +155,7 @@ export function authInterceptor(): Interceptor {
         expiresAt: apiKeyRecord.expiresAt,
       });
 
-      console.log(`[DB] Valid API Key ID: ${apiKeyRecord.id}`);
+      logger.logDebug("Valid API key from database", { apiKeyId: apiKeyRecord.id });
 
       // Attach API key ID to context for use in handlers
       req.contextValues.set(apiKeyContextKey, apiKeyRecord.id);

@@ -7,6 +7,9 @@ import {
 import { StorageError } from "../../../../errors/storage";
 import { type BaseEventMetadata } from "../../../../interface/event/Event";
 import { type UserId } from "../../../../config/identifiers";
+import { logger } from "../../../../errors/logger";
+
+const OPERATION = "AddSdkCall";
 
 export async function handleAddSdkCall(
   event_data: BaseEventMetadata<"SDK_CALL"> & {
@@ -17,16 +20,14 @@ export async function handleAddSdkCall(
   const connectionObject = getPostgresDB();
 
   try {
-    console.log(
-      `[PostgresAdapter] Processing SDK_CALL event for user: ${event_data.userId}`,
-    );
+    logger.logOperationInfo(OPERATION, "start", "Processing SDK_CALL event", {
+      userId: event_data.userId,
+      apiKeyId,
+    });
 
     // Validate debit amount is not negative
     const debitAmount = event_data.data.debitAmount;
     if (typeof debitAmount === "number" && debitAmount < 0) {
-      console.error(
-        `[PostgresAdapter] Invalid SDK call debit amount for user ${event_data.userId}: ${debitAmount}`,
-      );
       throw StorageError.insertFailed(
         `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
         new Error(`debitAmount ${debitAmount} is negative`),
@@ -43,22 +44,23 @@ export async function handleAddSdkCall(
           })
           .onConflictDoNothing();
 
-        console.log(
-          `[PostgresAdapter] User ${event_data.userId} ensured in database`,
+        logger.logOperationDebug(
+          OPERATION,
+          "user_ensured",
+          "User ensured in database",
+          { userId: event_data.userId },
         );
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] User insert failed for ${event_data.userId}:`,
-          e,
-        );
-
         if (
           e instanceof Error &&
           e.message.includes('Failed query: insert into "users" ("id")')
         ) {
           // User already exists, ignore the error
-          console.log(
-            `[PostgresAdapter] User ${event_data.userId} already exists, continuing`,
+          logger.logOperationDebug(
+            OPERATION,
+            "user_exists",
+            "User already exists, continuing",
+            { userId: event_data.userId },
           );
         } else {
           throw StorageError.userInsertFailed(
@@ -72,14 +74,7 @@ export async function handleAddSdkCall(
       let reported_timestamp;
       try {
         reported_timestamp = event_data.reported_timestamp.toISO();
-        console.log(
-          `[PostgresAdapter] Reported timestamp: ${reported_timestamp}`,
-        );
       } catch (e) {
-        console.error(
-          "[PostgresAdapter] Failed to convert timestamp to ISO:",
-          e,
-        );
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
           e instanceof Error ? e : new Error(String(e)),
@@ -104,10 +99,6 @@ export async function handleAddSdkCall(
           })
           .returning({ id: eventsTable.id });
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] Event insert failed for user ${event_data.userId}:`,
-          e,
-        );
         throw StorageError.eventInsertFailed(
           `Failed to insert event for user ${event_data.userId}`,
           e instanceof Error ? e : new Error(String(e)),
@@ -118,7 +109,12 @@ export async function handleAddSdkCall(
         throw StorageError.emptyResult("Event insert returned no ID");
       }
 
-      console.log(`[PostgresAdapter] Event inserted with ID: ${eventID.id}`);
+      logger.logOperationInfo(
+        OPERATION,
+        "event_inserted",
+        "Event row inserted",
+        { eventId: eventID.id, userId: event_data.userId, apiKeyId },
+      );
 
       // Insert SDK call event
       try {
@@ -130,14 +126,17 @@ export async function handleAddSdkCall(
           debitAmount: sdkData.data.debitAmount,
         });
 
-        console.log(
-          `[PostgresAdapter] SDK call event inserted successfully with debit amount: ${sdkData.data.debitAmount}`,
+        logger.logOperationInfo(
+          OPERATION,
+          "sdk_call_inserted",
+          "SDK call event inserted successfully",
+          {
+            eventId: eventID.id,
+            debitAmount: sdkData.data.debitAmount,
+            userId: event_data.userId,
+          },
         );
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] SDK call event insert failed for event ID ${eventID.id}:`,
-          e,
-        );
         throw StorageError.insertFailed(
           `Failed to insert SDK call event for event ID ${eventID.id}`,
           e instanceof Error ? e : new Error(String(e)),
@@ -147,11 +146,13 @@ export async function handleAddSdkCall(
       return { id: eventID };
     });
 
-    console.log(
-      `[PostgresAdapter] SDK_CALL event processing completed successfully`,
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "SDK_CALL transaction completed successfully",
+      { userId: event_data.userId, apiKeyId },
     );
   } catch (e) {
-    console.error("[PostgresAdapter] SDK_CALL transaction failed:", e);
 
     // Use duck typing instead of instanceof to work with mocked modules
     if (

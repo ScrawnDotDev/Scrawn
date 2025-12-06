@@ -13,6 +13,9 @@ import { ZodError } from "zod";
 import { StorageAdapterFactory } from "../../../factory";
 import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../../../context/auth";
+import { logger } from "../../../errors/logger";
+
+const OPERATION = "RegisterEvent";
 
 export async function registerEvent(
   req: RegisterEventRequest,
@@ -25,7 +28,9 @@ export async function registerEvent(
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
 
-    console.log(`[RegisterEvent] Authenticated with API Key ID: ${apiKeyId}`);
+    logger.logOperationInfo(OPERATION, "authenticated", "Request authenticated", {
+      apiKeyId,
+    });
 
     // Validate the incoming request against the schema
     let eventSkeleton;
@@ -79,12 +84,23 @@ export async function registerEvent(
       );
     }
 
+    logger.logOperationInfo(OPERATION, "completed", "Event stored successfully", {
+      apiKeyId,
+      userId: eventSkeleton.userId,
+    });
+
     return create(RegisterEventResponseSchema, {
       random: "Event stored successfully",
     });
   } catch (error) {
-    console.error("=== RegisterEvent Error ===");
-    console.error("Error:", error);
+    logger.logOperationError(
+      OPERATION,
+      "failed",
+      error instanceof EventError ? error.type : "UNKNOWN",
+      "RegisterEvent handler failed",
+      error instanceof Error ? error : undefined,
+      { apiKeyId: context.values.get(apiKeyContextKey) },
+    );
 
     // Re-throw EventError as-is
     if (error instanceof EventError) {

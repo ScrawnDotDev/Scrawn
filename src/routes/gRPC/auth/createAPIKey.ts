@@ -14,6 +14,9 @@ import { AddKey } from "../../../events/RawEvents/AddKey";
 import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../../../context/auth";
 import { hashAPIKey } from "../../../utils/hashAPIKey";
+import { logger } from "../../../errors/logger";
+
+const OPERATION = "CreateAPIKey";
 
 export async function createAPIKey(
   req: CreateAPIKeyRequest,
@@ -26,7 +29,9 @@ export async function createAPIKey(
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
 
-    console.log(`[CreateAPIKey] Authenticated with API Key ID: ${apiKeyId}`);
+    logger.logOperationInfo(OPERATION, "authenticated", "Request authenticated", {
+      apiKeyId,
+    });
 
     // Validate the incoming request against the schema
     let validatedData;
@@ -82,6 +87,11 @@ export async function createAPIKey(
       );
     }
 
+    logger.logOperationInfo(OPERATION, "completed", "API key created successfully", {
+      apiKeyId: keyEventData.id,
+      name: validatedData.name,
+    });
+
     return create(CreateAPIKeyResponseSchema, {
       apiKeyId: keyEventData.id,
       apiKey: apiKey,
@@ -90,8 +100,14 @@ export async function createAPIKey(
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error("=== CreateAPIKey Error ===");
-    console.error("Error:", error);
+    logger.logOperationError(
+      OPERATION,
+      "failed",
+      error instanceof APIKeyError ? error.type : "UNKNOWN",
+      "CreateAPIKey handler failed",
+      error instanceof Error ? error : undefined,
+      { apiKeyId: context.values.get(apiKeyContextKey) },
+    );
 
     // Re-throw APIKeyError as-is
     if (error instanceof APIKeyError) {
