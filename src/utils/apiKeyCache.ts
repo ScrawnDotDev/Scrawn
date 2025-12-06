@@ -1,4 +1,6 @@
 // USING LOCAL CACHING JUST FOR NOW
+import { logger } from "../errors/logger";
+
 interface CachedAPIKey {
   id: string;
   expiresAt: string;
@@ -102,8 +104,9 @@ class APIKeyCache {
 
     if (oldestKey) {
       this.cache.delete(oldestKey);
-      console.log(
-        `[APIKeyCache] Evicted LRU entry (cache full at ${this.maxSize})`,
+      logger.logDebug(
+        `Evicted LRU cache entry (cache full at ${this.maxSize})`,
+        {},
       );
     }
   }
@@ -126,8 +129,9 @@ class APIKeyCache {
     keysToDelete.forEach((key) => this.cache.delete(key));
 
     if (keysToDelete.length > 0) {
-      console.log(
-        `[APIKeyCache] Cleaned up ${keysToDelete.length} expired entries`,
+      logger.logDebug(
+        `Cleaned up ${keysToDelete.length} expired cache entries`,
+        {},
       );
     }
   }

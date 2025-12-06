@@ -3,6 +3,9 @@ import { RequestSDKCall } from "../../../../events/RequestEvents/RequestSDKCall"
 import { StorageAdapterFactory } from "../../../../factory";
 import { type BaseEventMetadata } from "../../../../interface/event/Event";
 import { type UserId } from "../../../../config/identifiers";
+import { logger } from "../../../../errors/logger";
+
+const OPERATION = "PriceRequestPayment";
 
 export async function handlePriceRequestPayment(
   event_data: BaseEventMetadata<"REQUEST_PAYMENT"> & {
@@ -14,8 +17,11 @@ export async function handlePriceRequestPayment(
       throw StorageError.invalidData("Missing userId in REQUEST_PAYMENT event");
     }
 
-    console.log(
-      `[PostgresAdapter] Calculating price for REQUEST_PAYMENT, user: ${event_data.userId}`,
+    logger.logOperationInfo(
+      OPERATION,
+      "start",
+      "Calculating price for REQUEST_PAYMENT",
+      { userId: event_data.userId },
     );
 
     const storageAdapter = await StorageAdapterFactory.getStorageAdapter(
@@ -37,17 +43,15 @@ export async function handlePriceRequestPayment(
       );
     }
 
-    console.log(
-      `[PostgresAdapter] Price calculated for user ${event_data.userId}: ${price}`,
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "Price calculated successfully",
+      { userId: event_data.userId, price },
     );
 
     return price;
   } catch (e) {
-    console.error(
-      `[PostgresAdapter] Failed to calculate price for REQUEST_PAYMENT:`,
-      e,
-    );
-
     // Use duck typing instead of instanceof to work with mocked modules
     if (
       e &&

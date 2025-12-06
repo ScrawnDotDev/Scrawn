@@ -7,6 +7,9 @@ import {
 import { StorageError } from "../../../../errors/storage";
 import { type BaseEventMetadata } from "../../../../interface/event/Event";
 import { type UserId } from "../../../../config/identifiers";
+import { logger } from "../../../../errors/logger";
+
+const OPERATION = "AddPayment";
 
 export async function handleAddPayment(
   event_data: BaseEventMetadata<"PAYMENT"> & {
@@ -34,9 +37,10 @@ export async function handleAddPayment(
       );
     }
 
-    console.log(
-      `[PostgresAdapter] Processing PAYMENT event for user: ${event_data.userId}`,
-    );
+    logger.logOperationInfo(OPERATION, "start", "Processing PAYMENT event", {
+      userId: event_data.userId,
+      apiKeyId,
+    });
 
     await connectionObject.transaction(async (txn) => {
       // Insert user if not exists
@@ -48,22 +52,23 @@ export async function handleAddPayment(
           })
           .onConflictDoNothing();
 
-        console.log(
-          `[PostgresAdapter] User ${event_data.userId} ensured in database`,
+        logger.logOperationDebug(
+          OPERATION,
+          "user_ensured",
+          "User ensured in database",
+          { userId: event_data.userId },
         );
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] User insert failed for ${event_data.userId}:`,
-          e,
-        );
-
         if (
           e instanceof Error &&
           e.message.includes('Failed query: insert into "users" ("id")')
         ) {
           // User already exists, ignore the error
-          console.log(
-            `[PostgresAdapter] User ${event_data.userId} already exists, continuing`,
+          logger.logOperationDebug(
+            OPERATION,
+            "user_exists",
+            "User already exists, continuing",
+            { userId: event_data.userId },
           );
         } else {
           throw StorageError.userInsertFailed(
@@ -77,14 +82,7 @@ export async function handleAddPayment(
       let reported_timestamp;
       try {
         reported_timestamp = event_data.reported_timestamp.toISO();
-        console.log(
-          `[PostgresAdapter] Reported timestamp: ${reported_timestamp}`,
-        );
       } catch (e) {
-        console.error(
-          "[PostgresAdapter] Failed to convert timestamp to ISO:",
-          e,
-        );
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
           e instanceof Error ? e : new Error(String(e)),
@@ -109,10 +107,6 @@ export async function handleAddPayment(
           })
           .returning({ id: eventsTable.id });
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] Event insert failed for user ${event_data.userId}:`,
-          e,
-        );
         throw StorageError.eventInsertFailed(
           `Failed to insert event for user ${event_data.userId}`,
           e instanceof Error ? e : new Error(String(e)),
@@ -123,7 +117,12 @@ export async function handleAddPayment(
         throw StorageError.emptyResult("Event insert returned no ID");
       }
 
-      console.log(`[PostgresAdapter] Event inserted with ID: ${eventID.id}`);
+      logger.logOperationInfo(
+        OPERATION,
+        "event_inserted",
+        "Event row inserted",
+        { eventId: eventID.id, userId: event_data.userId, apiKeyId },
+      );
 
       // Insert payment event
       try {
@@ -132,14 +131,17 @@ export async function handleAddPayment(
           creditAmount: event_data.data.creditAmount,
         });
 
-        console.log(
-          `[PostgresAdapter] Payment event inserted successfully with credit amount: ${event_data.data.creditAmount}`,
+        logger.logOperationInfo(
+          OPERATION,
+          "payment_inserted",
+          "Payment event inserted successfully",
+          {
+            eventId: eventID.id,
+            creditAmount: event_data.data.creditAmount,
+            userId: event_data.userId,
+          },
         );
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] Payment event insert failed for event ID ${eventID.id}:`,
-          e,
-        );
         throw StorageError.insertFailed(
           `Failed to insert payment event for event ID ${eventID.id}`,
           e instanceof Error ? e : new Error(String(e)),
@@ -149,11 +151,13 @@ export async function handleAddPayment(
       return { id: eventID };
     });
 
-    console.log(
-      `[PostgresAdapter] PAYMENT event processing completed successfully`,
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "PAYMENT transaction completed successfully",
+      { userId: event_data.userId, apiKeyId },
     );
   } catch (e) {
-    console.error("[PostgresAdapter] PAYMENT transaction failed:", e);
 
     // Use duck typing instead of instanceof to work with mocked modules
     if (
