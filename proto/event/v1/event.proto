@@ -28,7 +28,11 @@ message RegisterEventRequest {
 
 message SDKCall {
     SDKCallType sdkCallType = 1;
-    float debitAmount = 2;
+    
+    oneof debit {
+        float amount = 2;
+        string tag = 3;
+    }
 }
 
 message RegisterEventResponse {

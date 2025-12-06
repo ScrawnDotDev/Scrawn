@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file event/v1/event.proto.
  */
 export const file_event_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIkoKB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRITCgtkZWJpdEFtb3VudBgCIAEoAiInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJKjUKCUV2ZW50VHlwZRIaChZFVkVOVF9UWVBFX1VOU1BFQ0lGSUVEEAASDAoIU0RLX0NBTEwQASpICgtTREtDYWxsVHlwZRIbChdTREtDYWxsVHlwZV9VTlNQRUNJRklFRBAAEgcKA1JBVxABEhMKD01JRERMRVdBUkVfQ0FMTBACMmIKDEV2ZW50U2VydmljZRJSCg1SZWdpc3RlckV2ZW50Eh4uZXZlbnQudjEuUmVnaXN0ZXJFdmVudFJlcXVlc3QaHy5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVzcG9uc2UiAGIGcHJvdG8z");
+  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIl8KB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRIQCgZhbW91bnQYAiABKAJIABINCgN0YWcYAyABKAlIAEIHCgVkZWJpdCInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJKjUKCUV2ZW50VHlwZRIaChZFVkVOVF9UWVBFX1VOU1BFQ0lGSUVEEAASDAoIU0RLX0NBTEwQASpICgtTREtDYWxsVHlwZRIbChdTREtDYWxsVHlwZV9VTlNQRUNJRklFRBAAEgcKA1JBVxABEhMKD01JRERMRVdBUkVfQ0FMTBACMmIKDEV2ZW50U2VydmljZRJSCg1SZWdpc3RlckV2ZW50Eh4uZXZlbnQudjEuUmVnaXN0ZXJFdmVudFJlcXVlc3QaHy5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVzcG9uc2UiAGIGcHJvdG8z");
 
 /**
  * @generated from message event.v1.RegisterEventRequest
@@ -55,9 +55,21 @@ export type SDKCall = Message<"event.v1.SDKCall"> & {
   sdkCallType: SDKCallType;
 
   /**
-   * @generated from field: float debitAmount = 2;
+   * @generated from oneof event.v1.SDKCall.debit
    */
-  debitAmount: number;
+  debit: {
+    /**
+     * @generated from field: float amount = 2;
+     */
+    value: number;
+    case: "amount";
+  } | {
+    /**
+     * @generated from field: string tag = 3;
+     */
+    value: string;
+    case: "tag";
+  } | { case: undefined; value?: undefined };
 };
 
 /**

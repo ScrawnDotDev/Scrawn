@@ -30,8 +30,11 @@ export async function registerEvent(
     // Validate the incoming request against the schema
     let eventSkeleton;
     try {
-      eventSkeleton = eventSchema.parse(req);
+      eventSkeleton = await eventSchema.parseAsync(req);
     } catch (error) {
+      if (error instanceof EventError) {
+        throw error;
+      }
       if (error instanceof ZodError) {
         const issues = error.issues
           .map((issue) => `${issue.path.join(".")}: ${issue.message}`)

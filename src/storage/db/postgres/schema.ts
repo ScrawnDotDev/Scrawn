@@ -107,3 +107,9 @@ export const paymentEventsRelation = relations(
     }),
   }),
 );
+
+export const tagsTable = pgTable("tags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tag: text("key").notNull(),
+  amount: integer("amount").notNull(),
+});
