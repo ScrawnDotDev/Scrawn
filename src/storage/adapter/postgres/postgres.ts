@@ -73,7 +73,7 @@ export class PostgresAdapter implements StorageAdapterType {
         if (!this.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddAiTokenUsage(event_data, this.apiKeyId);
+        return await handleAddAiTokenUsage([event_data], this.apiKeyId);
       }
 
       default: {

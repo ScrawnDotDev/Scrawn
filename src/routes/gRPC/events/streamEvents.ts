@@ -13,7 +13,7 @@ import {
   extractApiKeyFromContext,
   validateAndParseEvent,
   createEventInstance,
-  storeEvent,
+  storeEventsBatch,
 } from "../../../utils/eventHelpers";
 
 const OPERATION = "StreamEvents";
@@ -23,10 +23,7 @@ export async function streamEvents(
   context: HandlerContext,
 ): Promise<StreamEventResponse> {
   let eventsProcessed = 0;
-  const events: Array<{
-    event: EventType<keyof EventDataMap>;
-    userId: string;
-  }> = [];
+  const events: Array<EventType<keyof EventDataMap>> = [];
 
   try {
     // Extract API key ID from context
@@ -51,7 +48,7 @@ export async function streamEvents(
         const event = createEventInstance(eventSkeleton);
 
         // Add to events array instead of storing immediately
-        events.push({ event, userId: eventSkeleton.userId });
+        events.push(event);
 
         logger.logOperationInfo(
           OPERATION,
@@ -78,7 +75,7 @@ export async function streamEvents(
       }
     }
 
-    // Store all events in one go after stream completes
+    // Store all events in one batch after stream completes
     if (events.length > 0) {
       logger.logOperationInfo(
         OPERATION,
@@ -87,20 +84,18 @@ export async function streamEvents(
         { apiKeyId, totalEvents: events.length },
       );
 
-      for (const { event, userId } of events) {
-        try {
-          await storeEvent(event, apiKeyId);
-          eventsProcessed++;
-        } catch (error) {
-          logger.logOperationError(
-            OPERATION,
-            "event_storage_failed",
-            error instanceof EventError ? error.type : "UNKNOWN",
-            "Failed to store event in batch",
-            error instanceof Error ? error : undefined,
-            { apiKeyId, userId, eventNumber: eventsProcessed + 1 },
-          );
-        }
+      try {
+        await storeEventsBatch(events, apiKeyId);
+        eventsProcessed = events.length;
+      } catch (error) {
+        logger.logOperationError(
+          OPERATION,
+          "batch_storage_failed",
+          error instanceof EventError ? error.type : "UNKNOWN",
+          "Failed to store events in batch",
+          error instanceof Error ? error : undefined,
+          { apiKeyId, totalEvents: events.length },
+        );
       }
     }
 

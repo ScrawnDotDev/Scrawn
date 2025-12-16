@@ -8,6 +8,8 @@ import type { EventType } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
 import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
+import { handleAddAiTokenUsage } from "../storage/adapter/postgres/handlers";
+import { StorageError } from "../errors/storage";
 import type {
   RegisterEventRequest,
   StreamEventRequest,
@@ -92,5 +94,68 @@ export async function storeEvent(
       "Failed to store event",
       error as Error,
     );
+  }
+}
+
+/**
+ * Store multiple events in a batch - groups by type and uses batch operations when possible
+ */
+export async function storeEventsBatch(
+  events: EventType[],
+  apiKeyId: string,
+): Promise<void> {
+  if (events.length === 0) {
+    return;
+  }
+
+  // Group events by type
+  const eventsByType = new Map<string, EventType[]>();
+  for (const event of events) {
+    const type = event.type;
+    if (!eventsByType.has(type)) {
+      eventsByType.set(type, []);
+    }
+    eventsByType.get(type)!.push(event);
+  }
+
+  // Process each type
+  for (const [type, typeEvents] of eventsByType) {
+    try {
+      if (type === "AI_TOKEN_USAGE") {
+        // Batch process AI_TOKEN_USAGE events
+        const serializedEvents: Array<
+          import("../interface/event/Event").BaseEventMetadata<"AI_TOKEN_USAGE"> & {
+            userId: string;
+          }
+        > = [];
+
+        for (const event of typeEvents) {
+          const { SQL } = event.serialize();
+          if (!SQL) {
+            throw StorageError.serializationFailed(
+              "Event serialization returned null or undefined",
+            );
+          }
+          if (SQL.type !== "AI_TOKEN_USAGE") {
+            throw StorageError.serializationFailed(
+              `Expected AI_TOKEN_USAGE but got ${SQL.type}`,
+            );
+          }
+          serializedEvents.push(SQL as any);
+        }
+
+        await handleAddAiTokenUsage(serializedEvents, apiKeyId);
+      } else {
+        // For other event types, use individual storage
+        for (const event of typeEvents) {
+          await storeEvent(event, apiKeyId);
+        }
+      }
+    } catch (error) {
+      throw EventError.serializationError(
+        `Failed to store ${type} events`,
+        error as Error,
+      );
+    }
   }
 }
