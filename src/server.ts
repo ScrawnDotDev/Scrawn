@@ -7,6 +7,7 @@ import { AuthService } from "./gen/auth/v1/auth_pb.ts";
 import { PaymentService } from "./gen/payment/v1/payment_pb.ts";
 import { authInterceptor } from "./interceptors/auth.ts";
 import { registerEvent } from "./routes/gRPC/events/registerEvent.ts";
+import { streamEvents } from "./routes/gRPC/events/streamEvents.ts";
 import { createAPIKey } from "./routes/gRPC/auth/createAPIKey.ts";
 import { createCheckoutLink } from "./routes/gRPC/payment/createCheckoutLink.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
@@ -31,6 +32,7 @@ const grpcHandler = connectNodeAdapter({
     // EventService implementation
     router.service(EventService, {
       registerEvent,
+      streamEvents,
     });
 
     // AuthService implementation

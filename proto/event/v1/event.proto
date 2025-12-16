@@ -5,11 +5,15 @@ package event.v1;
 service EventService {
   // RegisterEvent registers an event as being done by a user
   rpc RegisterEvent(RegisterEventRequest) returns (RegisterEventResponse) {}
+
+  // StreamEvents streams events from client to server (e.g., AI token usage)
+  rpc StreamEvents(stream StreamEventRequest) returns (StreamEventResponse) {}
 }
 
 enum EventType {
   EVENT_TYPE_UNSPECIFIED = 0;
   SDK_CALL = 1;
+  AI_TOKEN_USAGE = 2;
 }
 
 enum SDKCallType {
@@ -28,7 +32,7 @@ message RegisterEventRequest {
 
 message SDKCall {
     SDKCallType sdkCallType = 1;
-    
+
     oneof debit {
         float amount = 2;
         string tag = 3;
@@ -37,4 +41,34 @@ message SDKCall {
 
 message RegisterEventResponse {
     string random = 1;
+}
+
+message StreamEventRequest {
+    EventType type = 1;
+    string userId = 2;
+    oneof data {
+        SDKCall sdkCall = 3;
+        AITokenUsage aiTokenUsage = 4;
+    }
+}
+
+message AITokenUsage {
+    string model = 1;
+    int32 inputTokens = 2;
+    int32 outputTokens = 3;
+
+    oneof inputDebit {
+        float inputAmount = 4;
+        string inputTag = 5;
+    }
+
+    oneof outputDebit {
+        float outputAmount = 6;
+        string outputTag = 7;
+    }
+}
+
+message StreamEventResponse {
+    int32 eventsProcessed = 1;
+    string message = 2;
 }

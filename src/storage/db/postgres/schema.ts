@@ -71,6 +71,10 @@ export const eventsRelation = relations(eventsTable, ({ one }) => ({
     fields: [eventsTable.id],
     references: [paymentEventsTable.id],
   }),
+  aiTokenUsageEvent: one(aiTokenUsageEventsTable, {
+    fields: [eventsTable.id],
+    references: [aiTokenUsageEventsTable.id],
+  }),
 }));
 
 export const sdkCallEventsTable = pgTable("sdk_call_events", {
@@ -113,3 +117,24 @@ export const tagsTable = pgTable("tags", {
   tag: text("key").notNull(),
   amount: integer("amount").notNull(),
 });
+
+export const aiTokenUsageEventsTable = pgTable("ai_token_usage_events", {
+  id: uuid("id")
+    .references(() => eventsTable.id)
+    .primaryKey(),
+  model: text("model").notNull(),
+  inputTokens: integer("input_tokens").notNull(),
+  outputTokens: integer("output_tokens").notNull(),
+  inputDebitAmount: integer("input_debit_amount").notNull(),
+  outputDebitAmount: integer("output_debit_amount").notNull(),
+});
+
+export const aiTokenUsageEventsRelation = relations(
+  aiTokenUsageEventsTable,
+  ({ one }) => ({
+    event: one(eventsTable, {
+      fields: [aiTokenUsageEventsTable.id],
+      references: [eventsTable.id],
+    }),
+  }),
+);

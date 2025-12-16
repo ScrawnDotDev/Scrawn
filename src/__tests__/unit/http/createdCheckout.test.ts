@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac } from "node:crypto";
 
-// Shared mocks
+// Shared mocks - initialize functions after vi is available
 const loggerMock = {
   logOperationInfo: vi.fn(),
   logOperationError: vi.fn(),
@@ -12,6 +12,7 @@ const loggerMock = {
 };
 
 const getStorageAdapterMock = vi.fn();
+const lemonSqueezySetupMock = vi.fn();
 
 // Track Payment constructor calls
 const paymentConstructorCalls: Array<{ userId: string; data: unknown }> = [];
@@ -28,24 +29,38 @@ class PaymentMock {
   }
 }
 
-const lemonSqueezySetupMock = vi.fn();
-
+// Mock modules
 vi.mock("../../../errors/logger.ts", () => ({
-  logger: loggerMock,
+  logger: {
+    logOperationInfo: vi.fn(),
+    logOperationError: vi.fn(),
+    logWarning: vi.fn(),
+    logDebug: vi.fn(),
+  },
 }));
 
 vi.mock("../../../factory/StorageAdapterFactory.ts", () => ({
   StorageAdapterFactory: {
-    getStorageAdapter: getStorageAdapterMock,
+    getStorageAdapter: vi.fn(),
   },
 }));
 
 vi.mock("../../../events/RawEvents/Payment.ts", () => ({
-  Payment: PaymentMock,
+  Payment: class Payment {
+    public userId: string;
+    public data: unknown;
+    public readonly type = "PAYMENT" as const;
+
+    constructor(userId: string, data: unknown) {
+      this.userId = userId;
+      this.data = data;
+      paymentConstructorCalls.push({ userId, data });
+    }
+  },
 }));
 
 vi.mock("@lemonsqueezy/lemonsqueezy.js", () => ({
-  lemonSqueezySetup: lemonSqueezySetupMock,
+  lemonSqueezySetup: vi.fn(),
 }));
 
 class MockRequest extends EventEmitter {
@@ -82,10 +97,19 @@ function emitBody(req: MockRequest, body: string): void {
 }
 
 describe("handleLemonSqueezyWebhook", () => {
-  beforeEach(() => {
+  let loggerModule: any;
+  let storageModule: any;
+  let lsModule: any;
+
+  beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
     paymentConstructorCalls.length = 0;
+
+    // Import mocked modules
+    loggerModule = await import("../../../errors/logger.ts");
+    storageModule = await import("../../../factory/StorageAdapterFactory.ts");
+    lsModule = await import("@lemonsqueezy/lemonsqueezy.js");
 
     // Default env; individual tests can override
     process.env.LEMON_SQUEEZY_API_KEY = "test-api-key";
@@ -112,7 +136,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Webhook secret not configured");
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "config",
       "MISSING_WEBHOOK_SECRET",
@@ -140,7 +164,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(401);
     expect((res as any).body).toContain("Invalid signature");
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "validate_signature",
       "INVALID_SIGNATURE",
@@ -171,7 +195,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Invalid JSON payload");
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "parse_payload",
       "INVALID_JSON",
@@ -206,7 +230,9 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(200);
     expect((res as any).body).toContain("Event ignored");
-    expect(getStorageAdapterMock).not.toHaveBeenCalled();
+    expect(
+      storageModule.StorageAdapterFactory.getStorageAdapter,
+    ).not.toHaveBeenCalled();
     expect(paymentConstructorCalls.length).toBe(0);
   });
 
@@ -239,7 +265,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Missing user_id in webhook payload");
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "validate_payload",
       "MISSING_USER_ID",
@@ -280,7 +306,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Missing apiKeyId in webhook payload");
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "validate_payload",
       "MISSING_API_KEY_ID",
@@ -295,9 +321,11 @@ describe("handleLemonSqueezyWebhook", () => {
     process.env.LEMON_SQUEEZY_WEBHOOK_SECRET = secret;
 
     const adapterAddMock = vi.fn().mockResolvedValue(undefined);
-    getStorageAdapterMock.mockResolvedValue({
+    vi.mocked(
+      storageModule.StorageAdapterFactory.getStorageAdapter,
+    ).mockResolvedValue({
       add: adapterAddMock,
-    });
+    } as any);
 
     const handleWebhook = await importHandler();
 
@@ -341,9 +369,12 @@ describe("handleLemonSqueezyWebhook", () => {
       data: { creditAmount: 123 },
     });
 
-    expect(getStorageAdapterMock).toHaveBeenCalledTimes(1);
-    const adapterCall = getStorageAdapterMock.mock.calls[0];
-    //@ts-ignore
+    expect(
+      storageModule.StorageAdapterFactory.getStorageAdapter,
+    ).toHaveBeenCalledTimes(1);
+    const adapterCall = vi.mocked(
+      storageModule.StorageAdapterFactory.getStorageAdapter,
+    ).mock.calls[0];
     expect(adapterCall[1]).toBe("api-key-456");
 
     expect(adapterAddMock).toHaveBeenCalledTimes(1);
@@ -358,9 +389,11 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const dbError = new Error("DB error");
     const adapterAddMock = vi.fn().mockRejectedValue(dbError);
-    getStorageAdapterMock.mockResolvedValue({
+    vi.mocked(
+      storageModule.StorageAdapterFactory.getStorageAdapter,
+    ).mockResolvedValue({
       add: adapterAddMock,
-    });
+    } as any);
 
     const handleWebhook = await importHandler();
 
@@ -401,7 +434,7 @@ describe("handleLemonSqueezyWebhook", () => {
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Database error");
 
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "database",
       "DATABASE_ERROR",
@@ -429,7 +462,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Internal server error");
-    expect(loggerMock.logOperationError).toHaveBeenCalledWith(
+    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
       "LemonSqueezyWebhook",
       "failed",
       "UNEXPECTED_ERROR",

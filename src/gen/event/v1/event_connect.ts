@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { RegisterEventRequest, RegisterEventResponse } from "./event_pb.js";
+import { RegisterEventRequest, RegisterEventResponse, StreamEventRequest, StreamEventResponse } from "./event_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -22,6 +22,17 @@ export const EventService = {
       I: RegisterEventRequest,
       O: RegisterEventResponse,
       kind: MethodKind.Unary,
+    },
+    /**
+     * StreamEvents streams events from client to server (e.g., AI token usage)
+     *
+     * @generated from rpc event.v1.EventService.StreamEvents
+     */
+    streamEvents: {
+      name: "StreamEvents",
+      I: StreamEventRequest,
+      O: StreamEventResponse,
+      kind: MethodKind.ClientStreaming,
     },
   }
 } as const;

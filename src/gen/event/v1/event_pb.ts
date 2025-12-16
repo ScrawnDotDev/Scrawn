@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file event/v1/event.proto.
  */
 export const file_event_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIl8KB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRIQCgZhbW91bnQYAiABKAJIABINCgN0YWcYAyABKAlIAEIHCgVkZWJpdCInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJKjUKCUV2ZW50VHlwZRIaChZFVkVOVF9UWVBFX1VOU1BFQ0lGSUVEEAASDAoIU0RLX0NBTEwQASpICgtTREtDYWxsVHlwZRIbChdTREtDYWxsVHlwZV9VTlNQRUNJRklFRBAAEgcKA1JBVxABEhMKD01JRERMRVdBUkVfQ0FMTBACMmIKDEV2ZW50U2VydmljZRJSCg1SZWdpc3RlckV2ZW50Eh4uZXZlbnQudjEuUmVnaXN0ZXJFdmVudFJlcXVlc3QaHy5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVzcG9uc2UiAGIGcHJvdG8z");
+  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIl8KB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRIQCgZhbW91bnQYAiABKAJIABINCgN0YWcYAyABKAlIAEIHCgVkZWJpdCInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJIqUBChJTdHJlYW1FdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIABIuCgxhaVRva2VuVXNhZ2UYBCABKAsyFi5ldmVudC52MS5BSVRva2VuVXNhZ2VIAEIGCgRkYXRhIr0BCgxBSVRva2VuVXNhZ2USDQoFbW9kZWwYASABKAkSEwoLaW5wdXRUb2tlbnMYAiABKAUSFAoMb3V0cHV0VG9rZW5zGAMgASgFEhUKC2lucHV0QW1vdW50GAQgASgCSAASEgoIaW5wdXRUYWcYBSABKAlIABIWCgxvdXRwdXRBbW91bnQYBiABKAJIARITCglvdXRwdXRUYWcYByABKAlIAUIMCgppbnB1dERlYml0Qg0KC291dHB1dERlYml0Ij8KE1N0cmVhbUV2ZW50UmVzcG9uc2USFwoPZXZlbnRzUHJvY2Vzc2VkGAEgASgFEg8KB21lc3NhZ2UYAiABKAkqSQoJRXZlbnRUeXBlEhoKFkVWRU5UX1RZUEVfVU5TUEVDSUZJRUQQABIMCghTREtfQ0FMTBABEhIKDkFJX1RPS0VOX1VTQUdFEAIqSAoLU0RLQ2FsbFR5cGUSGwoXU0RLQ2FsbFR5cGVfVU5TUEVDSUZJRUQQABIHCgNSQVcQARITCg9NSURETEVXQVJFX0NBTEwQAjKzAQoMRXZlbnRTZXJ2aWNlElIKDVJlZ2lzdGVyRXZlbnQSHi5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVxdWVzdBofLmV2ZW50LnYxLlJlZ2lzdGVyRXZlbnRSZXNwb25zZSIAEk8KDFN0cmVhbUV2ZW50cxIcLmV2ZW50LnYxLlN0cmVhbUV2ZW50UmVxdWVzdBodLmV2ZW50LnYxLlN0cmVhbUV2ZW50UmVzcG9uc2UiACgBYgZwcm90bzM");
 
 /**
  * @generated from message event.v1.RegisterEventRequest
@@ -97,6 +97,128 @@ export const RegisterEventResponseSchema: GenMessage<RegisterEventResponse> = /*
   messageDesc(file_event_v1_event, 2);
 
 /**
+ * @generated from message event.v1.StreamEventRequest
+ */
+export type StreamEventRequest = Message<"event.v1.StreamEventRequest"> & {
+  /**
+   * @generated from field: event.v1.EventType type = 1;
+   */
+  type: EventType;
+
+  /**
+   * @generated from field: string userId = 2;
+   */
+  userId: string;
+
+  /**
+   * @generated from oneof event.v1.StreamEventRequest.data
+   */
+  data: {
+    /**
+     * @generated from field: event.v1.SDKCall sdkCall = 3;
+     */
+    value: SDKCall;
+    case: "sdkCall";
+  } | {
+    /**
+     * @generated from field: event.v1.AITokenUsage aiTokenUsage = 4;
+     */
+    value: AITokenUsage;
+    case: "aiTokenUsage";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message event.v1.StreamEventRequest.
+ * Use `create(StreamEventRequestSchema)` to create a new message.
+ */
+export const StreamEventRequestSchema: GenMessage<StreamEventRequest> = /*@__PURE__*/
+  messageDesc(file_event_v1_event, 3);
+
+/**
+ * @generated from message event.v1.AITokenUsage
+ */
+export type AITokenUsage = Message<"event.v1.AITokenUsage"> & {
+  /**
+   * @generated from field: string model = 1;
+   */
+  model: string;
+
+  /**
+   * @generated from field: int32 inputTokens = 2;
+   */
+  inputTokens: number;
+
+  /**
+   * @generated from field: int32 outputTokens = 3;
+   */
+  outputTokens: number;
+
+  /**
+   * @generated from oneof event.v1.AITokenUsage.inputDebit
+   */
+  inputDebit: {
+    /**
+     * @generated from field: float inputAmount = 4;
+     */
+    value: number;
+    case: "inputAmount";
+  } | {
+    /**
+     * @generated from field: string inputTag = 5;
+     */
+    value: string;
+    case: "inputTag";
+  } | { case: undefined; value?: undefined };
+
+  /**
+   * @generated from oneof event.v1.AITokenUsage.outputDebit
+   */
+  outputDebit: {
+    /**
+     * @generated from field: float outputAmount = 6;
+     */
+    value: number;
+    case: "outputAmount";
+  } | {
+    /**
+     * @generated from field: string outputTag = 7;
+     */
+    value: string;
+    case: "outputTag";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message event.v1.AITokenUsage.
+ * Use `create(AITokenUsageSchema)` to create a new message.
+ */
+export const AITokenUsageSchema: GenMessage<AITokenUsage> = /*@__PURE__*/
+  messageDesc(file_event_v1_event, 4);
+
+/**
+ * @generated from message event.v1.StreamEventResponse
+ */
+export type StreamEventResponse = Message<"event.v1.StreamEventResponse"> & {
+  /**
+   * @generated from field: int32 eventsProcessed = 1;
+   */
+  eventsProcessed: number;
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message: string;
+};
+
+/**
+ * Describes the message event.v1.StreamEventResponse.
+ * Use `create(StreamEventResponseSchema)` to create a new message.
+ */
+export const StreamEventResponseSchema: GenMessage<StreamEventResponse> = /*@__PURE__*/
+  messageDesc(file_event_v1_event, 5);
+
+/**
  * @generated from enum event.v1.EventType
  */
 export enum EventType {
@@ -109,6 +231,11 @@ export enum EventType {
    * @generated from enum value: SDK_CALL = 1;
    */
   SDK_CALL = 1,
+
+  /**
+   * @generated from enum value: AI_TOKEN_USAGE = 2;
+   */
+  AI_TOKEN_USAGE = 2,
 }
 
 /**
@@ -156,6 +283,16 @@ export const EventService: GenService<{
     methodKind: "unary";
     input: typeof RegisterEventRequestSchema;
     output: typeof RegisterEventResponseSchema;
+  },
+  /**
+   * StreamEvents streams events from client to server (e.g., AI token usage)
+   *
+   * @generated from rpc event.v1.EventService.StreamEvents
+   */
+  streamEvents: {
+    methodKind: "client_streaming";
+    input: typeof StreamEventRequestSchema;
+    output: typeof StreamEventResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_event_v1_event, 0);

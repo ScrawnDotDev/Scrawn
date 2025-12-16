@@ -1,23 +1,9 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { authInterceptor, no_auth } from "../../../interceptors/auth";
 import * as dbModule from "../../../storage/db/postgres/db";
 import * as hashModule from "../../../utils/hashAPIKey";
 
 describe("authInterceptor", () => {
-  // Authorization that starts with Bearer and has valid format should succeed with valid DB response
-  const mockDb = {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue([
-      {
-        id: "test-api-key-id",
-        expiresAt: new Date(Date.now() + 86400000).toISOString(), // expires tomorrow
-        revoked: false,
-      },
-    ]),
-  };
-
   const makeReq = (auth?: string) => ({
     url: "https://api.example.com/protected_endpoint",
     header: auth
@@ -26,11 +12,28 @@ describe("authInterceptor", () => {
     contextValues: new Map(),
   });
 
-  // Mock DB to return valid API key record
-  vi.spyOn(dbModule, "getPostgresDB").mockReturnValue({
-    ...mockDb,
-  } as any);
-  vi.spyOn(hashModule, "hashAPIKey").mockReturnValue("mocked-hash");
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Mock DB to return valid API key record
+    const mockDb = {
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([
+        {
+          id: "test-api-key-id",
+          expiresAt: new Date(Date.now() + 86400000).toISOString(), // expires tomorrow
+          revoked: false,
+        },
+      ]),
+    };
+
+    vi.spyOn(dbModule, "getPostgresDB").mockReturnValue({
+      ...mockDb,
+    } as any);
+    vi.spyOn(hashModule, "hashAPIKey").mockReturnValue("mocked-hash");
+  });
 
   it("Ignores no_auth endpoints", async () => {
     const next = vi.fn().mockResolvedValue("next called");

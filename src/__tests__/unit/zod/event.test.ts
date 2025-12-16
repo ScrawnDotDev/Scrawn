@@ -23,8 +23,10 @@ describe("eventSchema", () => {
     if (result.success) {
       expect(result.data.type).toBe("SDK_CALL");
       expect(result.data.userId).toBe("550e8400-e29b-41d4-a716-446655440000");
-      expect(result.data.data.sdkCallType).toBe("RAW");
-      expect(result.data.data.debitAmount).toBe(1050);
+      if (result.data.type === "SDK_CALL") {
+        expect(result.data.data.sdkCallType).toBe("RAW");
+        expect(result.data.data.debitAmount).toBe(1050);
+      }
     }
   });
 
@@ -48,8 +50,10 @@ describe("eventSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.type).toBe("SDK_CALL");
-      expect(result.data.data.sdkCallType).toBe("MIDDLEWARE_CALL");
-      expect(result.data.data.debitAmount).toBe(2599);
+      if (result.data.type === "SDK_CALL") {
+        expect(result.data.data.sdkCallType).toBe("MIDDLEWARE_CALL");
+        expect(result.data.data.debitAmount).toBe(2599);
+      }
     }
   });
 
@@ -71,7 +75,7 @@ describe("eventSchema", () => {
 
     const result = await eventSchema.safeParseAsync(validEvent);
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data.type === "SDK_CALL") {
       expect(result.data.data.debitAmount).toBe(12345);
     }
   });
@@ -94,7 +98,7 @@ describe("eventSchema", () => {
 
     const result = await eventSchema.safeParseAsync(validEvent);
     expect(result.success).toBe(true);
-    if (result.success) {
+    if (result.success && result.data.type === "SDK_CALL") {
       expect(result.data.data).not.toHaveProperty("case");
       expect(result.data.data).toHaveProperty("sdkCallType");
       expect(result.data.data).toHaveProperty("debitAmount");
