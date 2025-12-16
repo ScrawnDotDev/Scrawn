@@ -8,6 +8,7 @@ import {
   handleAddPayment,
   handlePriceRequestPayment,
   handlePriceRequestSdkCall,
+  handleAddAiTokenUsage,
 } from "./handlers";
 import { logger } from "../../../errors/logger";
 
@@ -66,6 +67,13 @@ export class PostgresAdapter implements StorageAdapterType {
 
       case "PAYMENT": {
         return await handleAddPayment(event_data, this.apiKeyId);
+      }
+
+      case "AI_TOKEN_USAGE": {
+        if (!this.apiKeyId) {
+          throw StorageError.missingApiKeyId();
+        }
+        return await handleAddAiTokenUsage(event_data, this.apiKeyId);
       }
 
       default: {

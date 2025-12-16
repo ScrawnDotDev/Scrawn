@@ -1,10 +1,17 @@
 import { DateTime } from "luxon";
-import { type EventSchemaType } from "../../zod/event";
 import { type UserId } from "../../config/identifiers";
 
 export type SDKCallEventData = {
-  sdkCallType: EventSchemaType["data"]["sdkCallType"];
+  sdkCallType: "RAW" | "MIDDLEWARE_CALL";
   debitAmount: number;
+};
+
+export type AITokenUsageEventData = {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  inputDebitAmount: number;
+  outputDebitAmount: number;
 };
 
 export type AddKeyEventData = {
@@ -24,8 +31,9 @@ export type RequestSDKCallEventData = null;
 /**
  * Mapping of event types to their data structures
  */
-type EventDataMap = {
+export type EventDataMap = {
   SDK_CALL: SDKCallEventData;
+  AI_TOKEN_USAGE: AITokenUsageEventData;
   ADD_KEY: AddKeyEventData;
   PAYMENT: PaymentEventData;
   REQUEST_PAYMENT: RequestPaymentEventData;
@@ -45,6 +53,7 @@ export type BaseEventMetadata<T extends keyof EventDataMap> = {
 type EventMetadataMap = {
   ADD_KEY: BaseEventMetadata<"ADD_KEY">;
   SDK_CALL: BaseEventMetadata<"SDK_CALL"> & { userId: UserId };
+  AI_TOKEN_USAGE: BaseEventMetadata<"AI_TOKEN_USAGE"> & { userId: UserId };
   PAYMENT: BaseEventMetadata<"PAYMENT"> & { userId: UserId };
   REQUEST_PAYMENT: BaseEventMetadata<"REQUEST_PAYMENT"> & { userId: UserId };
   REQUEST_SDK_CALL: BaseEventMetadata<"REQUEST_SDK_CALL"> & { userId: UserId };
@@ -77,6 +86,13 @@ export interface EventType<
  * SDK Call Event
  */
 export interface SDKCallEventType extends EventType<"SDK_CALL"> {
+  readonly userId: UserId;
+}
+
+/**
+ * AI Token Usage Event
+ */
+export interface AITokenUsageEventType extends EventType<"AI_TOKEN_USAGE"> {
   readonly userId: UserId;
 }
 

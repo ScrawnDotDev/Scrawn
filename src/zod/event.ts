@@ -71,5 +71,110 @@ const SDKCallEvent = BaseEvent.extend({
     .transform((obj) => obj.value),
 });
 
-export const eventSchema = z.discriminatedUnion("type", [SDKCallEvent]);
+const AITokenUsageEvent = BaseEvent.extend({
+  type: z
+    .literal(2)
+    .transform(() => "AI_TOKEN_USAGE") as z.ZodType<"AI_TOKEN_USAGE">,
+  data: z
+    .object({
+      case: z.literal("aiTokenUsage"),
+      value: z
+        .object({
+          model: z.string().min(1),
+          inputTokens: z.number().int().min(0),
+          outputTokens: z.number().int().min(0),
+          inputDebit: z.union([
+            z.object({
+              case: z.literal("inputAmount"),
+              value: z.number().min(0),
+            }),
+            z.object({
+              case: z.literal("inputTag"),
+              value: z.string(),
+            }),
+          ]),
+          outputDebit: z.union([
+            z.object({
+              case: z.literal("outputAmount"),
+              value: z.number().min(0),
+            }),
+            z.object({
+              case: z.literal("outputTag"),
+              value: z.string(),
+            }),
+          ]),
+        })
+        .transform(async (v) => {
+          const db = getPostgresDB();
+
+          // Process input debit
+          let inputDebitAmount: number;
+          if (v.inputDebit.case === "inputTag") {
+            try {
+              const [tagRow] = await db
+                .select()
+                .from(tagsTable)
+                .where(eq(tagsTable.tag, v.inputDebit.value))
+                .limit(1);
+
+              if (!tagRow) {
+                throw EventError.validationFailed(
+                  `Input tag not found: ${v.inputDebit.value}`,
+                );
+              }
+
+              inputDebitAmount = tagRow.amount;
+            } catch (e) {
+              if (e instanceof EventError) {
+                throw e;
+              }
+              throw EventError.unknown(e as Error);
+            }
+          } else {
+            inputDebitAmount = Math.floor(v.inputDebit.value * 100);
+          }
+
+          // Process output debit
+          let outputDebitAmount: number;
+          if (v.outputDebit.case === "outputTag") {
+            try {
+              const [tagRow] = await db
+                .select()
+                .from(tagsTable)
+                .where(eq(tagsTable.tag, v.outputDebit.value))
+                .limit(1);
+
+              if (!tagRow) {
+                throw EventError.validationFailed(
+                  `Output tag not found: ${v.outputDebit.value}`,
+                );
+              }
+
+              outputDebitAmount = tagRow.amount;
+            } catch (e) {
+              if (e instanceof EventError) {
+                throw e;
+              }
+              throw EventError.unknown(e as Error);
+            }
+          } else {
+            outputDebitAmount = Math.floor(v.outputDebit.value * 100);
+          }
+
+          return {
+            model: v.model,
+            inputTokens: v.inputTokens,
+            outputTokens: v.outputTokens,
+            inputDebitAmount,
+            outputDebitAmount,
+          };
+        }),
+    })
+    .transform((obj) => obj.value),
+});
+
+export const eventSchema = z.discriminatedUnion("type", [
+  SDKCallEvent,
+  AITokenUsageEvent,
+]);
 export type EventSchemaType = z.infer<typeof eventSchema>;

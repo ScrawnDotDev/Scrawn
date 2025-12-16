@@ -10,6 +10,9 @@ dist
 coverage
 *.lcov
 
+# local testing
+test-stream-events.ts
+
 # logs
 logs
 _.log

@@ -20,6 +20,9 @@ export class StorageAdapterFactory {
       case "SDK_CALL": {
         return new PostgresAdapter(event, apiKeyId);
       }
+      case "AI_TOKEN_USAGE": {
+        return new PostgresAdapter(event, apiKeyId);
+      }
       case "PAYMENT": {
         return new PostgresAdapter(event, apiKeyId);
       }
