@@ -1,15 +1,15 @@
-import type { SDKCallEventType } from "../../interface/event/Event";
+import type { PaymentEventType } from "../../interface/event/Event";
 import { DateTime } from "luxon";
-import type { EventUnion } from "../../interface/event/Event";
+import type { PaymentEventData } from "../../interface/event/Event";
 import { type UserId } from "../../config/identifiers";
 
-export class SDKCall implements SDKCallEventType {
+export class Payment implements PaymentEventType {
   public reported_timestamp: DateTime;
-  public readonly type = "SDK_CALL" as const;
+  public readonly type = "PAYMENT" as const;
 
   constructor(
     public userId: UserId,
-    public data: EventUnion<"SDK_CALL">,
+    public data: PaymentEventData,
   ) {
     this.reported_timestamp = DateTime.utc();
   }

@@ -51,9 +51,7 @@ export const eventsTable = pgTable("events", {
   userId: USER_ID_CONFIG.dbType("user_id")
     .references(() => usersTable.id)
     .notNull(),
-  api_keyId: uuid("api_key_id")
-    .references(() => apiKeysTable.id)
-    .notNull(),
+  api_keyId: uuid("api_key_id").references(() => apiKeysTable.id),
 });
 
 export const eventsRelation = relations(eventsTable, ({ one }) => ({
@@ -109,3 +107,9 @@ export const paymentEventsRelation = relations(
     }),
   }),
 );
+
+export const tagsTable = pgTable("tags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tag: text("key").notNull(),
+  amount: integer("amount").notNull(),
+});

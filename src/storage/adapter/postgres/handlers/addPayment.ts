@@ -2,37 +2,45 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import {
   usersTable,
   eventsTable,
-  sdkCallEventsTable,
+  paymentEventsTable,
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type BaseEventMetadata } from "../../../../interface/event/Event";
 import { type UserId } from "../../../../config/identifiers";
 import { logger } from "../../../../errors/logger";
 
-const OPERATION = "AddSdkCall";
+const OPERATION = "AddPayment";
 
-export async function handleAddSdkCall(
-  event_data: BaseEventMetadata<"SDK_CALL"> & {
+export async function handleAddPayment(
+  event_data: BaseEventMetadata<"PAYMENT"> & {
     userId: UserId;
   },
-  apiKeyId: string,
+  apiKeyId?: string,
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
   try {
-    logger.logOperationInfo(OPERATION, "start", "Processing SDK_CALL event", {
+    const creditAmount = event_data?.data?.creditAmount;
+
+    // Ensure creditAmount is a finite number and positive
+    if (
+      creditAmount === undefined ||
+      creditAmount === null ||
+      typeof creditAmount !== "number" ||
+      !Number.isFinite(creditAmount) ||
+      creditAmount <= 0
+    ) {
+      throw StorageError.invalidData(
+        `Invalid creditAmount: must be a positive finite number, got ${String(
+          creditAmount,
+        )}`,
+      );
+    }
+
+    logger.logOperationInfo(OPERATION, "start", "Processing PAYMENT event", {
       userId: event_data.userId,
       apiKeyId,
     });
-
-    // Validate debit amount is not negative
-    const debitAmount = event_data.data.debitAmount;
-    if (typeof debitAmount === "number" && debitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
-        new Error(`debitAmount ${debitAmount} is negative`),
-      );
-    }
 
     await connectionObject.transaction(async (txn) => {
       // Insert user if not exists
@@ -87,7 +95,7 @@ export async function handleAddSdkCall(
         );
       }
 
-      // Insert event
+      // Insert event (apiKeyId is optional for webhook events)
       let eventID;
       try {
         [eventID] = await txn
@@ -116,29 +124,26 @@ export async function handleAddSdkCall(
         { eventId: eventID.id, userId: event_data.userId, apiKeyId },
       );
 
-      // Insert SDK call event
+      // Insert payment event
       try {
-        const sdkData = event_data;
-
-        await txn.insert(sdkCallEventsTable).values({
+        await txn.insert(paymentEventsTable).values({
           id: eventID.id,
-          type: sdkData.data.sdkCallType,
-          debitAmount: sdkData.data.debitAmount,
+          creditAmount: event_data.data.creditAmount,
         });
 
         logger.logOperationInfo(
           OPERATION,
-          "sdk_call_inserted",
-          "SDK call event inserted successfully",
+          "payment_inserted",
+          "Payment event inserted successfully",
           {
             eventId: eventID.id,
-            debitAmount: sdkData.data.debitAmount,
+            creditAmount: event_data.data.creditAmount,
             userId: event_data.userId,
           },
         );
       } catch (e) {
         throw StorageError.insertFailed(
-          `Failed to insert SDK call event for event ID ${eventID.id}`,
+          `Failed to insert payment event for event ID ${eventID.id}`,
           e instanceof Error ? e : new Error(String(e)),
         );
       }
@@ -149,7 +154,7 @@ export async function handleAddSdkCall(
     logger.logOperationInfo(
       OPERATION,
       "completed",
-      "SDK_CALL transaction completed successfully",
+      "PAYMENT transaction completed successfully",
       { userId: event_data.userId, apiKeyId },
     );
   } catch (e) {
@@ -165,7 +170,7 @@ export async function handleAddSdkCall(
     }
 
     throw StorageError.transactionFailed(
-      "Transaction failed while storing SDK_CALL event",
+      "Transaction failed while storing PAYMENT event",
       e instanceof Error ? e : new Error(String(e)),
     );
   }

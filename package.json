@@ -9,9 +9,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "start": "bun run src/server.ts",
-    "init_key": "bun run src/utils/generateInitialAPIKey.ts",
-    "ls:stores": "bun run src/utils/lemonsqueezy/listStores.ts",
-    "ls:variants": "bun run src/utils/lemonsqueezy/listVariants.ts"
+    "init_key": "bun run src/utils/generateInitialAPIKey.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

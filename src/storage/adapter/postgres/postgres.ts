@@ -5,9 +5,11 @@ import { StorageError } from "../../../errors/storage";
 import {
   handleAddSdkCall,
   handleAddKey,
+  handleAddPayment,
   handlePriceRequestPayment,
   handlePriceRequestSdkCall,
 } from "./handlers";
+import { logger } from "../../../errors/logger";
 
 export class PostgresAdapter implements StorageAdapterType {
   name: string;
@@ -35,7 +37,6 @@ export class PostgresAdapter implements StorageAdapterType {
         );
       }
     } catch (e) {
-      console.error("[PostgresAdapter] Event serialization failed:", e);
       // Use duck typing instead of instanceof to work with mocked modules
       if (
         e &&
@@ -63,10 +64,11 @@ export class PostgresAdapter implements StorageAdapterType {
         return await handleAddKey(event_data);
       }
 
+      case "PAYMENT": {
+        return await handleAddPayment(event_data, this.apiKeyId);
+      }
+
       default: {
-        console.error(
-          `[PostgresAdapter] Unknown event type encountered: ${event_data.type}`,
-        );
         throw StorageError.unknownEventType(event_data.type);
       }
     }
@@ -85,10 +87,6 @@ export class PostgresAdapter implements StorageAdapterType {
         );
       }
     } catch (e) {
-      console.error(
-        "[PostgresAdapter] Event serialization failed in price():",
-        e,
-      );
       // Use duck typing instead of instanceof to work with mocked modules
       if (
         e &&
@@ -114,9 +112,6 @@ export class PostgresAdapter implements StorageAdapterType {
       }
 
       default: {
-        console.error(
-          `[PostgresAdapter] Unknown event type in price(): ${event_data.type}`,
-        );
         throw StorageError.unknownEventType(event_data.type);
       }
     }

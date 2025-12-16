@@ -7,6 +7,16 @@ interface LogContext {
   [key: string]: unknown;
 }
 
+interface OperationContext extends LogContext {
+  operation: string;
+  stage?: string;
+  endpoint?: string;
+  userId?: string | number;
+  apiKeyId?: string | number;
+  eventId?: string | number;
+  requestId?: string;
+}
+
 class ErrorLogger {
   private logger: PinoLogger;
   private errorCounts = new Map<string, number>();
@@ -108,6 +118,39 @@ class ErrorLogger {
 
   getSuppressedErrors(): string[] {
     return Array.from(this.suppressedErrors);
+  }
+
+  logOperationError(
+    operation: string,
+    stage: string,
+    errorType: string,
+    message: string,
+    originalError?: Error,
+    extra?: Omit<OperationContext, "operation" | "stage">,
+  ): void {
+    this.logError(errorType, message, originalError, {
+      operation,
+      stage,
+      ...extra,
+    });
+  }
+
+  logOperationInfo(
+    operation: string,
+    stage: string,
+    message: string,
+    extra?: Omit<OperationContext, "operation" | "stage">,
+  ): void {
+    this.logInfo(message, { operation, stage, ...extra });
+  }
+
+  logOperationDebug(
+    operation: string,
+    stage: string,
+    message: string,
+    extra?: Omit<OperationContext, "operation" | "stage">,
+  ): void {
+    this.logDebug(message, { operation, stage, ...extra });
   }
 }
 

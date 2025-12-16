@@ -2,6 +2,9 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { apiKeysTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type BaseEventMetadata } from "../../../../interface/event/Event";
+import { logger } from "../../../../errors/logger";
+
+const OPERATION = "AddKey";
 
 export async function handleAddKey(
   event_data: BaseEventMetadata<"ADD_KEY">,
@@ -30,23 +33,16 @@ export async function handleAddKey(
       throw StorageError.invalidData("API key cannot be empty");
     }
 
-    console.log(
-      `[PostgresAdapter] Processing ADD_KEY event for key: ${event_data.data.name}`,
-    );
+    logger.logOperationInfo(OPERATION, "start", "Processing ADD_KEY event", {
+      keyName: event_data.data.name,
+    });
 
     return await connectionObject.transaction(async (txn) => {
       // Validate and prepare timestamp
       let reported_timestamp;
       try {
         reported_timestamp = event_data.reported_timestamp.toISO();
-        console.log(
-          `[PostgresAdapter] Reported timestamp: ${reported_timestamp}`,
-        );
       } catch (e) {
-        console.error(
-          "[PostgresAdapter] Failed to convert timestamp to ISO:",
-          e,
-        );
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
           e instanceof Error ? e : new Error(String(e)),
@@ -72,11 +68,6 @@ export async function handleAddKey(
           })
           .returning({ id: apiKeysTable.id });
       } catch (e) {
-        console.error(
-          `[PostgresAdapter] API key insert failed for key ${keyData.data.name}:`,
-          e,
-        );
-
         // Check for unique constraint violations
         if (
           e instanceof Error &&
@@ -104,15 +95,16 @@ export async function handleAddKey(
         );
       }
 
-      console.log(
-        `[PostgresAdapter] API key inserted successfully with ID: ${apiKeyRecord.id}`,
+      logger.logOperationInfo(
+        OPERATION,
+        "key_inserted",
+        "API key inserted successfully",
+        { apiKeyId: apiKeyRecord.id, keyName: keyData.data.name },
       );
 
       return apiKeyRecord;
     });
   } catch (e) {
-    console.error("[PostgresAdapter] ADD_KEY transaction failed:", e);
-
     // Use duck typing instead of instanceof to work with mocked modules
     if (
       e &&
