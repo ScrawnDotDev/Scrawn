@@ -29,9 +29,14 @@ export async function createAPIKey(
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
 
-    logger.logOperationInfo(OPERATION, "authenticated", "Request authenticated", {
-      apiKeyId,
-    });
+    logger.logOperationInfo(
+      OPERATION,
+      "authenticated",
+      "Request authenticated",
+      {
+        apiKeyId,
+      },
+    );
 
     // Validate the incoming request against the schema
     let validatedData;
@@ -87,10 +92,15 @@ export async function createAPIKey(
       );
     }
 
-    logger.logOperationInfo(OPERATION, "completed", "API key created successfully", {
-      apiKeyId: keyEventData.id,
-      name: validatedData.name,
-    });
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "API key created successfully",
+      {
+        apiKeyId: keyEventData.id,
+        name: validatedData.name,
+      },
+    );
 
     return create(CreateAPIKeyResponseSchema, {
       apiKeyId: keyEventData.id,

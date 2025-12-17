@@ -1,6 +1,7 @@
 # Agent Guidelines for Scrawn Backend
 
 ## Commands
+
 - **Test all**: `bun test` or `vitest`
 - **Test single file**: `vitest src/__tests__/unit/path/to/test.test.ts`
 - **Test with UI**: `bun run test:ui`
@@ -9,6 +10,7 @@
 - **DB migrations**: `bunx drizzle-kit push`
 
 ## Code Style
+
 - **Runtime**: Bun with TypeScript ESNext, strict mode enabled
 - **Imports**: Use `type` keyword for type-only imports (e.g., `import type { Foo } from "..."`)
 - **Types**: Always use explicit types for function parameters and return values; avoid `any`

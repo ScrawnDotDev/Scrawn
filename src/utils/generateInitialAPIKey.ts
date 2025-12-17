@@ -4,7 +4,9 @@ import { randomUUID } from "crypto";
 const HMAC_SECRET = process.env.HMAC_SECRET;
 
 if (!HMAC_SECRET) {
-  console.error("Error: HMAC_SECRET environment variable is not set. (check .env.example file)");
+  console.error(
+    "Error: HMAC_SECRET environment variable is not set. (check .env.example file)",
+  );
   process.exit(1);
 }
 

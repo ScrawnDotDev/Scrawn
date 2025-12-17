@@ -111,7 +111,12 @@ export async function handleLemonSqueezyWebhook(
   res: ServerResponse | Http2ServerResponse,
 ): Promise<void> {
   try {
-    logger.logOperationInfo(OPERATION, "start", "Processing webhook request", {});
+    logger.logOperationInfo(
+      OPERATION,
+      "start",
+      "Processing webhook request",
+      {},
+    );
 
     // Read the raw body
     const rawBody = await readBody(req);
@@ -237,12 +242,11 @@ export async function handleLemonSqueezyWebhook(
     // Extract payment amount (convert from cents to the integer format used in DB)
     const creditAmount = Math.round(payload.data.attributes.total);
 
-    logger.logOperationInfo(
-      OPERATION,
-      "payment_data",
-      "Processing payment",
-      { userId, apiKeyId, creditAmount },
-    );
+    logger.logOperationInfo(OPERATION, "payment_data", "Processing payment", {
+      userId,
+      apiKeyId,
+      creditAmount,
+    });
 
     // Create and store the payment event
     try {

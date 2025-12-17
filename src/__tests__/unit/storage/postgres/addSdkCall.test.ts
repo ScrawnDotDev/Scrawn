@@ -93,8 +93,12 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key-pos");
       await adapter.add();
 
-      const insertedValues = mockTransaction.values.mock.calls.map((c: any) => c[0]);
-      const sdkCallRecord = insertedValues.find((v: any) => v && v.debitAmount === 500);
+      const insertedValues = mockTransaction.values.mock.calls.map(
+        (c: any) => c[0],
+      );
+      const sdkCallRecord = insertedValues.find(
+        (v: any) => v && v.debitAmount === 500,
+      );
 
       expect(sdkCallRecord).toBeDefined();
       expect(sdkCallRecord.debitAmount).toBeGreaterThan(0);

@@ -5,6 +5,7 @@ The backend service for Scrawn - a usage-based billing platform with gRPC API en
 ## Overview
 
 Scrawn backend provides gRPC services for:
+
 - **Event tracking** - Register SDK calls and usage events
 - **Authentication** - API key management
 - **Payment processing** - Checkout link generation via Lemon Squeezy
@@ -12,6 +13,7 @@ Scrawn backend provides gRPC services for:
 Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endpoint usage, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
 
 ## Railway Quickstart
+
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/o22nR_?referralCode=jdhNLd&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 ## Prerequisites
@@ -23,13 +25,15 @@ Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endp
 ## Setup
 
 1. **Install dependencies**
+
    ```bash
    bun install
    ```
 
 2. **Configure environment variables**
-   
+
    Create a `.env.local` file in the backend directory:
+
    ```env
    DATABASE_URL=postgresql://user:password@localhost:5432/scrawn
    HMAC_SECRET=your-hmac-secret-key
@@ -40,11 +44,13 @@ Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endp
    ```
 
 3. **Run database migrations**
+
    ```bash
    bunx drizzle-kit push
    ```
 
 4. **Generate initial API key** (optional)
+
    ```bash
    bun run init_key
    ```
@@ -57,11 +63,13 @@ Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endp
 ## Running the Server
 
 **Development mode** (with auto-reload):
+
 ```bash
 bun run dev:backend
 ```
 
 **Production mode**:
+
 ```bash
 bun start
 ```

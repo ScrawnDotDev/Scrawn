@@ -6,9 +6,7 @@ export class AddKey implements AddKeyEventType {
   public reported_timestamp: DateTime;
   public readonly type = "ADD_KEY" as const;
 
-  constructor(
-    public data: AddKeyEventData,
-  ) {
+  constructor(public data: AddKeyEventData) {
     this.reported_timestamp = DateTime.utc();
   }
 

@@ -33,9 +33,14 @@ export async function createCheckoutLink(
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
 
-    logger.logOperationInfo(OPERATION, "authenticated", "Request authenticated", {
-      apiKeyId,
-    });
+    logger.logOperationInfo(
+      OPERATION,
+      "authenticated",
+      "Request authenticated",
+      {
+        apiKeyId,
+      },
+    );
 
     // Read environment configuration
     const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;

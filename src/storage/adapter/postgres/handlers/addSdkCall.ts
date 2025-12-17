@@ -153,7 +153,6 @@ export async function handleAddSdkCall(
       { userId: event_data.userId, apiKeyId },
     );
   } catch (e) {
-
     // Use duck typing instead of instanceof to work with mocked modules
     if (
       e &&

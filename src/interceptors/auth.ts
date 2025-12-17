@@ -23,7 +23,9 @@ export function authInterceptor(): Interceptor {
     try {
       const split = req.url.split("/");
       endpoint = `${split[split.length - 2]}/${split[split.length - 1]}`;
-      logger.logDebug(`Processing request to ${endpoint}`, { endpoint: req.url });
+      logger.logDebug(`Processing request to ${endpoint}`, {
+        endpoint: req.url,
+      });
     } catch (e) {
       logger.logDebug("Could not parse endpoint for logging", { url: req.url });
     }
@@ -155,7 +157,9 @@ export function authInterceptor(): Interceptor {
         expiresAt: apiKeyRecord.expiresAt,
       });
 
-      logger.logDebug("Valid API key from database", { apiKeyId: apiKeyRecord.id });
+      logger.logDebug("Valid API key from database", {
+        apiKeyId: apiKeyRecord.id,
+      });
 
       // Attach API key ID to context for use in handlers
       req.contextValues.set(apiKeyContextKey, apiKeyRecord.id);

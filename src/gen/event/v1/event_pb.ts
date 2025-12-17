@@ -2,15 +2,28 @@
 // @generated from file event/v1/event.proto (package event.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type {
+  GenEnum,
+  GenFile,
+  GenMessage,
+  GenService,
+} from "@bufbuild/protobuf/codegenv2";
+import {
+  enumDesc,
+  fileDesc,
+  messageDesc,
+  serviceDesc,
+} from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file event/v1/event.proto.
  */
-export const file_event_v1_event: GenFile = /*@__PURE__*/
-  fileDesc("ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIl8KB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRIQCgZhbW91bnQYAiABKAJIABINCgN0YWcYAyABKAlIAEIHCgVkZWJpdCInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJIqUBChJTdHJlYW1FdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIABIuCgxhaVRva2VuVXNhZ2UYBCABKAsyFi5ldmVudC52MS5BSVRva2VuVXNhZ2VIAEIGCgRkYXRhIr0BCgxBSVRva2VuVXNhZ2USDQoFbW9kZWwYASABKAkSEwoLaW5wdXRUb2tlbnMYAiABKAUSFAoMb3V0cHV0VG9rZW5zGAMgASgFEhUKC2lucHV0QW1vdW50GAQgASgCSAASEgoIaW5wdXRUYWcYBSABKAlIABIWCgxvdXRwdXRBbW91bnQYBiABKAJIARITCglvdXRwdXRUYWcYByABKAlIAUIMCgppbnB1dERlYml0Qg0KC291dHB1dERlYml0Ij8KE1N0cmVhbUV2ZW50UmVzcG9uc2USFwoPZXZlbnRzUHJvY2Vzc2VkGAEgASgFEg8KB21lc3NhZ2UYAiABKAkqSQoJRXZlbnRUeXBlEhoKFkVWRU5UX1RZUEVfVU5TUEVDSUZJRUQQABIMCghTREtfQ0FMTBABEhIKDkFJX1RPS0VOX1VTQUdFEAIqSAoLU0RLQ2FsbFR5cGUSGwoXU0RLQ2FsbFR5cGVfVU5TUEVDSUZJRUQQABIHCgNSQVcQARITCg9NSURETEVXQVJFX0NBTEwQAjKzAQoMRXZlbnRTZXJ2aWNlElIKDVJlZ2lzdGVyRXZlbnQSHi5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVxdWVzdBofLmV2ZW50LnYxLlJlZ2lzdGVyRXZlbnRSZXNwb25zZSIAEk8KDFN0cmVhbUV2ZW50cxIcLmV2ZW50LnYxLlN0cmVhbUV2ZW50UmVxdWVzdBodLmV2ZW50LnYxLlN0cmVhbUV2ZW50UmVzcG9uc2UiACgBYgZwcm90bzM");
+export const file_event_v1_event: GenFile =
+  /*@__PURE__*/
+  fileDesc(
+    "ChRldmVudC92MS9ldmVudC5wcm90bxIIZXZlbnQudjEidwoUUmVnaXN0ZXJFdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIAEIGCgRkYXRhIl8KB1NES0NhbGwSKgoLc2RrQ2FsbFR5cGUYASABKA4yFS5ldmVudC52MS5TREtDYWxsVHlwZRIQCgZhbW91bnQYAiABKAJIABINCgN0YWcYAyABKAlIAEIHCgVkZWJpdCInChVSZWdpc3RlckV2ZW50UmVzcG9uc2USDgoGcmFuZG9tGAEgASgJIqUBChJTdHJlYW1FdmVudFJlcXVlc3QSIQoEdHlwZRgBIAEoDjITLmV2ZW50LnYxLkV2ZW50VHlwZRIOCgZ1c2VySWQYAiABKAkSJAoHc2RrQ2FsbBgDIAEoCzIRLmV2ZW50LnYxLlNES0NhbGxIABIuCgxhaVRva2VuVXNhZ2UYBCABKAsyFi5ldmVudC52MS5BSVRva2VuVXNhZ2VIAEIGCgRkYXRhIr0BCgxBSVRva2VuVXNhZ2USDQoFbW9kZWwYASABKAkSEwoLaW5wdXRUb2tlbnMYAiABKAUSFAoMb3V0cHV0VG9rZW5zGAMgASgFEhUKC2lucHV0QW1vdW50GAQgASgCSAASEgoIaW5wdXRUYWcYBSABKAlIABIWCgxvdXRwdXRBbW91bnQYBiABKAJIARITCglvdXRwdXRUYWcYByABKAlIAUIMCgppbnB1dERlYml0Qg0KC291dHB1dERlYml0Ij8KE1N0cmVhbUV2ZW50UmVzcG9uc2USFwoPZXZlbnRzUHJvY2Vzc2VkGAEgASgFEg8KB21lc3NhZ2UYAiABKAkqSQoJRXZlbnRUeXBlEhoKFkVWRU5UX1RZUEVfVU5TUEVDSUZJRUQQABIMCghTREtfQ0FMTBABEhIKDkFJX1RPS0VOX1VTQUdFEAIqSAoLU0RLQ2FsbFR5cGUSGwoXU0RLQ2FsbFR5cGVfVU5TUEVDSUZJRUQQABIHCgNSQVcQARITCg9NSURETEVXQVJFX0NBTEwQAjKzAQoMRXZlbnRTZXJ2aWNlElIKDVJlZ2lzdGVyRXZlbnQSHi5ldmVudC52MS5SZWdpc3RlckV2ZW50UmVxdWVzdBofLmV2ZW50LnYxLlJlZ2lzdGVyRXZlbnRSZXNwb25zZSIAEk8KDFN0cmVhbUV2ZW50cxIcLmV2ZW50LnYxLlN0cmVhbUV2ZW50UmVxdWVzdBodLmV2ZW50LnYxLlN0cmVhbUV2ZW50UmVzcG9uc2UiACgBYgZwcm90bzM",
+  );
 
 /**
  * @generated from message event.v1.RegisterEventRequest
@@ -29,20 +42,23 @@ export type RegisterEventRequest = Message<"event.v1.RegisterEventRequest"> & {
   /**
    * @generated from oneof event.v1.RegisterEventRequest.data
    */
-  data: {
-    /**
-     * @generated from field: event.v1.SDKCall sdkCall = 3;
-     */
-    value: SDKCall;
-    case: "sdkCall";
-  } | { case: undefined; value?: undefined };
+  data:
+    | {
+        /**
+         * @generated from field: event.v1.SDKCall sdkCall = 3;
+         */
+        value: SDKCall;
+        case: "sdkCall";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message event.v1.RegisterEventRequest.
  * Use `create(RegisterEventRequestSchema)` to create a new message.
  */
-export const RegisterEventRequestSchema: GenMessage<RegisterEventRequest> = /*@__PURE__*/
+export const RegisterEventRequestSchema: GenMessage<RegisterEventRequest> =
+  /*@__PURE__*/
   messageDesc(file_event_v1_event, 0);
 
 /**
@@ -57,43 +73,49 @@ export type SDKCall = Message<"event.v1.SDKCall"> & {
   /**
    * @generated from oneof event.v1.SDKCall.debit
    */
-  debit: {
-    /**
-     * @generated from field: float amount = 2;
-     */
-    value: number;
-    case: "amount";
-  } | {
-    /**
-     * @generated from field: string tag = 3;
-     */
-    value: string;
-    case: "tag";
-  } | { case: undefined; value?: undefined };
+  debit:
+    | {
+        /**
+         * @generated from field: float amount = 2;
+         */
+        value: number;
+        case: "amount";
+      }
+    | {
+        /**
+         * @generated from field: string tag = 3;
+         */
+        value: string;
+        case: "tag";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message event.v1.SDKCall.
  * Use `create(SDKCallSchema)` to create a new message.
  */
-export const SDKCallSchema: GenMessage<SDKCall> = /*@__PURE__*/
+export const SDKCallSchema: GenMessage<SDKCall> =
+  /*@__PURE__*/
   messageDesc(file_event_v1_event, 1);
 
 /**
  * @generated from message event.v1.RegisterEventResponse
  */
-export type RegisterEventResponse = Message<"event.v1.RegisterEventResponse"> & {
-  /**
-   * @generated from field: string random = 1;
-   */
-  random: string;
-};
+export type RegisterEventResponse =
+  Message<"event.v1.RegisterEventResponse"> & {
+    /**
+     * @generated from field: string random = 1;
+     */
+    random: string;
+  };
 
 /**
  * Describes the message event.v1.RegisterEventResponse.
  * Use `create(RegisterEventResponseSchema)` to create a new message.
  */
-export const RegisterEventResponseSchema: GenMessage<RegisterEventResponse> = /*@__PURE__*/
+export const RegisterEventResponseSchema: GenMessage<RegisterEventResponse> =
+  /*@__PURE__*/
   messageDesc(file_event_v1_event, 2);
 
 /**
@@ -113,26 +135,30 @@ export type StreamEventRequest = Message<"event.v1.StreamEventRequest"> & {
   /**
    * @generated from oneof event.v1.StreamEventRequest.data
    */
-  data: {
-    /**
-     * @generated from field: event.v1.SDKCall sdkCall = 3;
-     */
-    value: SDKCall;
-    case: "sdkCall";
-  } | {
-    /**
-     * @generated from field: event.v1.AITokenUsage aiTokenUsage = 4;
-     */
-    value: AITokenUsage;
-    case: "aiTokenUsage";
-  } | { case: undefined; value?: undefined };
+  data:
+    | {
+        /**
+         * @generated from field: event.v1.SDKCall sdkCall = 3;
+         */
+        value: SDKCall;
+        case: "sdkCall";
+      }
+    | {
+        /**
+         * @generated from field: event.v1.AITokenUsage aiTokenUsage = 4;
+         */
+        value: AITokenUsage;
+        case: "aiTokenUsage";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message event.v1.StreamEventRequest.
  * Use `create(StreamEventRequestSchema)` to create a new message.
  */
-export const StreamEventRequestSchema: GenMessage<StreamEventRequest> = /*@__PURE__*/
+export const StreamEventRequestSchema: GenMessage<StreamEventRequest> =
+  /*@__PURE__*/
   messageDesc(file_event_v1_event, 3);
 
 /**
@@ -157,43 +183,50 @@ export type AITokenUsage = Message<"event.v1.AITokenUsage"> & {
   /**
    * @generated from oneof event.v1.AITokenUsage.inputDebit
    */
-  inputDebit: {
-    /**
-     * @generated from field: float inputAmount = 4;
-     */
-    value: number;
-    case: "inputAmount";
-  } | {
-    /**
-     * @generated from field: string inputTag = 5;
-     */
-    value: string;
-    case: "inputTag";
-  } | { case: undefined; value?: undefined };
+  inputDebit:
+    | {
+        /**
+         * @generated from field: float inputAmount = 4;
+         */
+        value: number;
+        case: "inputAmount";
+      }
+    | {
+        /**
+         * @generated from field: string inputTag = 5;
+         */
+        value: string;
+        case: "inputTag";
+      }
+    | { case: undefined; value?: undefined };
 
   /**
    * @generated from oneof event.v1.AITokenUsage.outputDebit
    */
-  outputDebit: {
-    /**
-     * @generated from field: float outputAmount = 6;
-     */
-    value: number;
-    case: "outputAmount";
-  } | {
-    /**
-     * @generated from field: string outputTag = 7;
-     */
-    value: string;
-    case: "outputTag";
-  } | { case: undefined; value?: undefined };
+  outputDebit:
+    | {
+        /**
+         * @generated from field: float outputAmount = 6;
+         */
+        value: number;
+        case: "outputAmount";
+      }
+    | {
+        /**
+         * @generated from field: string outputTag = 7;
+         */
+        value: string;
+        case: "outputTag";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message event.v1.AITokenUsage.
  * Use `create(AITokenUsageSchema)` to create a new message.
  */
-export const AITokenUsageSchema: GenMessage<AITokenUsage> = /*@__PURE__*/
+export const AITokenUsageSchema: GenMessage<AITokenUsage> =
+  /*@__PURE__*/
   messageDesc(file_event_v1_event, 4);
 
 /**
@@ -215,7 +248,8 @@ export type StreamEventResponse = Message<"event.v1.StreamEventResponse"> & {
  * Describes the message event.v1.StreamEventResponse.
  * Use `create(StreamEventResponseSchema)` to create a new message.
  */
-export const StreamEventResponseSchema: GenMessage<StreamEventResponse> = /*@__PURE__*/
+export const StreamEventResponseSchema: GenMessage<StreamEventResponse> =
+  /*@__PURE__*/
   messageDesc(file_event_v1_event, 5);
 
 /**
@@ -241,7 +275,8 @@ export enum EventType {
 /**
  * Describes the enum event.v1.EventType.
  */
-export const EventTypeSchema: GenEnum<EventType> = /*@__PURE__*/
+export const EventTypeSchema: GenEnum<EventType> =
+  /*@__PURE__*/
   enumDesc(file_event_v1_event, 0);
 
 /**
@@ -267,7 +302,8 @@ export enum SDKCallType {
 /**
  * Describes the enum event.v1.SDKCallType.
  */
-export const SDKCallTypeSchema: GenEnum<SDKCallType> = /*@__PURE__*/
+export const SDKCallTypeSchema: GenEnum<SDKCallType> =
+  /*@__PURE__*/
   enumDesc(file_event_v1_event, 1);
 
 /**
@@ -283,7 +319,7 @@ export const EventService: GenService<{
     methodKind: "unary";
     input: typeof RegisterEventRequestSchema;
     output: typeof RegisterEventResponseSchema;
-  },
+  };
   /**
    * StreamEvents streams events from client to server (e.g., AI token usage)
    *
@@ -293,7 +329,5 @@ export const EventService: GenService<{
     methodKind: "client_streaming";
     input: typeof StreamEventRequestSchema;
     output: typeof StreamEventResponseSchema;
-  },
-}> = /*@__PURE__*/
-  serviceDesc(file_event_v1_event, 0);
-
+  };
+}> = /*@__PURE__*/ serviceDesc(file_event_v1_event, 0);

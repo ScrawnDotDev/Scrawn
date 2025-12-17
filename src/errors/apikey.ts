@@ -30,7 +30,10 @@ export class APIKeyError extends ConnectError {
     Object.setPrototypeOf(this, APIKeyError.prototype);
   }
 
-  static invalidExpiration(details?: string, originalError?: Error): APIKeyError {
+  static invalidExpiration(
+    details?: string,
+    originalError?: Error,
+  ): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.INVALID_EXPIRATION,
       message: details
@@ -64,13 +67,18 @@ export class APIKeyError extends ConnectError {
   static notFound(apiKeyId?: string, originalError?: Error): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.NOT_FOUND,
-      message: apiKeyId ? `API key not found: ${apiKeyId}` : "API key not found",
+      message: apiKeyId
+        ? `API key not found: ${apiKeyId}`
+        : "API key not found",
       code: Code.NotFound,
       originalError,
     });
   }
 
-  static revocationFailed(details?: string, originalError?: Error): APIKeyError {
+  static revocationFailed(
+    details?: string,
+    originalError?: Error,
+  ): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.REVOCATION_FAILED,
       message: details
