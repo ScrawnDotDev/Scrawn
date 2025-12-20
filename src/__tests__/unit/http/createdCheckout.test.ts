@@ -21,11 +21,23 @@ class PaymentMock {
   public userId: string;
   public data: unknown;
   public readonly type = "PAYMENT" as const;
+  public reported_timestamp = { toISO: () => "2024-01-01T00:00:00.000Z" };
 
   constructor(userId: string, data: unknown) {
     this.userId = userId;
     this.data = data;
     paymentConstructorCalls.push({ userId, data });
+  }
+
+  serialize() {
+    return {
+      SQL: {
+        type: this.type,
+        userId: this.userId,
+        reported_timestamp: this.reported_timestamp,
+        data: this.data,
+      },
+    };
   }
 }
 
@@ -50,11 +62,23 @@ vi.mock("../../../events/RawEvents/Payment.ts", () => ({
     public userId: string;
     public data: unknown;
     public readonly type = "PAYMENT" as const;
+    public reported_timestamp = { toISO: () => "2024-01-01T00:00:00.000Z" };
 
     constructor(userId: string, data: unknown) {
       this.userId = userId;
       this.data = data;
       paymentConstructorCalls.push({ userId, data });
+    }
+
+    serialize() {
+      return {
+        SQL: {
+          type: this.type,
+          userId: this.userId,
+          reported_timestamp: this.reported_timestamp,
+          data: this.data,
+        },
+      };
     }
   },
 }));

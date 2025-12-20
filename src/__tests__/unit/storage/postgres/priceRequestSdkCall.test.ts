@@ -33,7 +33,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       mockDb.groupBy.mockResolvedValueOnce([{ price: "1500" }]);
 
       const adapter = new PostgresAdapter(requestEvent);
-      const price = await adapter.price();
+      const serialized = requestEvent.serialize();
+      const price = await adapter.price(serialized);
 
       expect(price).toBe(1500);
     });
@@ -47,7 +48,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       mockDb.groupBy.mockResolvedValueOnce([]);
 
       const adapter = new PostgresAdapter(requestEvent);
-      const price = await adapter.price();
+      const serialized = requestEvent.serialize();
+      const price = await adapter.price(serialized);
 
       expect(price).toBe(0);
     });
@@ -61,7 +63,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       mockDb.groupBy.mockResolvedValueOnce([{ price: null }]);
 
       const adapter = new PostgresAdapter(requestEvent);
-      const price = await adapter.price();
+      const serialized = requestEvent.serialize();
+      const price = await adapter.price(serialized);
 
       expect(price).toBe(0);
     });
@@ -75,7 +78,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       mockDb.groupBy.mockResolvedValueOnce([{ price: "12345" }]);
 
       const adapter = new PostgresAdapter(requestEvent);
-      const price = await adapter.price();
+      const serialized = requestEvent.serialize();
+      const price = await adapter.price(serialized);
 
       expect(typeof price).toBe("number");
       expect(price).toBe(12345);
@@ -99,7 +103,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       };
 
       const adapter = new PostgresAdapter(invalidEvent as any);
-      await expect(adapter.price()).rejects.toThrow("Missing userId");
+      const serialized = invalidEvent.serialize() as any;
+      await expect(adapter.price(serialized)).rejects.toThrow("Missing userId");
     });
 
     it("throws error when userId is empty string", async () => {
@@ -119,7 +124,10 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       };
 
       const adapter = new PostgresAdapter(invalidEvent as any);
-      await expect(adapter.price()).rejects.toThrow("Invalid userId format");
+      const serialized = invalidEvent.serialize() as any;
+      await expect(adapter.price(serialized)).rejects.toThrow(
+        "Invalid userId format",
+      );
     });
   });
 
@@ -135,7 +143,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       );
 
       const adapter = new PostgresAdapter(requestEvent);
-      await expect(adapter.price()).rejects.toThrow();
+      const serialized = requestEvent.serialize();
+      await expect(adapter.price(serialized)).rejects.toThrow();
     });
 
     it("handles null query result", async () => {
@@ -147,7 +156,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       mockDb.groupBy.mockResolvedValueOnce(null);
 
       const adapter = new PostgresAdapter(requestEvent);
-      await expect(adapter.price()).rejects.toThrow(
+      const serialized = requestEvent.serialize();
+      await expect(adapter.price(serialized)).rejects.toThrow(
         "Price query returned null",
       );
     });
@@ -161,7 +171,8 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       mockDb.groupBy.mockResolvedValueOnce({ price: "1500" });
 
       const adapter = new PostgresAdapter(requestEvent);
-      await expect(adapter.price()).rejects.toThrow(
+      const serialized = requestEvent.serialize();
+      await expect(adapter.price(serialized)).rejects.toThrow(
         "Query result is not an array",
       );
     });
