@@ -101,9 +101,8 @@ export async function createCheckoutLink(
     let custom_price: number;
     try {
       const event = new RequestPayment(validatedData.userId, null);
-      const storageAdapter = await StorageAdapterFactory.getStorageAdapter(
-        event,
-      );
+      const storageAdapter =
+        await StorageAdapterFactory.getStorageAdapter(event);
 
       if (!storageAdapter) {
         throw PaymentError.storageAdapterFailed(

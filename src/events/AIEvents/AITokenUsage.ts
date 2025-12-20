@@ -1,4 +1,7 @@
-import type { AITokenUsageEvent, AITokenUsageEventData } from "../../interface/event/Event";
+import type {
+  AITokenUsageEvent,
+  AITokenUsageEventData,
+} from "../../interface/event/Event";
 import { DateTime } from "luxon";
 import type { UserId } from "../../config/identifiers";
 

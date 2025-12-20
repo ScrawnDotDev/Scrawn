@@ -1,4 +1,7 @@
-import type { SDKCallEvent, SDKCallEventData } from "../../interface/event/Event";
+import type {
+  SDKCallEvent,
+  SDKCallEventData,
+} from "../../interface/event/Event";
 import { DateTime } from "luxon";
 import type { UserId } from "../../config/identifiers";
 

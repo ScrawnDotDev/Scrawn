@@ -10,7 +10,10 @@ import {
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
 } from "./handlers";
-import type { SerializedEvent, EventKind } from "../../../interface/event/Event";
+import type {
+  SerializedEvent,
+  EventKind,
+} from "../../../interface/event/Event";
 
 export class PostgresAdapter implements StorageAdapter {
   name: string;
@@ -80,9 +83,7 @@ export class PostgresAdapter implements StorageAdapter {
     }
   }
 
-  async price(
-    serialized: SerializedEvent<EventKind>,
-  ): Promise<number> {
+  async price(serialized: SerializedEvent<EventKind>): Promise<number> {
     let event_data;
 
     try {

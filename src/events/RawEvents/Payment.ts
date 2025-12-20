@@ -1,4 +1,7 @@
-import type { PaymentEvent, PaymentEventData } from "../../interface/event/Event";
+import type {
+  PaymentEvent,
+  PaymentEventData,
+} from "../../interface/event/Event";
 import { DateTime } from "luxon";
 import type { UserId } from "../../config/identifiers";
 

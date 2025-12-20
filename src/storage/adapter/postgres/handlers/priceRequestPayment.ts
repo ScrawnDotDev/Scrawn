@@ -22,9 +22,7 @@ export async function handlePriceRequestPayment(
     );
 
     const event = new RequestSDKCall(event_data.userId, null);
-    const storageAdapter = await StorageAdapterFactory.getStorageAdapter(
-      event
-    );
+    const storageAdapter = await StorageAdapterFactory.getStorageAdapter(event);
 
     if (!storageAdapter) {
       throw StorageError.unknown(
