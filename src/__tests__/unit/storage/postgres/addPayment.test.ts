@@ -42,7 +42,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-123" }]);
 
       const adapter = new PostgresAdapter(paymentEvent, "api-key-123");
-      await adapter.add();
+      const serialized = paymentEvent.serialize();
+      await adapter.add(serialized);
 
       const eventInsertCall = mockTransaction.values.mock.calls[1][0];
       expect(eventInsertCall.api_keyId).toBe("api-key-123");
@@ -56,7 +57,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-456" }]);
 
       const adapter = new PostgresAdapter(paymentEvent);
-      await adapter.add();
+      const serialized = paymentEvent.serialize();
+      await adapter.add(serialized);
 
       const eventInsertCall = mockTransaction.values.mock.calls[1][0];
       expect(eventInsertCall.api_keyId).toBeUndefined();
@@ -70,7 +72,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-3" }]);
 
       const adapter = new PostgresAdapter(paymentEvent);
-      await adapter.add();
+      const serialized = paymentEvent.serialize();
+      await adapter.add(serialized);
 
       const paymentInsertCall = mockTransaction.values.mock.calls[2][0];
       expect(paymentInsertCall.creditAmount).toBe(15000);
@@ -85,7 +88,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       mockTransaction.returning.mockResolvedValueOnce([{ id: "event-id-pos" }]);
 
       const adapter = new PostgresAdapter(paymentEvent);
-      await adapter.add();
+      const serialized = paymentEvent.serialize();
+      await adapter.add(serialized);
 
       const paymentInsertCall = mockTransaction.values.mock.calls[2][0];
       expect(paymentInsertCall.creditAmount).toBe(1);
@@ -111,7 +115,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       };
 
       const adapter = new PostgresAdapter(invalidEvent as any);
-      await expect(adapter.add()).rejects.toThrow(/positive/);
+      const serialized = invalidEvent.serialize() as any;
+      await expect(adapter.add(serialized)).rejects.toThrow(/positive/);
     });
 
     it("throws error when creditAmount is negative", async () => {
@@ -131,7 +136,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       };
 
       const adapter = new PostgresAdapter(invalidEvent as any);
-      await expect(adapter.add()).rejects.toThrow(/positive/);
+      const serialized = invalidEvent.serialize() as any;
+      await expect(adapter.add(serialized)).rejects.toThrow(/positive/);
     });
 
     it("throws error when timestamp is empty", async () => {
@@ -155,7 +161,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       mockTransaction.returning.mockResolvedValueOnce([]);
 
       const adapter = new PostgresAdapter(invalidEvent as any);
-      await expect(adapter.add()).rejects.toThrow(
+      const serialized = invalidEvent.serialize() as any;
+      await expect(adapter.add(serialized)).rejects.toThrow(
         "Timestamp is undefined or empty",
       );
     });
@@ -173,7 +180,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       );
 
       const adapter = new PostgresAdapter(paymentEvent);
-      await expect(adapter.add()).rejects.toThrow();
+      const serialized = paymentEvent.serialize();
+      await expect(adapter.add(serialized)).rejects.toThrow();
     });
 
     it("handles empty event ID response", async () => {
@@ -185,7 +193,8 @@ describe("PostgresAdapter - addPayment handler", () => {
       mockTransaction.returning.mockResolvedValueOnce([]);
 
       const adapter = new PostgresAdapter(paymentEvent);
-      await expect(adapter.add()).rejects.toThrow(
+      const serialized = paymentEvent.serialize();
+      await expect(adapter.add(serialized)).rejects.toThrow(
         "Event insert returned no ID",
       );
     });

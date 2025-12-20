@@ -1,9 +1,11 @@
-import type { PaymentEventType } from "../../interface/event/Event";
+import type {
+  PaymentEvent,
+  PaymentEventData,
+} from "../../interface/event/Event";
 import { DateTime } from "luxon";
-import type { PaymentEventData } from "../../interface/event/Event";
-import { type UserId } from "../../config/identifiers";
+import type { UserId } from "../../config/identifiers";
 
-export class Payment implements PaymentEventType {
+export class Payment implements PaymentEvent {
   public reported_timestamp: DateTime;
   public readonly type = "PAYMENT" as const;
 

@@ -4,7 +4,7 @@ import { AuthError } from "../errors/auth";
 import { EventError } from "../errors/event";
 import { eventSchema } from "../zod/event";
 import { ZodError } from "zod";
-import type { EventType } from "../interface/event/Event";
+import type { Event, SqlRecord } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
 import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
@@ -58,7 +58,7 @@ export function createEventInstance(eventSkeleton: {
   type: string;
   userId: string;
   data: any;
-}): EventType {
+}): Event {
   try {
     switch (eventSkeleton.type) {
       case "SDK_CALL":
@@ -80,7 +80,7 @@ export function createEventInstance(eventSkeleton: {
  * Store the event using the appropriate storage adapter
  */
 export async function storeEvent(
-  event: EventType,
+  event: Event,
   apiKeyId: string,
 ): Promise<void> {
   try {
@@ -88,7 +88,7 @@ export async function storeEvent(
       event,
       apiKeyId,
     );
-    await adapter.add();
+    await adapter.add(event.serialize());
   } catch (error) {
     throw EventError.serializationError(
       "Failed to store event",
@@ -101,7 +101,7 @@ export async function storeEvent(
  * Store multiple events in a batch - groups by type and uses batch operations when possible
  */
 export async function storeEventsBatch(
-  events: EventType[],
+  events: Event[],
   apiKeyId: string,
 ): Promise<void> {
   if (events.length === 0) {
@@ -109,7 +109,7 @@ export async function storeEventsBatch(
   }
 
   // Group events by type
-  const eventsByType = new Map<string, EventType[]>();
+  const eventsByType = new Map<string, Event[]>();
   for (const event of events) {
     const type = event.type;
     if (!eventsByType.has(type)) {
@@ -123,11 +123,7 @@ export async function storeEventsBatch(
     try {
       if (type === "AI_TOKEN_USAGE") {
         // Batch process AI_TOKEN_USAGE events
-        const serializedEvents: Array<
-          import("../interface/event/Event").BaseEventMetadata<"AI_TOKEN_USAGE"> & {
-            userId: string;
-          }
-        > = [];
+        const serializedEvents: Array<SqlRecord<"AI_TOKEN_USAGE">> = [];
 
         for (const event of typeEvents) {
           const { SQL } = event.serialize();
@@ -141,7 +137,7 @@ export async function storeEventsBatch(
               `Expected AI_TOKEN_USAGE but got ${SQL.type}`,
             );
           }
-          serializedEvents.push(SQL as any);
+          serializedEvents.push(SQL as SqlRecord<"AI_TOKEN_USAGE">);
         }
 
         await handleAddAiTokenUsage(serializedEvents, apiKeyId);

@@ -1,6 +1,9 @@
-import { DateTime } from "luxon";
-import { type UserId } from "../../config/identifiers";
+import type { DateTime } from "luxon";
+import type { UserId } from "../../config/identifiers";
 
+/**
+ * Event payload data structures
+ */
 export type SDKCallEventData = {
   sdkCallType: "RAW" | "MIDDLEWARE_CALL";
   debitAmount: number;
@@ -29,7 +32,18 @@ export type RequestPaymentEventData = null;
 export type RequestSDKCallEventData = null;
 
 /**
- * Mapping of event types to their data structures
+ * Event kind discriminator
+ */
+export type EventKind =
+  | "SDK_CALL"
+  | "AI_TOKEN_USAGE"
+  | "ADD_KEY"
+  | "PAYMENT"
+  | "REQUEST_PAYMENT"
+  | "REQUEST_SDK_CALL";
+
+/**
+ * Mapping of event kinds to their data structures
  */
 export type EventDataMap = {
   SDK_CALL: SDKCallEventData;
@@ -40,84 +54,98 @@ export type EventDataMap = {
   REQUEST_SDK_CALL: RequestSDKCallEventData;
 };
 
-export type EventUnion<T extends keyof EventDataMap> = {
-  [K in keyof EventDataMap]: EventDataMap[K];
-}[T];
-
-export type BaseEventMetadata<T extends keyof EventDataMap> = {
-  type: T;
-  reported_timestamp: DateTime;
-  data: EventDataMap[T];
-};
-
-type EventMetadataMap = {
-  ADD_KEY: BaseEventMetadata<"ADD_KEY">;
-  SDK_CALL: BaseEventMetadata<"SDK_CALL"> & { userId: UserId };
-  AI_TOKEN_USAGE: BaseEventMetadata<"AI_TOKEN_USAGE"> & { userId: UserId };
-  PAYMENT: BaseEventMetadata<"PAYMENT"> & { userId: UserId };
-  REQUEST_PAYMENT: BaseEventMetadata<"REQUEST_PAYMENT"> & { userId: UserId };
-  REQUEST_SDK_CALL: BaseEventMetadata<"REQUEST_SDK_CALL"> & { userId: UserId };
-};
-
-type EventStorageAdapterMap<Type extends keyof EventDataMap> = {
-  SQL: {
-    [K in keyof EventDataMap]: EventMetadataMap[K];
-  }[Type];
-};
-
-type EventStorageAdapterUnion<T extends keyof EventDataMap> = {
-  [K in keyof EventDataMap]: EventStorageAdapterMap<K>;
-}[T];
+/**
+ * Get event data type for a specific event kind
+ */
+export type EventData<K extends EventKind> = EventDataMap[K];
 
 /**
- * Base Event interface - all events in the system extend this
+ * Base SQL record structure for all events
  */
-export interface EventType<
-  Type extends keyof EventDataMap = keyof EventDataMap,
-> {
-  type: Type;
-  readonly reported_timestamp: DateTime;
-  readonly data: EventDataMap[Type];
+type BaseSqlRecord<K extends EventKind> = {
+  type: K;
+  reported_timestamp: DateTime;
+  data: EventData<K>;
+};
 
-  serialize(): EventStorageAdapterUnion<Type>;
+/**
+ * SQL record structure for events that require userId
+ */
+type SqlRecordWithUserId<K extends EventKind> = BaseSqlRecord<K> & {
+  userId: UserId;
+};
+
+/**
+ * Mapping of event kinds to their SQL record structures
+ */
+type SqlRecordMap = {
+  ADD_KEY: BaseSqlRecord<"ADD_KEY">;
+  SDK_CALL: SqlRecordWithUserId<"SDK_CALL">;
+  AI_TOKEN_USAGE: SqlRecordWithUserId<"AI_TOKEN_USAGE">;
+  PAYMENT: SqlRecordWithUserId<"PAYMENT">;
+  REQUEST_PAYMENT: SqlRecordWithUserId<"REQUEST_PAYMENT">;
+  REQUEST_SDK_CALL: SqlRecordWithUserId<"REQUEST_SDK_CALL">;
+};
+
+/**
+ * Get SQL record type for a specific event kind
+ */
+export type SqlRecord<K extends EventKind> = SqlRecordMap[K];
+
+/**
+ * Serialized event format (wrapped in SQL adapter envelope)
+ */
+export type SerializedEvent<K extends EventKind = EventKind> = {
+  SQL: SqlRecord<K>;
+};
+
+/**
+ * Base Event interface - all events in the system implement this
+ */
+export interface Event<K extends EventKind = EventKind> {
+  readonly type: K;
+  readonly reported_timestamp: DateTime;
+  readonly data: EventData<K>;
+
+  serialize(): SerializedEvent<K>;
 }
 
 /**
  * SDK Call Event
  */
-export interface SDKCallEventType extends EventType<"SDK_CALL"> {
+export interface SDKCallEvent extends Event<"SDK_CALL"> {
   readonly userId: UserId;
 }
 
 /**
  * AI Token Usage Event
  */
-export interface AITokenUsageEventType extends EventType<"AI_TOKEN_USAGE"> {
+export interface AITokenUsageEvent extends Event<"AI_TOKEN_USAGE"> {
   readonly userId: UserId;
 }
 
 /**
  * Add Key Event
  */
-export interface AddKeyEventType extends EventType<"ADD_KEY"> {}
+export interface AddKeyEvent extends Event<"ADD_KEY"> {}
 
 /**
  * Payment Event
  */
-export interface PaymentEventType extends EventType<"PAYMENT"> {
+export interface PaymentEvent extends Event<"PAYMENT"> {
   readonly userId: UserId;
 }
 
 /**
  * Payment Request Event
  */
-export interface RequestPaymentEventType extends EventType<"REQUEST_PAYMENT"> {
-  readonly userId: string;
+export interface RequestPaymentEvent extends Event<"REQUEST_PAYMENT"> {
+  readonly userId: UserId;
 }
 
 /**
  * SDK Call Request Event
  */
-export interface RequestSDKCallEventType extends EventType<"REQUEST_SDK_CALL"> {
-  readonly userId: string;
+export interface RequestSDKCallEvent extends Event<"REQUEST_SDK_CALL"> {
+  readonly userId: UserId;
 }

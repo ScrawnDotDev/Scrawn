@@ -1,13 +1,13 @@
 import { getPostgresDB } from "../../../db/postgres/db";
 import { apiKeysTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
+import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "AddKey";
 
 export async function handleAddKey(
-  event_data: BaseEventMetadata<"ADD_KEY">,
+  event_data: SqlRecord<"ADD_KEY">,
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 

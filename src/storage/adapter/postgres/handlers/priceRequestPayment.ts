@@ -1,16 +1,13 @@
 import { StorageError } from "../../../../errors/storage";
 import { RequestSDKCall } from "../../../../events/RequestEvents/RequestSDKCall";
 import { StorageAdapterFactory } from "../../../../factory";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
-import { type UserId } from "../../../../config/identifiers";
+import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "PriceRequestPayment";
 
 export async function handlePriceRequestPayment(
-  event_data: BaseEventMetadata<"REQUEST_PAYMENT"> & {
-    userId: UserId;
-  },
+  event_data: SqlRecord<"REQUEST_PAYMENT">,
 ): Promise<number> {
   try {
     if (!event_data.userId) {
@@ -24,9 +21,8 @@ export async function handlePriceRequestPayment(
       { userId: event_data.userId },
     );
 
-    const storageAdapter = await StorageAdapterFactory.getStorageAdapter(
-      new RequestSDKCall(event_data.userId, null),
-    );
+    const event = new RequestSDKCall(event_data.userId, null);
+    const storageAdapter = await StorageAdapterFactory.getStorageAdapter(event);
 
     if (!storageAdapter) {
       throw StorageError.unknown(
@@ -34,7 +30,7 @@ export async function handlePriceRequestPayment(
       );
     }
 
-    const price = await storageAdapter.price();
+    const price = await storageAdapter.price(event.serialize());
 
     if (typeof price !== "number" || isNaN(price)) {
       throw StorageError.priceCalculationFailed(

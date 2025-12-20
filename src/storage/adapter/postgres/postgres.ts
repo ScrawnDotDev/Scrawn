@@ -1,5 +1,5 @@
-import { type StorageAdapterType } from "../../../interface/storage/Storage";
-import { type EventType } from "../../../interface/event/Event";
+import { type StorageAdapter } from "../../../interface/storage/Storage";
+import { type Event } from "../../../interface/event/Event";
 import { getPostgresDB } from "../../db/postgres/db";
 import { StorageError } from "../../../errors/storage";
 import {
@@ -10,26 +10,27 @@ import {
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
 } from "./handlers";
-import { logger } from "../../../errors/logger";
+import type {
+  SerializedEvent,
+  EventKind,
+} from "../../../interface/event/Event";
 
-export class PostgresAdapter implements StorageAdapterType {
+export class PostgresAdapter implements StorageAdapter {
   name: string;
   connectionObject;
-  event: EventType;
   apiKeyId?: string;
 
-  constructor(event: EventType, apiKeyId?: string) {
+  constructor(event: Event, apiKeyId?: string) {
     this.name = event.type;
     this.connectionObject = getPostgresDB();
-    this.event = event;
     this.apiKeyId = apiKeyId;
   }
 
-  async add(): Promise<{ id: string } | void> {
+  async add(serialized: SerializedEvent<EventKind>) {
     let event_data;
 
     try {
-      const { SQL } = this.event.serialize();
+      const { SQL } = serialized;
       event_data = SQL;
 
       if (!event_data) {
@@ -82,11 +83,11 @@ export class PostgresAdapter implements StorageAdapterType {
     }
   }
 
-  async price(): Promise<number> {
+  async price(serialized: SerializedEvent<EventKind>): Promise<number> {
     let event_data;
 
     try {
-      const { SQL } = this.event.serialize();
+      const { SQL } = serialized;
       event_data = SQL;
 
       if (!event_data) {

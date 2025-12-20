@@ -9,7 +9,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "start": "bun run src/server.ts",
-    "init_key": "bun run src/utils/generateInitialAPIKey.ts"
+    "init_key": "bun run src/utils/generateInitialAPIKey.ts",
+    "format": "bunx prettier --write ."
   },
   "devDependencies": {
     "@types/bun": "latest",
