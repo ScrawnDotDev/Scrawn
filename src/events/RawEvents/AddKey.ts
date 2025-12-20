@@ -1,8 +1,7 @@
-import type { AddKeyEventType } from "../../interface/event/Event";
+import type { AddKeyEvent, AddKeyEventData } from "../../interface/event/Event";
 import { DateTime } from "luxon";
-import type { AddKeyEventData } from "../../interface/event/Event";
 
-export class AddKey implements AddKeyEventType {
+export class AddKey implements AddKeyEvent {
   public reported_timestamp: DateTime;
   public readonly type = "ADD_KEY" as const;
 

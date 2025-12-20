@@ -1,16 +1,13 @@
 import { StorageError } from "../../../../errors/storage";
 import { RequestSDKCall } from "../../../../events/RequestEvents/RequestSDKCall";
 import { StorageAdapterFactory } from "../../../../factory";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
-import { type UserId } from "../../../../config/identifiers";
+import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "PriceRequestPayment";
 
 export async function handlePriceRequestPayment(
-  event_data: BaseEventMetadata<"REQUEST_PAYMENT"> & {
-    userId: UserId;
-  },
+  event_data: SqlRecord<"REQUEST_PAYMENT">,
 ): Promise<number> {
   try {
     if (!event_data.userId) {

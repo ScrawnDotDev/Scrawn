@@ -2,7 +2,7 @@ import type {
   StreamEventRequest,
   StreamEventResponse,
 } from "../../../gen/event/v1/event_pb";
-import type { EventType, EventDataMap } from "../../../interface/event/Event";
+import type { Event, EventKind } from "../../../interface/event/Event";
 import { StreamEventResponseSchema } from "../../../gen/event/v1/event_pb";
 import { create } from "@bufbuild/protobuf";
 import { EventError } from "../../../errors/event";
@@ -23,7 +23,7 @@ export async function streamEvents(
   context: HandlerContext,
 ): Promise<StreamEventResponse> {
   let eventsProcessed = 0;
-  const events: Array<EventType<keyof EventDataMap>> = [];
+  const events: Array<Event<EventKind>> = [];
 
   try {
     // Extract API key ID from context

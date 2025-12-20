@@ -1,15 +1,16 @@
 import type {
   RequestSDKCallEventData,
-  RequestSDKCallEventType,
+  RequestSDKCallEvent,
 } from "../../interface/event/Event";
 import { DateTime } from "luxon";
+import type { UserId } from "../../config/identifiers";
 
-export class RequestSDKCall implements RequestSDKCallEventType {
+export class RequestSDKCall implements RequestSDKCallEvent {
   public reported_timestamp: DateTime;
   public readonly type = "REQUEST_SDK_CALL" as const;
 
   constructor(
-    public userId: string,
+    public userId: UserId,
     public data: RequestSDKCallEventData,
   ) {
     this.reported_timestamp = DateTime.utc();

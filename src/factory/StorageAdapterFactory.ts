@@ -1,4 +1,4 @@
-import type { EventType } from "../interface/event/Event.ts";
+import type { Event } from "../interface/event/Event.ts";
 import { PostgresAdapter } from "../storage/adapter/postgres/postgres.ts";
 
 /**
@@ -15,7 +15,7 @@ export class StorageAdapterFactory {
    * @param apiKeyId - Optional API key ID to associate with the event
    * @returns The storage adapter instance for the event type
    */
-  public static async getStorageAdapter(event: EventType, apiKeyId?: string) {
+  public static async getStorageAdapter(event: Event, apiKeyId?: string) {
     switch (event.type) {
       case "SDK_CALL": {
         return new PostgresAdapter(event, apiKeyId);

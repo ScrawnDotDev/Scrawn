@@ -5,16 +5,13 @@ import {
   sdkCallEventsTable,
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
-import { type UserId } from "../../../../config/identifiers";
+import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "AddSdkCall";
 
 export async function handleAddSdkCall(
-  event_data: BaseEventMetadata<"SDK_CALL"> & {
-    userId: UserId;
-  },
+  event_data: SqlRecord<"SDK_CALL">,
   apiKeyId: string,
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();

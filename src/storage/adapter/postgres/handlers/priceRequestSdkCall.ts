@@ -2,16 +2,13 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { sdkCallEventsTable, eventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq, sum } from "drizzle-orm";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
-import { type UserId } from "../../../../config/identifiers";
+import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "PriceRequestSdkCall";
 
 export async function handlePriceRequestSdkCall(
-  event_data: BaseEventMetadata<"REQUEST_SDK_CALL"> & {
-    userId: UserId;
-  },
+  event_data: SqlRecord<"REQUEST_SDK_CALL">,
 ): Promise<number> {
   const connectionObject = getPostgresDB();
 

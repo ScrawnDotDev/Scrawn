@@ -5,16 +5,13 @@ import {
   paymentEventsTable,
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
-import { type UserId } from "../../../../config/identifiers";
+import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "AddPayment";
 
 export async function handleAddPayment(
-  event_data: BaseEventMetadata<"PAYMENT"> & {
-    userId: UserId;
-  },
+  event_data: SqlRecord<"PAYMENT">,
   apiKeyId?: string,
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();

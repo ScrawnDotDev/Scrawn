@@ -1,15 +1,14 @@
-import type { AITokenUsageEventType } from "../../interface/event/Event";
+import type { AITokenUsageEvent, AITokenUsageEventData } from "../../interface/event/Event";
 import { DateTime } from "luxon";
-import type { EventUnion } from "../../interface/event/Event";
-import { type UserId } from "../../config/identifiers";
+import type { UserId } from "../../config/identifiers";
 
-export class AITokenUsage implements AITokenUsageEventType {
+export class AITokenUsage implements AITokenUsageEvent {
   public reported_timestamp: DateTime;
   public readonly type = "AI_TOKEN_USAGE" as const;
 
   constructor(
     public userId: UserId,
-    public data: EventUnion<"AI_TOKEN_USAGE">,
+    public data: AITokenUsageEventData,
   ) {
     this.reported_timestamp = DateTime.utc();
   }

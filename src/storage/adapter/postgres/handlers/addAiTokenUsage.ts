@@ -5,8 +5,8 @@ import {
   aiTokenUsageEventsTable,
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type BaseEventMetadata } from "../../../../interface/event/Event";
-import { type UserId } from "../../../../config/identifiers";
+import { type SqlRecord } from "../../../../interface/event/Event";
+import type { UserId } from "../../../../config/identifiers";
 import { logger } from "../../../../errors/logger";
 
 const OPERATION = "AddAiTokenUsage";
@@ -22,11 +22,7 @@ type AggregatedEvent = {
 };
 
 export async function handleAddAiTokenUsage(
-  events: Array<
-    BaseEventMetadata<"AI_TOKEN_USAGE"> & {
-      userId: UserId;
-    }
-  >,
+  events: Array<SqlRecord<"AI_TOKEN_USAGE">>,
   apiKeyId: string,
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
