@@ -3,7 +3,6 @@ import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import crypto from "node:crypto";
 import { lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
 import { Payment } from "../../events/RawEvents/Payment.ts";
-import { PostgresAdapter } from "../../storage/adapter/postgres/postgres.ts";
 import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
 import { logger } from "../../errors/logger.ts";
 
@@ -256,7 +255,7 @@ export async function handleLemonSqueezyWebhook(
         apiKeyId,
       );
 
-      await adapter.add();
+      await adapter.add(paymentEvent.serialize());
 
       logger.logOperationInfo(
         OPERATION,

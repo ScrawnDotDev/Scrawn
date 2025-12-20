@@ -1,4 +1,4 @@
-import type { EventType } from "../event/Event";
+import type { EventStorageAdapterMap, EventType } from "../event/Event";
 
 /**
  * Storage - Consumes events
@@ -6,8 +6,7 @@ import type { EventType } from "../event/Event";
 export interface StorageAdapterType {
   name: string;
   connectionObject: unknown;
-  event: EventType;
 
-  add(): Promise<{ id: string } | void>;
-  price(): Promise<number>;
+  add(serialized: EventStorageAdapterMap<EventType["type"]>): Promise<{ id: string } | void>;
+  price(serialized: EventStorageAdapterMap<EventType["type"]>): Promise<number>;
 }

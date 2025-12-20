@@ -88,7 +88,7 @@ export async function storeEvent(
       event,
       apiKeyId,
     );
-    await adapter.add();
+    await adapter.add(event.serialize());
   } catch (error) {
     throw EventError.serializationError(
       "Failed to store event",

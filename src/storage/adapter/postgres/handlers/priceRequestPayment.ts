@@ -24,8 +24,9 @@ export async function handlePriceRequestPayment(
       { userId: event_data.userId },
     );
 
+    const event = new RequestSDKCall(event_data.userId, null);
     const storageAdapter = await StorageAdapterFactory.getStorageAdapter(
-      new RequestSDKCall(event_data.userId, null),
+      event
     );
 
     if (!storageAdapter) {
@@ -34,7 +35,7 @@ export async function handlePriceRequestPayment(
       );
     }
 
-    const price = await storageAdapter.price();
+    const price = await storageAdapter.price(event.serialize());
 
     if (typeof price !== "number" || isNaN(price)) {
       throw StorageError.priceCalculationFailed(

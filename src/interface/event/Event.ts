@@ -59,7 +59,7 @@ type EventMetadataMap = {
   REQUEST_SDK_CALL: BaseEventMetadata<"REQUEST_SDK_CALL"> & { userId: UserId };
 };
 
-type EventStorageAdapterMap<Type extends keyof EventDataMap> = {
+export type EventStorageAdapterMap<Type extends keyof EventDataMap> = {
   SQL: {
     [K in keyof EventDataMap]: EventMetadataMap[K];
   }[Type];

@@ -11,25 +11,24 @@ import {
   handleAddAiTokenUsage,
 } from "./handlers";
 import { logger } from "../../../errors/logger";
+import type { EventStorageAdapterMap } from "../../../interface/event/Event";
 
 export class PostgresAdapter implements StorageAdapterType {
   name: string;
   connectionObject;
-  event: EventType;
   apiKeyId?: string;
 
   constructor(event: EventType, apiKeyId?: string) {
     this.name = event.type;
     this.connectionObject = getPostgresDB();
-    this.event = event;
     this.apiKeyId = apiKeyId;
   }
 
-  async add(): Promise<{ id: string } | void> {
+  async add(serialized: EventStorageAdapterMap<EventType["type"]>) {
     let event_data;
 
     try {
-      const { SQL } = this.event.serialize();
+      const { SQL } = serialized;
       event_data = SQL;
 
       if (!event_data) {
@@ -82,11 +81,13 @@ export class PostgresAdapter implements StorageAdapterType {
     }
   }
 
-  async price(): Promise<number> {
+  async price(
+    serialized: EventStorageAdapterMap<EventType["type"]>,
+  ): Promise<number> {
     let event_data;
 
     try {
-      const { SQL } = this.event.serialize();
+      const { SQL } = serialized;
       event_data = SQL;
 
       if (!event_data) {

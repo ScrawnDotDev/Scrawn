@@ -100,8 +100,9 @@ export async function createCheckoutLink(
     // Get custom price from storage
     let custom_price: number;
     try {
+      const event = new RequestPayment(validatedData.userId, null);
       const storageAdapter = await StorageAdapterFactory.getStorageAdapter(
-        new RequestPayment(validatedData.userId, null),
+        event,
       );
 
       if (!storageAdapter) {
@@ -110,7 +111,7 @@ export async function createCheckoutLink(
         );
       }
 
-      custom_price = await storageAdapter.price();
+      custom_price = await storageAdapter.price(event.serialize());
 
       if (
         typeof custom_price !== "number" ||
