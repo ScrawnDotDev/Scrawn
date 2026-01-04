@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { Http2ServerRequest, Http2ServerResponse } from "node:http2";
 import crypto from "node:crypto";
 import { lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
 import { Payment } from "../../events/RawEvents/Payment.ts";
@@ -87,7 +86,7 @@ function verifyWebhookSignature(
 /**
  * Reads the request body as a string
  */
-function readBody(req: IncomingMessage | Http2ServerRequest): Promise<string> {
+function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = "";
     req.on("data", (chunk) => {
@@ -106,8 +105,8 @@ function readBody(req: IncomingMessage | Http2ServerRequest): Promise<string> {
  * Handles the Lemon Squeezy order-created webhook
  */
 export async function handleLemonSqueezyWebhook(
-  req: IncomingMessage | Http2ServerRequest,
-  res: ServerResponse | Http2ServerResponse,
+  req: IncomingMessage,
+  res: ServerResponse,
 ): Promise<void> {
   try {
     logger.logOperationInfo(

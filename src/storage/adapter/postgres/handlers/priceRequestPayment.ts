@@ -1,5 +1,6 @@
 import { StorageError } from "../../../../errors/storage";
 import { RequestSDKCall } from "../../../../events/RequestEvents/RequestSDKCall";
+import { AITokenUsage } from "../../../../events/AIEvents/AITokenUsage";
 import { StorageAdapterFactory } from "../../../../factory";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
@@ -21,32 +22,81 @@ export async function handlePriceRequestPayment(
       { userId: event_data.userId },
     );
 
-    const event = new RequestSDKCall(event_data.userId, null);
-    const storageAdapter = await StorageAdapterFactory.getStorageAdapter(event);
+    // Calculate SDK call price
+    const sdkEvent = new RequestSDKCall(event_data.userId, null);
+    const sdkStorageAdapter =
+      await StorageAdapterFactory.getStorageAdapter(sdkEvent);
 
-    if (!storageAdapter) {
+    if (!sdkStorageAdapter) {
       throw StorageError.unknown(
-        new Error("Storage adapter factory returned null or undefined"),
+        new Error(
+          "Storage adapter factory returned null or undefined for SDK calls",
+        ),
       );
     }
 
-    const price = await storageAdapter.price(event.serialize());
+    const sdkPrice = await sdkStorageAdapter.price(sdkEvent.serialize());
 
-    if (typeof price !== "number" || isNaN(price)) {
+    if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
       throw StorageError.priceCalculationFailed(
         event_data.userId,
-        new Error(`Invalid price value returned: ${price}`),
+        new Error(`Invalid SDK price value returned: ${sdkPrice}`),
       );
     }
 
     logger.logOperationInfo(
       OPERATION,
-      "completed",
-      "Price calculated successfully",
-      { userId: event_data.userId, price },
+      "sdk_price_calculated",
+      "SDK call price calculated successfully",
+      { userId: event_data.userId, sdkPrice },
     );
 
-    return price;
+    // Calculate AI token usage price
+    const aiEvent = new AITokenUsage(event_data.userId, {
+      model: "",
+      inputTokens: 0,
+      outputTokens: 0,
+      inputDebitAmount: 0,
+      outputDebitAmount: 0,
+    });
+    const aiStorageAdapter =
+      await StorageAdapterFactory.getStorageAdapter(aiEvent);
+
+    if (!aiStorageAdapter) {
+      throw StorageError.unknown(
+        new Error(
+          "Storage adapter factory returned null or undefined for AI token usage",
+        ),
+      );
+    }
+
+    const aiPrice = await aiStorageAdapter.price(aiEvent.serialize());
+
+    if (typeof aiPrice !== "number" || isNaN(aiPrice)) {
+      throw StorageError.priceCalculationFailed(
+        event_data.userId,
+        new Error(`Invalid AI price value returned: ${aiPrice}`),
+      );
+    }
+
+    logger.logOperationInfo(
+      OPERATION,
+      "ai_price_calculated",
+      "AI token usage price calculated successfully",
+      { userId: event_data.userId, aiPrice },
+    );
+
+    // Sum both prices
+    const totalPrice = sdkPrice + aiPrice;
+
+    logger.logOperationInfo(
+      OPERATION,
+      "completed",
+      "Total price calculated successfully",
+      { userId: event_data.userId, sdkPrice, aiPrice, totalPrice },
+    );
+
+    return totalPrice;
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
     if (

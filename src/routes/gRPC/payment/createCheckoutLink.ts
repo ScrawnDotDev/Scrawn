@@ -10,7 +10,7 @@ import {
 } from "../../../zod/payment";
 import { PaymentError } from "../../../errors/payment";
 import { AuthError } from "../../../errors/auth";
-import { ZodError } from "zod";
+import { custom, ZodError } from "zod";
 import type { HandlerContext } from "@connectrpc/connect";
 import {
   lemonSqueezySetup,
@@ -115,7 +115,7 @@ export async function createCheckoutLink(
       if (
         typeof custom_price !== "number" ||
         isNaN(custom_price) ||
-        custom_price <= 0
+        custom_price < 0
       ) {
         throw PaymentError.priceCalculationFailed(
           validatedData.userId,

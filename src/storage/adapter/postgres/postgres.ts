@@ -9,6 +9,7 @@ import {
   handlePriceRequestPayment,
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
+  handlePriceRequestAiTokenUsage,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -118,6 +119,10 @@ export class PostgresAdapter implements StorageAdapter {
 
       case "REQUEST_SDK_CALL": {
         return await handlePriceRequestSdkCall(event_data);
+      }
+
+      case "AI_TOKEN_USAGE": {
+        return await handlePriceRequestAiTokenUsage(event_data);
       }
 
       default: {

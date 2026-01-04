@@ -1,4 +1,4 @@
-import * as http2 from "node:http2";
+import * as http from "node:http";
 import type { ConnectRouter } from "@connectrpc/connect";
 import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { createValidateInterceptor } from "@connectrpc/validate";
@@ -49,8 +49,8 @@ const grpcHandler = connectNodeAdapter({
 
 // Create a combined handler for both gRPC and HTTP webhooks
 const requestHandler = (
-  req: http2.Http2ServerRequest,
-  res: http2.Http2ServerResponse,
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
 ) => {
   // Handle webhook endpoint
   if (
@@ -65,6 +65,6 @@ const requestHandler = (
   grpcHandler(req, res);
 };
 
-http2.createServer(requestHandler).listen(8069);
-console.log("Server listening on http://localhost:8069 (HTTP/2)");
+http.createServer(requestHandler).listen(8069);
+console.log("Server listening on http://localhost:8069");
 console.log("Webhook endpoint: http://localhost:8069/webhooks/lemonsqueezy");
