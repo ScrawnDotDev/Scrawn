@@ -1,6 +1,6 @@
 import { StorageError } from "../../../../errors/storage";
 import { RequestSDKCall } from "../../../../events/RequestEvents/RequestSDKCall";
-import { AITokenUsage } from "../../../../events/AIEvents/AITokenUsage";
+import { RequestAITokenUsage } from "../../../../events/RequestEvents/RequestAITokenUsage";
 import { StorageAdapterFactory } from "../../../../factory";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
@@ -52,13 +52,7 @@ export async function handlePriceRequestPayment(
     );
 
     // Calculate AI token usage price
-    const aiEvent = new AITokenUsage(event_data.userId, {
-      model: "",
-      inputTokens: 0,
-      outputTokens: 0,
-      inputDebitAmount: 0,
-      outputDebitAmount: 0,
-    });
+    const aiEvent = new RequestAITokenUsage(event_data.userId, null);
     const aiStorageAdapter =
       await StorageAdapterFactory.getStorageAdapter(aiEvent);
 

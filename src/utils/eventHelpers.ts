@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import type { Event, SqlRecord } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
 import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
+import { RequestAITokenUsage } from "../events/RequestEvents/RequestAITokenUsage";
 import { StorageAdapterFactory } from "../factory";
 import { handleAddAiTokenUsage } from "../storage/adapter/postgres/handlers";
 import { StorageError } from "../errors/storage";
@@ -65,6 +66,11 @@ export function createEventInstance(eventSkeleton: {
         return new SDKCall(eventSkeleton.userId, eventSkeleton.data);
       case "AI_TOKEN_USAGE":
         return new AITokenUsage(eventSkeleton.userId, eventSkeleton.data);
+      case "REQUEST_AI_TOKEN_USAGE":
+        return new RequestAITokenUsage(
+          eventSkeleton.userId,
+          eventSkeleton.data,
+        );
       default:
         throw EventError.unsupportedEventType(eventSkeleton.type);
     }

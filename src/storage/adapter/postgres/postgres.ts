@@ -121,7 +121,7 @@ export class PostgresAdapter implements StorageAdapter {
         return await handlePriceRequestSdkCall(event_data);
       }
 
-      case "AI_TOKEN_USAGE": {
+      case "REQUEST_AI_TOKEN_USAGE": {
         return await handlePriceRequestAiTokenUsage(event_data);
       }
 

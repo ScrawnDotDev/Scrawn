@@ -12,13 +12,15 @@ import { parse } from "zod/v4/core";
 const OPERATION = "PriceRequestAiTokenUsage";
 
 export async function handlePriceRequestAiTokenUsage(
-  event_data: SqlRecord<"AI_TOKEN_USAGE">,
+  event_data: SqlRecord<"REQUEST_AI_TOKEN_USAGE">,
 ): Promise<number> {
   const connectionObject = getPostgresDB();
 
   try {
     if (!event_data.userId) {
-      throw StorageError.invalidData("Missing userId in AI_TOKEN_USAGE event");
+      throw StorageError.invalidData(
+        "Missing userId in REQUEST_AI_TOKEN_USAGE event",
+      );
     }
 
     if (
@@ -33,7 +35,7 @@ export async function handlePriceRequestAiTokenUsage(
     logger.logOperationInfo(
       OPERATION,
       "start",
-      "Querying price for AI_TOKEN_USAGE",
+      "Querying price for REQUEST_AI_TOKEN_USAGE",
       { userId: event_data.userId },
     );
 
@@ -51,12 +53,12 @@ export async function handlePriceRequestAiTokenUsage(
         .groupBy(eventsTable.userId);
     } catch (e) {
       throw StorageError.queryFailed(
-        `Failed to query AI_TOKEN_USAGE events for user ${event_data.userId}`,
+        `Failed to query REQUEST_AI_TOKEN_USAGE events for user ${event_data.userId}`,
         e instanceof Error ? e : new Error(String(e)),
       );
     }
-    
-    console.log('ASDFOUWIEJROJSD', result)
+
+    console.log("ASDFOUWIEJROJSD", result);
 
     if (!result) {
       throw StorageError.emptyResult(
@@ -123,7 +125,7 @@ export async function handlePriceRequestAiTokenUsage(
       { userId: event_data.userId, price: parsedPrice },
     );
 
-    console.log("YEAA", parsedPrice)
+    console.log("YEAA", parsedPrice);
     return parsedPrice;
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
@@ -137,7 +139,7 @@ export async function handlePriceRequestAiTokenUsage(
     }
 
     throw StorageError.priceCalculationFailed(
-      "Failed to calculate price for AI_TOKEN_USAGE event",
+      "Failed to calculate price for REQUEST_AI_TOKEN_USAGE event",
       e instanceof Error ? e : new Error(String(e)),
     );
   }

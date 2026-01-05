@@ -35,6 +35,9 @@ export class StorageAdapterFactory {
       case "REQUEST_SDK_CALL": {
         return new PostgresAdapter(event);
       }
+      case "REQUEST_AI_TOKEN_USAGE": {
+        return new PostgresAdapter(event);
+      }
       default: {
         throw new Error(`Unknown event type: ${event}`);
       }

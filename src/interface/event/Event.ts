@@ -31,6 +31,8 @@ export type RequestPaymentEventData = null;
 
 export type RequestSDKCallEventData = null;
 
+export type RequestAITokenUsageEventData = null;
+
 /**
  * Event kind discriminator
  */
@@ -40,7 +42,8 @@ export type EventKind =
   | "ADD_KEY"
   | "PAYMENT"
   | "REQUEST_PAYMENT"
-  | "REQUEST_SDK_CALL";
+  | "REQUEST_SDK_CALL"
+  | "REQUEST_AI_TOKEN_USAGE";
 
 /**
  * Mapping of event kinds to their data structures
@@ -52,6 +55,7 @@ export type EventDataMap = {
   PAYMENT: PaymentEventData;
   REQUEST_PAYMENT: RequestPaymentEventData;
   REQUEST_SDK_CALL: RequestSDKCallEventData;
+  REQUEST_AI_TOKEN_USAGE: RequestAITokenUsageEventData;
 };
 
 /**
@@ -85,6 +89,7 @@ type SqlRecordMap = {
   PAYMENT: SqlRecordWithUserId<"PAYMENT">;
   REQUEST_PAYMENT: SqlRecordWithUserId<"REQUEST_PAYMENT">;
   REQUEST_SDK_CALL: SqlRecordWithUserId<"REQUEST_SDK_CALL">;
+  REQUEST_AI_TOKEN_USAGE: SqlRecordWithUserId<"REQUEST_AI_TOKEN_USAGE">;
 };
 
 /**
@@ -147,5 +152,12 @@ export interface RequestPaymentEvent extends Event<"REQUEST_PAYMENT"> {
  * SDK Call Request Event
  */
 export interface RequestSDKCallEvent extends Event<"REQUEST_SDK_CALL"> {
+  readonly userId: UserId;
+}
+
+/**
+ * AI Token Usage Request Event
+ */
+export interface RequestAITokenUsageEvent extends Event<"REQUEST_AI_TOKEN_USAGE"> {
   readonly userId: UserId;
 }
