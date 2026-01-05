@@ -7,7 +7,6 @@ import { StorageError } from "../../../../errors/storage";
 import { eq, sum, sql } from "drizzle-orm";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import { logger } from "../../../../errors/logger";
-import { parse } from "zod/v4/core";
 
 const OPERATION = "PriceRequestAiTokenUsage";
 
@@ -57,8 +56,6 @@ export async function handlePriceRequestAiTokenUsage(
         e instanceof Error ? e : new Error(String(e)),
       );
     }
-
-    console.log("ASDFOUWIEJROJSD", result);
 
     if (!result) {
       throw StorageError.emptyResult(
@@ -125,7 +122,6 @@ export async function handlePriceRequestAiTokenUsage(
       { userId: event_data.userId, price: parsedPrice },
     );
 
-    console.log("YEAA", parsedPrice);
     return parsedPrice;
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
