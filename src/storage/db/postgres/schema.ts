@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   pgTable,
@@ -6,6 +6,7 @@ import {
   timestamp,
   text,
   boolean,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { USER_ID_CONFIG } from "../../../config/identifiers";
 
@@ -17,26 +18,34 @@ export const usersRelation = relations(usersTable, ({ many }) => ({
   events: many(eventsTable),
 }));
 
-export const apiKeysTable = pgTable("api_keys", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  key: text("key").notNull().unique(),
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-    mode: "string",
-  })
-    .defaultNow()
-    .notNull(),
-  expiresAt: timestamp("expires_at", {
-    withTimezone: true,
-    mode: "string",
-  }).notNull(),
-  revoked: boolean("revoked").default(false).notNull(),
-  revokedAt: timestamp("revoked_at", {
-    withTimezone: true,
-    mode: "string",
+export const apiKeysTable = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    key: text("key").notNull().unique(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+      mode: "string",
+    }).notNull(),
+    revoked: boolean("revoked").default(false).notNull(),
+    revokedAt: timestamp("revoked_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
+  },
+  (table) => ({
+    uniqueActiveName: uniqueIndex("unique_active_name")
+      .on(table.name)
+      .where(sql`${table.revoked} = false`),
   }),
-});
+);
 
 export const apiKeysRelation = relations(apiKeysTable, ({ many }) => ({
   events: many(eventsTable),
