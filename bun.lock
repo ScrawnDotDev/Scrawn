@@ -1,19 +1,16 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "backend",
       "dependencies": {
         "@bufbuild/protobuf": "^2.9.0",
-        "@bufbuild/protoc-gen-connect-es": "^0.13.0",
-        "@bufbuild/protoc-gen-es": "^2.9.0",
         "@connectrpc/connect": "^2.1.0",
         "@connectrpc/connect-node": "^2.1.0",
         "@connectrpc/validate": "^0.2.0",
         "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
         "@libsql/client": "^0.15.15",
-        "@types/luxon": "^3.7.1",
-        "buf": "bufbuild/buf",
         "dotenv": "^17.2.3",
         "drizzle-orm": "^0.44.7",
         "luxon": "^3.7.2",
@@ -24,8 +21,12 @@
         "zod": "^4.1.12",
       },
       "devDependencies": {
+        "@bufbuild/protoc-gen-connect-es": "^0.13.0",
+        "@bufbuild/protoc-gen-es": "^2.9.0",
         "@types/bun": "latest",
+        "@types/luxon": "^3.7.1",
         "@vitest/ui": "^4.0.3",
+        "buf": "bufbuild/buf",
         "drizzle-kit": "^0.31.6",
         "tsx": "^4.20.6",
         "vitest": "^4.0.3",
@@ -238,7 +239,7 @@
 
     "aws-ssl-profiles": ["aws-ssl-profiles@1.1.2", "", {}, "sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g=="],
 
-    "buf": ["buf@github:bufbuild/buf#d500877", {}, "bufbuild-buf-d500877"],
+    "buf": ["buf@github:bufbuild/buf#2e53c7d", {}, "bufbuild-buf-2e53c7d"],
 
     "buffer-from": ["buffer-from@1.1.2", "", {}, "sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ=="],
 
