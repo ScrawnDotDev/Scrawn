@@ -47,7 +47,7 @@ describe("apiKeyCache", () => {
       expiresAt,
     });
 
-    // Advance time by > 5 minutes TTL (cacheTTLMinutes = 5)
+    // Advance time by > 5 minutes TTL
     const later = base + 6 * 60 * 1000;
     (Date as any).now = () => later;
 
