@@ -16,7 +16,8 @@ export const apiKeyCache = {
   set: (hash: string, data: CachedAPIKey) => store.set(hash, data),
   delete: (hash: string) => store.delete(hash),
   clear: () => store.clear(),
-  getStats: () => { // for testing and debugging purposes
+  getStats: () => {
+    // for testing and debugging purposes
     const stats = store.getStats();
     return {
       size: stats.size,
