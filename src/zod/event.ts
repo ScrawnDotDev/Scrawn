@@ -173,8 +173,8 @@ const AITokenUsageEvent = BaseEvent.extend({
     .transform((obj) => obj.value),
 });
 
-export const eventSchema = z.discriminatedUnion("type", [
-  SDKCallEvent,
-  AITokenUsageEvent,
-]);
-export type EventSchemaType = z.infer<typeof eventSchema>;
+export const registerEventSchema = SDKCallEvent;
+export type RegisterEventSchemaType = z.infer<typeof registerEventSchema>;
+
+export const streamEventSchema = AITokenUsageEvent;
+export type StreamEventSchemaType = z.infer<typeof streamEventSchema>;

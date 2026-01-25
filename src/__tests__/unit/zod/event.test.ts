@@ -1,7 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { eventSchema } from "../../../zod/event";
+import { describe, it, expect, vi } from "vitest";
+vi.mock("../../../storage/db/postgres/db", () => ({
+  getPostgresDB: vi.fn(() => ({})),
+}));
 
-describe("eventSchema", () => {
+import { registerEventSchema, streamEventSchema } from "../../../zod/event";
+
+describe("registerEventSchema", () => {
   it("validates and transforms SDK_CALL event with RAW type", async () => {
     const validEvent = {
       type: 1,
@@ -18,7 +22,7 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(validEvent);
+    const result = await registerEventSchema.safeParseAsync(validEvent);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.type).toBe("SDK_CALL");
@@ -46,7 +50,7 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(validEvent);
+    const result = await registerEventSchema.safeParseAsync(validEvent);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.type).toBe("SDK_CALL");
@@ -73,7 +77,7 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(validEvent);
+    const result = await registerEventSchema.safeParseAsync(validEvent);
     expect(result.success).toBe(true);
     if (result.success && result.data.type === "SDK_CALL") {
       expect(result.data.data.debitAmount).toBe(12345);
@@ -96,7 +100,7 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(validEvent);
+    const result = await registerEventSchema.safeParseAsync(validEvent);
     expect(result.success).toBe(true);
     if (result.success && result.data.type === "SDK_CALL") {
       expect(result.data.data).not.toHaveProperty("case");
@@ -121,7 +125,7 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(invalidEvent);
+    const result = await registerEventSchema.safeParseAsync(invalidEvent);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe("Invalid UUID");
@@ -144,7 +148,7 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(invalidEvent);
+    const result = await registerEventSchema.safeParseAsync(invalidEvent);
     expect(result.success).toBe(false);
   });
 
@@ -164,7 +168,61 @@ describe("eventSchema", () => {
       },
     };
 
-    const result = await eventSchema.safeParseAsync(invalidEvent);
+    const result = await registerEventSchema.safeParseAsync(invalidEvent);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("streamEventSchema", () => {
+  it("accepts AI_TOKEN_USAGE events", async () => {
+    const validEvent = {
+      type: 2,
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      data: {
+        case: "aiTokenUsage",
+        value: {
+          model: "gpt-4",
+          inputTokens: 100,
+          outputTokens: 50,
+          inputDebit: {
+            case: "inputAmount",
+            value: 0.01,
+          },
+          outputDebit: {
+            case: "outputAmount",
+            value: 0.02,
+          },
+        },
+      },
+    };
+
+    const result = await streamEventSchema.safeParseAsync(validEvent);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.type).toBe("AI_TOKEN_USAGE");
+      if (result.data.type === "AI_TOKEN_USAGE") {
+        expect(result.data.data.model).toBe("gpt-4");
+      }
+    }
+  });
+
+  it("rejects SDK_CALL events", async () => {
+    const invalidEvent = {
+      type: 1,
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      data: {
+        case: "sdkCall",
+        value: {
+          sdkCallType: 1,
+          debit: {
+            case: "amount",
+            value: 10.5,
+          },
+        },
+      },
+    };
+
+    const result = await streamEventSchema.safeParseAsync(invalidEvent);
     expect(result.success).toBe(false);
   });
 });

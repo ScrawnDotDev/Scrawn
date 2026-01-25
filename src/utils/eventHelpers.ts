@@ -2,15 +2,13 @@ import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../context/auth";
 import { AuthError } from "../errors/auth";
 import { EventError } from "../errors/event";
-import { eventSchema } from "../zod/event";
+import { registerEventSchema, streamEventSchema } from "../zod/event";
 import { ZodError } from "zod";
-import type { Event, SqlRecord } from "../interface/event/Event";
+import type { Event } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
 import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
 import { RequestAITokenUsage } from "../events/RequestEvents/RequestAITokenUsage";
 import { StorageAdapterFactory } from "../factory";
-import { handleAddAiTokenUsage } from "../storage/adapter/postgres/handlers";
-import { StorageError } from "../errors/storage";
 import type {
   RegisterEventRequest,
   StreamEventRequest,
@@ -30,11 +28,33 @@ export function extractApiKeyFromContext(context: HandlerContext): string {
 /**
  * Validate and parse the incoming event request
  */
-export async function validateAndParseEvent(
-  req: RegisterEventRequest | StreamEventRequest,
+export async function validateAndParseRegisterEvent(
+  req: RegisterEventRequest,
 ) {
   try {
-    return await eventSchema.parseAsync(req);
+    return await registerEventSchema.parseAsync(req);
+  } catch (error) {
+    if (error instanceof EventError) {
+      throw error;
+    }
+    if (error instanceof ZodError) {
+      const issues = error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; ");
+      throw EventError.validationFailed(issues, error);
+    }
+    throw EventError.validationFailed(
+      "Unknown validation error",
+      error as Error,
+    );
+  }
+}
+
+export async function validateAndParseStreamEvent(
+  req: StreamEventRequest,
+) {
+  try {
+    return await streamEventSchema.parseAsync(req);
   } catch (error) {
     if (error instanceof EventError) {
       throw error;
@@ -106,58 +126,3 @@ export async function storeEvent(
 /**
  * Store multiple events in a batch - groups by type and uses batch operations when possible
  */
-export async function storeEventsBatch(
-  events: Event[],
-  apiKeyId: string,
-): Promise<void> {
-  if (events.length === 0) {
-    return;
-  }
-
-  // Group events by type
-  const eventsByType = new Map<string, Event[]>();
-  for (const event of events) {
-    const type = event.type;
-    if (!eventsByType.has(type)) {
-      eventsByType.set(type, []);
-    }
-    eventsByType.get(type)!.push(event);
-  }
-
-  // Process each type
-  for (const [type, typeEvents] of eventsByType) {
-    try {
-      if (type === "AI_TOKEN_USAGE") {
-        // Batch process AI_TOKEN_USAGE events
-        const serializedEvents: Array<SqlRecord<"AI_TOKEN_USAGE">> = [];
-
-        for (const event of typeEvents) {
-          const { SQL } = event.serialize();
-          if (!SQL) {
-            throw StorageError.serializationFailed(
-              "Event serialization returned null or undefined",
-            );
-          }
-          if (SQL.type !== "AI_TOKEN_USAGE") {
-            throw StorageError.serializationFailed(
-              `Expected AI_TOKEN_USAGE but got ${SQL.type}`,
-            );
-          }
-          serializedEvents.push(SQL as SqlRecord<"AI_TOKEN_USAGE">);
-        }
-
-        await handleAddAiTokenUsage(serializedEvents, apiKeyId);
-      } else {
-        // For other event types, use individual storage
-        for (const event of typeEvents) {
-          await storeEvent(event, apiKeyId);
-        }
-      }
-    } catch (error) {
-      throw EventError.serializationError(
-        `Failed to store ${type} events`,
-        error as Error,
-      );
-    }
-  }
-}

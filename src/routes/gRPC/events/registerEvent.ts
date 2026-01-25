@@ -10,7 +10,7 @@ import { apiKeyContextKey } from "../../../context/auth";
 import { logger } from "../../../errors/logger";
 import {
   extractApiKeyFromContext,
-  validateAndParseEvent,
+  validateAndParseRegisterEvent,
   createEventInstance,
   storeEvent,
 } from "../../../utils/eventHelpers";
@@ -35,7 +35,7 @@ export async function registerEvent(
     );
 
     // Validate and parse the incoming event
-    const eventSkeleton = await validateAndParseEvent(req);
+    const eventSkeleton = await validateAndParseRegisterEvent(req);
 
     // Create the appropriate event instance
     const event = createEventInstance(eventSkeleton);

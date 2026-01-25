@@ -3,10 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import {
-  CreateCheckoutLinkRequest,
-  CreateCheckoutLinkResponse,
-} from "./payment_pb.js";
+import { CreateCheckoutLinkRequest, CreateCheckoutLinkResponse } from "./payment_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -26,5 +23,6 @@ export const PaymentService = {
       O: CreateCheckoutLinkResponse,
       kind: MethodKind.Unary,
     },
-  },
+  }
 } as const;
+
