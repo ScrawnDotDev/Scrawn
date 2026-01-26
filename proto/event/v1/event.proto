@@ -47,7 +47,6 @@ message StreamEventRequest {
     EventType type = 1;
     string userId = 2;
     oneof data {
-        SDKCall sdkCall = 3;
         AITokenUsage aiTokenUsage = 4;
     }
 }

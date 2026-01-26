@@ -12,7 +12,7 @@ const OPERATION = "AddPayment";
 
 export async function handleAddPayment(
   event_data: SqlRecord<"PAYMENT">,
-  apiKeyId?: string,
+  apiKeyId?: string
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -29,8 +29,8 @@ export async function handleAddPayment(
     ) {
       throw StorageError.invalidData(
         `Invalid creditAmount: must be a positive finite number, got ${String(
-          creditAmount,
-        )}`,
+          creditAmount
+        )}`
       );
     }
 
@@ -53,7 +53,7 @@ export async function handleAddPayment(
           OPERATION,
           "user_ensured",
           "User ensured in database",
-          { userId: event_data.userId },
+          { userId: event_data.userId }
         );
       } catch (e) {
         if (
@@ -65,12 +65,12 @@ export async function handleAddPayment(
             OPERATION,
             "user_exists",
             "User already exists, continuing",
-            { userId: event_data.userId },
+            { userId: event_data.userId }
           );
         } else {
           throw StorageError.userInsertFailed(
             event_data.userId,
-            e instanceof Error ? e : new Error(String(e)),
+            e instanceof Error ? e : new Error(String(e))
           );
         }
       }
@@ -82,13 +82,13 @@ export async function handleAddPayment(
       } catch (e) {
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
       if (!reported_timestamp || reported_timestamp.trim().length === 0) {
         throw StorageError.invalidTimestamp(
-          "Timestamp is undefined or empty after conversion",
+          "Timestamp is undefined or empty after conversion"
         );
       }
 
@@ -106,7 +106,7 @@ export async function handleAddPayment(
       } catch (e) {
         throw StorageError.eventInsertFailed(
           `Failed to insert event for user ${event_data.userId}`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -118,7 +118,7 @@ export async function handleAddPayment(
         OPERATION,
         "event_inserted",
         "Event row inserted",
-        { eventId: eventID.id, userId: event_data.userId, apiKeyId },
+        { eventId: eventID.id, userId: event_data.userId, apiKeyId }
       );
 
       // Insert payment event
@@ -136,12 +136,12 @@ export async function handleAddPayment(
             eventId: eventID.id,
             creditAmount: event_data.data.creditAmount,
             userId: event_data.userId,
-          },
+          }
         );
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to insert payment event for event ID ${eventID.id}`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -152,7 +152,7 @@ export async function handleAddPayment(
       OPERATION,
       "completed",
       "PAYMENT transaction completed successfully",
-      { userId: event_data.userId, apiKeyId },
+      { userId: event_data.userId, apiKeyId }
     );
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
@@ -167,7 +167,7 @@ export async function handleAddPayment(
 
     throw StorageError.transactionFailed(
       "Transaction failed while storing PAYMENT event",
-      e instanceof Error ? e : new Error(String(e)),
+      e instanceof Error ? e : new Error(String(e))
     );
   }
 }

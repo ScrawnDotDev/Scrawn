@@ -25,7 +25,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
           return Promise.resolve(mockAiAdapter);
         }
         return Promise.resolve(null);
-      },
+      }
     );
   });
 
@@ -126,7 +126,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
       } as any;
 
       await expect(handlePriceRequestPayment(eventData)).rejects.toThrow(
-        "Missing userId",
+        "Missing userId"
       );
     });
 
@@ -139,7 +139,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
       };
 
       await expect(handlePriceRequestPayment(eventData)).rejects.toThrow(
-        "Missing userId",
+        "Missing userId"
       );
     });
   });
@@ -159,7 +159,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
             return Promise.resolve(null as any);
           }
           return Promise.resolve(mockAiAdapter);
-        },
+        }
       );
 
       await expect(handlePriceRequestPayment(eventData)).rejects.toThrow();
@@ -184,7 +184,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
             return Promise.resolve(null as any);
           }
           return Promise.resolve(null);
-        },
+        }
       );
 
       await expect(handlePriceRequestPayment(eventData)).rejects.toThrow();
@@ -204,7 +204,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
             return Promise.resolve(undefined as any);
           }
           return Promise.resolve(mockAiAdapter);
-        },
+        }
       );
 
       await expect(handlePriceRequestPayment(eventData)).rejects.toThrow();
@@ -304,7 +304,7 @@ describe("PostgresAdapter - priceRequestPayment handler", () => {
       };
 
       mockSdkAdapter.price.mockRejectedValueOnce(
-        new Error("Database connection failed"),
+        new Error("Database connection failed")
       );
 
       await expect(handlePriceRequestPayment(eventData)).rejects.toThrow();

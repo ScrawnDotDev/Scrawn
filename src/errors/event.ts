@@ -45,7 +45,7 @@ export class EventError extends ConnectError {
 
   static unsupportedEventType(
     eventType: string,
-    originalError?: Error,
+    originalError?: Error
   ): EventError {
     return new EventError({
       type: EventErrorType.UNSUPPORTED_EVENT_TYPE,
@@ -66,7 +66,7 @@ export class EventError extends ConnectError {
 
   static serializationError(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): EventError {
     return new EventError({
       type: EventErrorType.SERIALIZATION_ERROR,
@@ -99,7 +99,7 @@ export class EventError extends ConnectError {
   static invalidDataFormat(
     field: string,
     expectedFormat: string,
-    originalError?: Error,
+    originalError?: Error
   ): EventError {
     return new EventError({
       type: EventErrorType.INVALID_DATA_FORMAT,

@@ -20,7 +20,7 @@ const OPERATION = "CreateAPIKey";
 
 export async function createAPIKey(
   req: CreateAPIKeyRequest,
-  context: HandlerContext,
+  context: HandlerContext
 ): Promise<CreateAPIKeyResponse> {
   try {
     // Get API key ID from context (set by auth interceptor)
@@ -35,7 +35,7 @@ export async function createAPIKey(
       "Request authenticated",
       {
         apiKeyId,
-      },
+      }
     );
 
     // Validate the incoming request against the schema
@@ -51,7 +51,7 @@ export async function createAPIKey(
       }
       throw APIKeyError.validationFailed(
         "Unknown validation error",
-        error as Error,
+        error as Error
       );
     }
 
@@ -88,7 +88,7 @@ export async function createAPIKey(
     } catch (error) {
       throw APIKeyError.creationFailed(
         "Failed to store API key",
-        error as Error,
+        error as Error
       );
     }
 
@@ -99,7 +99,7 @@ export async function createAPIKey(
       {
         apiKeyId: keyEventData.id,
         name: validatedData.name,
-      },
+      }
     );
 
     return create(CreateAPIKeyResponseSchema, {
@@ -116,7 +116,7 @@ export async function createAPIKey(
       error instanceof APIKeyError ? error.type : "UNKNOWN",
       "CreateAPIKey handler failed",
       error instanceof Error ? error : undefined,
-      { apiKeyId: context.values.get(apiKeyContextKey) },
+      { apiKeyId: context.values.get(apiKeyContextKey) }
     );
 
     // Re-throw APIKeyError as-is

@@ -39,7 +39,7 @@ export function authInterceptor(): Interceptor {
           AuthErrorType.MISSING_HEADER,
           error.message,
           undefined,
-          { endpoint: req.url },
+          { endpoint: req.url }
         );
         throw error;
       }
@@ -50,7 +50,7 @@ export function authInterceptor(): Interceptor {
           AuthErrorType.INVALID_HEADER_FORMAT,
           error.message,
           undefined,
-          { headerValue: authorization.substring(0, 20) + "..." },
+          { headerValue: authorization.substring(0, 20) + "..." }
         );
         throw error;
       }
@@ -64,7 +64,7 @@ export function authInterceptor(): Interceptor {
           AuthErrorType.INVALID_API_KEY,
           error.message,
           undefined,
-          { endpoint: req.url },
+          { endpoint: req.url }
         );
         throw error;
       }
@@ -99,13 +99,13 @@ export function authInterceptor(): Interceptor {
         apiKeyRecord = result[0];
       } catch (err) {
         const error = AuthError.databaseError(
-          err instanceof Error ? err : undefined,
+          err instanceof Error ? err : undefined
         );
         logger.logError(
           AuthErrorType.DATABASE_ERROR,
           error.message,
           err instanceof Error ? err : undefined,
-          { endpoint: req.url },
+          { endpoint: req.url }
         );
         throw error;
       }
@@ -117,7 +117,7 @@ export function authInterceptor(): Interceptor {
           AuthErrorType.INVALID_API_KEY,
           error.message,
           undefined,
-          { endpoint: req.url },
+          { endpoint: req.url }
         );
         throw error;
       }
@@ -129,7 +129,7 @@ export function authInterceptor(): Interceptor {
           AuthErrorType.REVOKED_API_KEY,
           error.message,
           undefined,
-          { apiKeyId: apiKeyRecord.id },
+          { apiKeyId: apiKeyRecord.id }
         );
         throw error;
       }
@@ -146,7 +146,7 @@ export function authInterceptor(): Interceptor {
           {
             apiKeyId: apiKeyRecord.id,
             expiresAt: apiKeyRecord.expiresAt,
-          },
+          }
         );
         throw error;
       }
@@ -173,7 +173,7 @@ export function authInterceptor(): Interceptor {
         AuthErrorType.UNKNOWN,
         error.message,
         err instanceof Error ? err : undefined,
-        { endpoint: req.url },
+        { endpoint: req.url }
       );
       throw error;
     }

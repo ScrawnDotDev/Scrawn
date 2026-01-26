@@ -46,7 +46,7 @@ export class PaymentError extends ConnectError {
 
   static checkoutCreationFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.CHECKOUT_CREATION_FAILED,
@@ -61,7 +61,7 @@ export class PaymentError extends ConnectError {
 
   static validationFailed(
     details: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.VALIDATION_FAILED,
@@ -73,7 +73,7 @@ export class PaymentError extends ConnectError {
 
   static lemonSqueezyApiError(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.LEMON_SQUEEZY_API_ERROR,
@@ -114,7 +114,7 @@ export class PaymentError extends ConnectError {
 
   static invalidCheckoutResponse(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.INVALID_CHECKOUT_RESPONSE,
@@ -128,7 +128,7 @@ export class PaymentError extends ConnectError {
 
   static priceCalculationFailed(
     userId?: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.PRICE_CALCULATION_FAILED,
@@ -142,7 +142,7 @@ export class PaymentError extends ConnectError {
 
   static storageAdapterFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.STORAGE_ADAPTER_FAILED,
@@ -156,7 +156,7 @@ export class PaymentError extends ConnectError {
 
   static configurationError(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.CONFIGURATION_ERROR,

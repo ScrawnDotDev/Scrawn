@@ -11,7 +11,7 @@ export class AITokenUsage implements AITokenUsageEvent {
 
   constructor(
     public userId: UserId,
-    public data: AITokenUsageEventData,
+    public data: AITokenUsageEventData
   ) {
     this.reported_timestamp = DateTime.utc();
   }

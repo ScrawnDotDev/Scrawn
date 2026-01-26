@@ -12,7 +12,7 @@ const OPERATION = "AddSdkCall";
 
 export async function handleAddSdkCall(
   event_data: SqlRecord<"SDK_CALL">,
-  apiKeyId: string,
+  apiKeyId: string
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -27,7 +27,7 @@ export async function handleAddSdkCall(
     if (typeof debitAmount === "number" && debitAmount < 0) {
       throw StorageError.insertFailed(
         `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
-        new Error(`debitAmount ${debitAmount} is negative`),
+        new Error(`debitAmount ${debitAmount} is negative`)
       );
     }
 
@@ -45,7 +45,7 @@ export async function handleAddSdkCall(
           OPERATION,
           "user_ensured",
           "User ensured in database",
-          { userId: event_data.userId },
+          { userId: event_data.userId }
         );
       } catch (e) {
         if (
@@ -57,12 +57,12 @@ export async function handleAddSdkCall(
             OPERATION,
             "user_exists",
             "User already exists, continuing",
-            { userId: event_data.userId },
+            { userId: event_data.userId }
           );
         } else {
           throw StorageError.userInsertFailed(
             event_data.userId,
-            e instanceof Error ? e : new Error(String(e)),
+            e instanceof Error ? e : new Error(String(e))
           );
         }
       }
@@ -74,13 +74,13 @@ export async function handleAddSdkCall(
       } catch (e) {
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
       if (!reported_timestamp || reported_timestamp.trim().length === 0) {
         throw StorageError.invalidTimestamp(
-          "Timestamp is undefined or empty after conversion",
+          "Timestamp is undefined or empty after conversion"
         );
       }
 
@@ -98,7 +98,7 @@ export async function handleAddSdkCall(
       } catch (e) {
         throw StorageError.eventInsertFailed(
           `Failed to insert event for user ${event_data.userId}`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -110,7 +110,7 @@ export async function handleAddSdkCall(
         OPERATION,
         "event_inserted",
         "Event row inserted",
-        { eventId: eventID.id, userId: event_data.userId, apiKeyId },
+        { eventId: eventID.id, userId: event_data.userId, apiKeyId }
       );
 
       // Insert SDK call event
@@ -131,12 +131,12 @@ export async function handleAddSdkCall(
             eventId: eventID.id,
             debitAmount: sdkData.data.debitAmount,
             userId: event_data.userId,
-          },
+          }
         );
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to insert SDK call event for event ID ${eventID.id}`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -147,7 +147,7 @@ export async function handleAddSdkCall(
       OPERATION,
       "completed",
       "SDK_CALL transaction completed successfully",
-      { userId: event_data.userId, apiKeyId },
+      { userId: event_data.userId, apiKeyId }
     );
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
@@ -162,7 +162,7 @@ export async function handleAddSdkCall(
 
     throw StorageError.transactionFailed(
       "Transaction failed while storing SDK_CALL event",
-      e instanceof Error ? e : new Error(String(e)),
+      e instanceof Error ? e : new Error(String(e))
     );
   }
 }

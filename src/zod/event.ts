@@ -23,7 +23,7 @@ const SDKCallEvent = BaseEvent.extend({
             z
               .literal(2)
               .transform(
-                () => "MIDDLEWARE_CALL",
+                () => "MIDDLEWARE_CALL"
               ) as z.ZodType<"MIDDLEWARE_CALL">,
           ]),
           debit: z.union([
@@ -55,7 +55,7 @@ const SDKCallEvent = BaseEvent.extend({
 
               if (!tagRow) {
                 throw EventError.validationFailed(
-                  `Tag not found: ${v.debit.value}`,
+                  `Tag not found: ${v.debit.value}`
                 );
               }
 
@@ -192,8 +192,8 @@ const AITokenUsageEvent = BaseEvent.extend({
     .transform((obj) => obj.value),
 });
 
-export const eventSchema = z.discriminatedUnion("type", [
-  SDKCallEvent,
-  AITokenUsageEvent,
-]);
-export type EventSchemaType = z.infer<typeof eventSchema>;
+export const registerEventSchema = SDKCallEvent;
+export type RegisterEventSchemaType = z.infer<typeof registerEventSchema>;
+
+export const streamEventSchema = AITokenUsageEvent;
+export type StreamEventSchemaType = z.infer<typeof streamEventSchema>;

@@ -98,10 +98,10 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       await adapter.add(serialized);
 
       const insertedValues = mockTransaction.values.mock.calls.map(
-        (c: any) => c[0],
+        (c: any) => c[0]
       );
       const sdkCallRecord = insertedValues.find(
-        (v: any) => v && v.debitAmount === 500,
+        (v: any) => v && v.debitAmount === 500
       );
 
       expect(sdkCallRecord).toBeDefined();
@@ -117,7 +117,7 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       });
 
       mockTransaction.returning.mockRejectedValueOnce(
-        new Error("Event insert failed"),
+        new Error("Event insert failed")
       );
 
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key");
@@ -136,7 +136,7 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       const adapter = new PostgresAdapter(sdkCallEvent, "api-key");
       const serialized = sdkCallEvent.serialize();
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Event insert returned no ID",
+        "Event insert returned no ID"
       );
     });
   });
@@ -163,7 +163,7 @@ describe("PostgresAdapter - addSdkCall handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any, "api-key");
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Timestamp is undefined or empty",
+        "Timestamp is undefined or empty"
       );
     });
   });

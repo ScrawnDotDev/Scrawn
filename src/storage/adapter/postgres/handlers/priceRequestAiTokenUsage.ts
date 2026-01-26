@@ -11,14 +11,14 @@ import { logger } from "../../../../errors/logger";
 const OPERATION = "PriceRequestAiTokenUsage";
 
 export async function handlePriceRequestAiTokenUsage(
-  event_data: SqlRecord<"REQUEST_AI_TOKEN_USAGE">,
+  event_data: SqlRecord<"REQUEST_AI_TOKEN_USAGE">
 ): Promise<number> {
   const connectionObject = getPostgresDB();
 
   try {
     if (!event_data.userId) {
       throw StorageError.invalidData(
-        "Missing userId in REQUEST_AI_TOKEN_USAGE event",
+        "Missing userId in REQUEST_AI_TOKEN_USAGE event"
       );
     }
 
@@ -27,7 +27,7 @@ export async function handlePriceRequestAiTokenUsage(
       event_data.userId.trim().length === 0
     ) {
       throw StorageError.invalidData(
-        `Invalid userId format: ${typeof event_data.userId}`,
+        `Invalid userId format: ${typeof event_data.userId}`
       );
     }
 
@@ -35,7 +35,7 @@ export async function handlePriceRequestAiTokenUsage(
       OPERATION,
       "start",
       "Querying price for REQUEST_AI_TOKEN_USAGE",
-      { userId: event_data.userId },
+      { userId: event_data.userId }
     );
 
     let result;
@@ -43,7 +43,7 @@ export async function handlePriceRequestAiTokenUsage(
       result = await connectionObject
         .select({
           price: sum(
-            sql`${aiTokenUsageEventsTable.inputDebitAmount} + ${aiTokenUsageEventsTable.outputDebitAmount}`,
+            sql`${aiTokenUsageEventsTable.inputDebitAmount} + ${aiTokenUsageEventsTable.outputDebitAmount}`
           ),
         })
         .from(aiTokenUsageEventsTable)
@@ -53,19 +53,19 @@ export async function handlePriceRequestAiTokenUsage(
     } catch (e) {
       throw StorageError.queryFailed(
         `Failed to query REQUEST_AI_TOKEN_USAGE events for user ${event_data.userId}`,
-        e instanceof Error ? e : new Error(String(e)),
+        e instanceof Error ? e : new Error(String(e))
       );
     }
 
     if (!result) {
       throw StorageError.emptyResult(
-        `Price query returned null for user ${event_data.userId}`,
+        `Price query returned null for user ${event_data.userId}`
       );
     }
 
     if (!Array.isArray(result)) {
       throw StorageError.queryFailed(
-        `Query result is not an array for user ${event_data.userId}`,
+        `Query result is not an array for user ${event_data.userId}`
       );
     }
 
@@ -74,7 +74,7 @@ export async function handlePriceRequestAiTokenUsage(
         OPERATION,
         "no_events",
         "No AI token usage events found, returning 0",
-        { userId: event_data.userId },
+        { userId: event_data.userId }
       );
       return 0;
     }
@@ -86,7 +86,7 @@ export async function handlePriceRequestAiTokenUsage(
         OPERATION,
         "null_price",
         "Price is null/undefined, returning 0",
-        { userId: event_data.userId },
+        { userId: event_data.userId }
       );
       return 0;
     }
@@ -97,14 +97,14 @@ export async function handlePriceRequestAiTokenUsage(
     } catch (e) {
       throw StorageError.priceCalculationFailed(
         event_data.userId,
-        new Error(`Failed to parse price value: ${priceValue}`),
+        new Error(`Failed to parse price value: ${priceValue}`)
       );
     }
 
     if (isNaN(parsedPrice)) {
       throw StorageError.priceCalculationFailed(
         event_data.userId,
-        new Error(`Price parsed to NaN from value: ${priceValue}`),
+        new Error(`Price parsed to NaN from value: ${priceValue}`)
       );
     }
 
@@ -119,7 +119,7 @@ export async function handlePriceRequestAiTokenUsage(
       OPERATION,
       "completed",
       "Price calculated successfully",
-      { userId: event_data.userId, price: parsedPrice },
+      { userId: event_data.userId, price: parsedPrice }
     );
 
     return parsedPrice;
@@ -136,7 +136,7 @@ export async function handlePriceRequestAiTokenUsage(
 
     throw StorageError.priceCalculationFailed(
       "Failed to calculate price for REQUEST_AI_TOKEN_USAGE event",
-      e instanceof Error ? e : new Error(String(e)),
+      e instanceof Error ? e : new Error(String(e))
     );
   }
 }

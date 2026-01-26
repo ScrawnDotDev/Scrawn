@@ -11,7 +11,7 @@ export class SDKCall implements SDKCallEvent {
 
   constructor(
     public userId: UserId,
-    public data: SDKCallEventData,
+    public data: SDKCallEventData
   ) {
     this.reported_timestamp = DateTime.utc();
   }

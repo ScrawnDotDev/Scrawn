@@ -44,7 +44,7 @@ export const apiKeysTable = pgTable(
     uniqueActiveName: uniqueIndex("unique_active_name")
       .on(table.name)
       .where(sql`${table.revoked} = false`),
-  }),
+  })
 );
 
 export const apiKeysRelation = relations(apiKeysTable, ({ many }) => ({
@@ -101,7 +101,7 @@ export const sdkCallEventsRelation = relations(
       fields: [sdkCallEventsTable.id],
       references: [eventsTable.id],
     }),
-  }),
+  })
 );
 
 export const paymentEventsTable = pgTable("payment_events", {
@@ -118,7 +118,7 @@ export const paymentEventsRelation = relations(
       fields: [paymentEventsTable.id],
       references: [eventsTable.id],
     }),
-  }),
+  })
 );
 
 export const tagsTable = pgTable("tags", {
@@ -145,5 +145,5 @@ export const aiTokenUsageEventsRelation = relations(
       fields: [aiTokenUsageEventsTable.id],
       references: [eventsTable.id],
     }),
-  }),
+  })
 );

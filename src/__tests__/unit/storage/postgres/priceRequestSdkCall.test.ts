@@ -27,7 +27,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
     it("calculates price for user with SDK call events", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockResolvedValueOnce([{ price: "1500" }]);
@@ -42,7 +42,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
     it("returns zero for user with no SDK call events", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockResolvedValueOnce([]);
@@ -57,7 +57,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
     it("returns zero when price is null", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockResolvedValueOnce([{ price: null }]);
@@ -72,7 +72,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
     it("parses string price to integer", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockResolvedValueOnce([{ price: "12345" }]);
@@ -126,7 +126,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.price(serialized)).rejects.toThrow(
-        "Invalid userId format",
+        "Invalid userId format"
       );
     });
   });
@@ -135,11 +135,11 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
     it("handles database query failure", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockRejectedValueOnce(
-        new Error("Database connection error"),
+        new Error("Database connection error")
       );
 
       const adapter = new PostgresAdapter(requestEvent);
@@ -150,7 +150,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
     it("handles null query result", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockResolvedValueOnce(null);
@@ -158,14 +158,14 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       const adapter = new PostgresAdapter(requestEvent);
       const serialized = requestEvent.serialize();
       await expect(adapter.price(serialized)).rejects.toThrow(
-        "Price query returned null",
+        "Price query returned null"
       );
     });
 
     it("handles non-array query result", async () => {
       const requestEvent = new RequestSDKCall(
         "550e8400-e29b-41d4-a716-446655440000",
-        null,
+        null
       );
 
       mockDb.groupBy.mockResolvedValueOnce({ price: "1500" });
@@ -173,7 +173,7 @@ describe("PostgresAdapter - priceRequestSdkCall handler", () => {
       const adapter = new PostgresAdapter(requestEvent);
       const serialized = requestEvent.serialize();
       await expect(adapter.price(serialized)).rejects.toThrow(
-        "Query result is not an array",
+        "Query result is not an array"
       );
     });
   });

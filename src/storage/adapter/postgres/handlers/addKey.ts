@@ -7,7 +7,7 @@ import { logger } from "../../../../errors/logger";
 const OPERATION = "AddKey";
 
 export async function handleAddKey(
-  event_data: SqlRecord<"ADD_KEY">,
+  event_data: SqlRecord<"ADD_KEY">
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -19,13 +19,13 @@ export async function handleAddKey(
 
     if (!event_data.data.name || typeof event_data.data.name !== "string") {
       throw StorageError.invalidData(
-        "Invalid or missing 'name' in ADD_KEY event data",
+        "Invalid or missing 'name' in ADD_KEY event data"
       );
     }
 
     if (!event_data.data.key || typeof event_data.data.key !== "string") {
       throw StorageError.invalidData(
-        "Invalid or missing 'key' in ADD_KEY event data",
+        "Invalid or missing 'key' in ADD_KEY event data"
       );
     }
 
@@ -45,13 +45,13 @@ export async function handleAddKey(
       } catch (e) {
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
       if (!reported_timestamp || reported_timestamp.trim().length === 0) {
         throw StorageError.invalidTimestamp(
-          "Timestamp is undefined or empty after conversion",
+          "Timestamp is undefined or empty after conversion"
         );
       }
 
@@ -75,13 +75,13 @@ export async function handleAddKey(
         ) {
           throw StorageError.constraintViolation(
             `API key with name '${keyData.data.name}' or key value already exists`,
-            e,
+            e
           );
         }
 
         throw StorageError.insertFailed(
           `Failed to insert API key '${keyData.data.name}'`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -91,7 +91,7 @@ export async function handleAddKey(
 
       if (!apiKeyRecord.id) {
         throw StorageError.emptyResult(
-          "API key insert returned object without id field",
+          "API key insert returned object without id field"
         );
       }
 
@@ -99,7 +99,7 @@ export async function handleAddKey(
         OPERATION,
         "key_inserted",
         "API key inserted successfully",
-        { apiKeyId: apiKeyRecord.id, keyName: keyData.data.name },
+        { apiKeyId: apiKeyRecord.id, keyName: keyData.data.name }
       );
 
       return apiKeyRecord;
@@ -117,7 +117,7 @@ export async function handleAddKey(
 
     throw StorageError.transactionFailed(
       "Transaction failed while storing ADD_KEY event",
-      e instanceof Error ? e : new Error(String(e)),
+      e instanceof Error ? e : new Error(String(e))
     );
   }
 }

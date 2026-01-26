@@ -23,7 +23,7 @@ type AggregatedEvent = {
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecord<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
+  apiKeyId: string
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -42,7 +42,7 @@ export async function handleAddAiTokenUsage(
       {
         eventCount: events.length,
         apiKeyId,
-      },
+      }
     );
 
     // Validate all events before processing
@@ -52,7 +52,7 @@ export async function handleAddAiTokenUsage(
       if (typeof inputTokens === "number" && inputTokens < 0) {
         throw StorageError.insertFailed(
           `Negative input tokens not allowed for AI token usage for user ${event_data.userId}`,
-          new Error(`inputTokens ${inputTokens} is negative`),
+          new Error(`inputTokens ${inputTokens} is negative`)
         );
       }
 
@@ -61,7 +61,7 @@ export async function handleAddAiTokenUsage(
       if (typeof outputTokens === "number" && outputTokens < 0) {
         throw StorageError.insertFailed(
           `Negative output tokens not allowed for AI token usage for user ${event_data.userId}`,
-          new Error(`outputTokens ${outputTokens} is negative`),
+          new Error(`outputTokens ${outputTokens} is negative`)
         );
       }
 
@@ -70,7 +70,7 @@ export async function handleAddAiTokenUsage(
       if (typeof inputDebitAmount === "number" && inputDebitAmount < 0) {
         throw StorageError.insertFailed(
           `Negative input debit amount not allowed for AI token usage for user ${event_data.userId}`,
-          new Error(`inputDebitAmount ${inputDebitAmount} is negative`),
+          new Error(`inputDebitAmount ${inputDebitAmount} is negative`)
         );
       }
 
@@ -79,7 +79,7 @@ export async function handleAddAiTokenUsage(
       if (typeof outputDebitAmount === "number" && outputDebitAmount < 0) {
         throw StorageError.insertFailed(
           `Negative output debit amount not allowed for AI token usage for user ${event_data.userId}`,
-          new Error(`outputDebitAmount ${outputDebitAmount} is negative`),
+          new Error(`outputDebitAmount ${outputDebitAmount} is negative`)
         );
       }
     }
@@ -94,13 +94,13 @@ export async function handleAddAiTokenUsage(
       } catch (e) {
         throw StorageError.invalidTimestamp(
           "Failed to convert reported_timestamp to ISO format",
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
       if (!reported_timestamp || reported_timestamp.trim().length === 0) {
         throw StorageError.invalidTimestamp(
-          "Timestamp is undefined or empty after conversion",
+          "Timestamp is undefined or empty after conversion"
         );
       }
 
@@ -141,13 +141,13 @@ export async function handleAddAiTokenUsage(
         originalCount: events.length,
         aggregatedCount: aggregatedEvents.length,
         apiKeyId,
-      },
+      }
     );
 
     await connectionObject.transaction(async (txn) => {
       // Collect unique user IDs
       const uniqueUserIds = Array.from(
-        new Set(aggregatedEvents.map((event) => event.userId)),
+        new Set(aggregatedEvents.map((event) => event.userId))
       );
 
       // Batch insert users if not exists
@@ -162,7 +162,7 @@ export async function handleAddAiTokenUsage(
             OPERATION,
             "users_ensured",
             "Users ensured in database",
-            { userCount: uniqueUserIds.length },
+            { userCount: uniqueUserIds.length }
           );
         }
       } catch (e) {
@@ -175,12 +175,12 @@ export async function handleAddAiTokenUsage(
             OPERATION,
             "users_exist",
             "Users already exist, continuing",
-            { userCount: uniqueUserIds.length },
+            { userCount: uniqueUserIds.length }
           );
         } else {
           throw StorageError.userInsertFailed(
             uniqueUserIds.join(", "),
-            e instanceof Error ? e : new Error(String(e)),
+            e instanceof Error ? e : new Error(String(e))
           );
         }
       }
@@ -202,7 +202,7 @@ export async function handleAddAiTokenUsage(
       } catch (e) {
         throw StorageError.eventInsertFailed(
           `Failed to batch insert ${aggregatedEvents.length} aggregated event(s)`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -213,7 +213,7 @@ export async function handleAddAiTokenUsage(
       if (eventIDs.length !== aggregatedEvents.length) {
         throw StorageError.insertFailed(
           `Expected ${aggregatedEvents.length} event IDs but got ${eventIDs.length}`,
-          new Error("Event ID count mismatch"),
+          new Error("Event ID count mismatch")
         );
       }
 
@@ -221,7 +221,7 @@ export async function handleAddAiTokenUsage(
         OPERATION,
         "events_inserted",
         `${eventIDs.length} event row(s) inserted`,
-        { eventCount: eventIDs.length, apiKeyId },
+        { eventCount: eventIDs.length, apiKeyId }
       );
 
       // Prepare AI token usage values for batch insert
@@ -230,7 +230,7 @@ export async function handleAddAiTokenUsage(
         if (!eventId) {
           throw StorageError.insertFailed(
             `Missing event ID at index ${index}`,
-            new Error("Event ID is undefined"),
+            new Error("Event ID is undefined")
           );
         }
         return {
@@ -254,12 +254,12 @@ export async function handleAddAiTokenUsage(
           {
             eventCount: aiTokenUsageValues.length,
             apiKeyId,
-          },
+          }
         );
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to batch insert AI token usage events`,
-          e instanceof Error ? e : new Error(String(e)),
+          e instanceof Error ? e : new Error(String(e))
         );
       }
 
@@ -267,7 +267,7 @@ export async function handleAddAiTokenUsage(
       if (!firstEvent || !firstEvent.id) {
         throw StorageError.insertFailed(
           "Missing or invalid ID for the first inserted event",
-          new Error(`Invalid first event ID: ${JSON.stringify(firstEvent)}`),
+          new Error(`Invalid first event ID: ${JSON.stringify(firstEvent)}`)
         );
       }
 
@@ -282,7 +282,7 @@ export async function handleAddAiTokenUsage(
         originalCount: events.length,
         aggregatedCount: aggregatedEvents.length,
         apiKeyId,
-      },
+      }
     );
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
@@ -297,7 +297,7 @@ export async function handleAddAiTokenUsage(
 
     throw StorageError.transactionFailed(
       `Transaction failed while storing ${events.length} AI_TOKEN_USAGE event(s)`,
-      e instanceof Error ? e : new Error(String(e)),
+      e instanceof Error ? e : new Error(String(e))
     );
   }
 }
