@@ -59,24 +59,24 @@ describe("authInterceptor", () => {
 
     // Empty Authorization should be rejected
     await expect(interceptor(next)(makeReq() as any)).rejects.toThrow(
-      "Missing Authorization header",
+      "Missing Authorization header"
     );
 
     // Authorization that does not start with Bearer should be rejected
     await expect(
-      interceptor(next)(makeReq("Token abcdef") as any),
+      interceptor(next)(makeReq("Token abcdef") as any)
     ).rejects.toThrow(
-      'Authorization header must be in format "Bearer <api_key>"',
+      'Authorization header must be in format "Bearer <api_key>"'
     );
 
     // Authorization with invalid API key format (not starting with scrn_) should be rejected
     await expect(
-      interceptor(next)(makeReq("Bearer " + "a".repeat(37)) as any),
+      interceptor(next)(makeReq("Bearer " + "a".repeat(37)) as any)
     ).rejects.toThrow("Invalid API key: Invalid API key format");
 
     // Authorization with invalid API key format (wrong length) should be rejected
     await expect(
-      interceptor(next)(makeReq("Bearer scrn_short") as any),
+      interceptor(next)(makeReq("Bearer scrn_short") as any)
     ).rejects.toThrow("Invalid API key: Invalid API key format");
   });
 

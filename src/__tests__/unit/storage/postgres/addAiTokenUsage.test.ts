@@ -148,7 +148,7 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
 
       // Find GPT-4 aggregated record
       const gpt4Record = aiTokenUsageInsertCall[0].find(
-        (r: any) => r.model === "gpt-4",
+        (r: any) => r.model === "gpt-4"
       );
       expect(gpt4Record).toEqual({
         id: expect.any(String),
@@ -161,7 +161,7 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
 
       // Find Claude aggregated record
       const claudeRecord = aiTokenUsageInsertCall[0].find(
-        (r: any) => r.model === "claude-3-opus",
+        (r: any) => r.model === "claude-3-opus"
       );
       expect(claudeRecord).toEqual({
         id: expect.any(String),
@@ -313,12 +313,12 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
 
       // Verify aggregation: should have 2 gpt-4 records and 1 claude record
       const gpt4Records = aiTokenUsageInsertCall[0].filter(
-        (r: any) => r.model === "gpt-4",
+        (r: any) => r.model === "gpt-4"
       );
       expect(gpt4Records).toHaveLength(2);
 
       const claudeRecords = aiTokenUsageInsertCall[0].filter(
-        (r: any) => r.model === "claude-3-sonnet",
+        (r: any) => r.model === "claude-3-sonnet"
       );
       expect(claudeRecords).toHaveLength(1);
 
@@ -419,7 +419,7 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
           { id: "user-1" },
           { id: "user-2" },
           { id: "user-3" },
-        ]),
+        ])
       );
     });
 
@@ -491,7 +491,7 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
       mockTransaction.returning.mockResolvedValueOnce([]);
 
       await expect(
-        handleAddAiTokenUsage(events, "api-key-123"),
+        handleAddAiTokenUsage(events, "api-key-123")
       ).rejects.toThrow("Event insert returned no IDs");
     });
 
@@ -527,7 +527,7 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
       mockTransaction.returning.mockResolvedValueOnce([{ id: "event-1" }]);
 
       await expect(
-        handleAddAiTokenUsage(events, "api-key-123"),
+        handleAddAiTokenUsage(events, "api-key-123")
       ).rejects.toThrow("Expected 2 event IDs but got 1");
     });
   });
@@ -552,7 +552,7 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
       mockDb.transaction.mockRejectedValueOnce(new Error("Transaction failed"));
 
       await expect(
-        handleAddAiTokenUsage(events, "api-key-123"),
+        handleAddAiTokenUsage(events, "api-key-123")
       ).rejects.toThrow("Transaction failed");
     });
 
@@ -573,11 +573,11 @@ describe("handleAddAiTokenUsage - Aggregation and Batch Insert", () => {
       ];
 
       mockTransaction.returning.mockRejectedValueOnce(
-        new Error("Insert failed"),
+        new Error("Insert failed")
       );
 
       await expect(
-        handleAddAiTokenUsage(events, "api-key-123"),
+        handleAddAiTokenUsage(events, "api-key-123")
       ).rejects.toThrow();
     });
   });

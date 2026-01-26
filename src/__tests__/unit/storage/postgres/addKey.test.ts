@@ -92,7 +92,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Missing data field",
+        "Missing data field"
       );
     });
 
@@ -119,7 +119,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Invalid or missing 'name'",
+        "Invalid or missing 'name'"
       );
     });
 
@@ -146,7 +146,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Invalid or missing 'key'",
+        "Invalid or missing 'key'"
       );
     });
 
@@ -175,7 +175,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "API key cannot be empty",
+        "API key cannot be empty"
       );
     });
 
@@ -202,7 +202,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Timestamp is undefined or empty",
+        "Timestamp is undefined or empty"
       );
     });
   });
@@ -216,7 +216,7 @@ describe("PostgresAdapter - addKey handler", () => {
       });
 
       mockTransaction.returning.mockRejectedValueOnce(
-        new Error("Database connection error"),
+        new Error("Database connection error")
       );
 
       const adapter = new PostgresAdapter(addKeyEvent);
@@ -236,7 +236,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(addKeyEvent);
       const serialized = addKeyEvent.serialize();
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "API key insert returned no record",
+        "API key insert returned no record"
       );
     });
 
@@ -252,7 +252,7 @@ describe("PostgresAdapter - addKey handler", () => {
       const adapter = new PostgresAdapter(addKeyEvent);
       const serialized = addKeyEvent.serialize();
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "API key insert returned object without id field",
+        "API key insert returned object without id field"
       );
     });
   });

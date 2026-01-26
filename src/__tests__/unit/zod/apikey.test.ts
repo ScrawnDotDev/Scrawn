@@ -53,7 +53,7 @@ describe("createAPIKeySchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
-        "API key name must be less than 255 characters",
+        "API key name must be less than 255 characters"
       );
     }
   });
@@ -68,7 +68,7 @@ describe("createAPIKeySchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
-        "Expiration time must be an integer",
+        "Expiration time must be an integer"
       );
     }
   });
@@ -83,7 +83,7 @@ describe("createAPIKeySchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
-        "Expiration time must be at least 60 seconds",
+        "Expiration time must be at least 60 seconds"
       );
     }
   });
@@ -98,7 +98,7 @@ describe("createAPIKeySchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe(
-        "Expiration time cannot exceed 1 year",
+        "Expiration time cannot exceed 1 year"
       );
     }
   });

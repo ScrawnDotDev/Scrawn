@@ -63,7 +63,7 @@ class ErrorLogger {
     errorType: string,
     message: string,
     originalError?: Error,
-    context?: LogContext,
+    context?: LogContext
   ): void {
     if (!this.shouldLog(errorType, message)) {
       return;
@@ -126,7 +126,7 @@ class ErrorLogger {
     errorType: string,
     message: string,
     originalError?: Error,
-    extra?: Omit<OperationContext, "operation" | "stage">,
+    extra?: Omit<OperationContext, "operation" | "stage">
   ): void {
     this.logError(errorType, message, originalError, {
       operation,
@@ -139,7 +139,7 @@ class ErrorLogger {
     operation: string,
     stage: string,
     message: string,
-    extra?: Omit<OperationContext, "operation" | "stage">,
+    extra?: Omit<OperationContext, "operation" | "stage">
   ): void {
     this.logInfo(message, { operation, stage, ...extra });
   }
@@ -148,7 +148,7 @@ class ErrorLogger {
     operation: string,
     stage: string,
     message: string,
-    extra?: Omit<OperationContext, "operation" | "stage">,
+    extra?: Omit<OperationContext, "operation" | "stage">
   ): void {
     this.logDebug(message, { operation, stage, ...extra });
   }

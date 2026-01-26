@@ -43,7 +43,7 @@ export async function validateAndParseRegisterEvent(req: RegisterEventRequest) {
     }
     throw EventError.validationFailed(
       "Unknown validation error",
-      error as Error,
+      error as Error
     );
   }
 }
@@ -63,7 +63,7 @@ export async function validateAndParseStreamEvent(req: StreamEventRequest) {
     }
     throw EventError.validationFailed(
       "Unknown validation error",
-      error as Error,
+      error as Error
     );
   }
 }
@@ -85,7 +85,7 @@ export function createEventInstance(eventSkeleton: {
       case "REQUEST_AI_TOKEN_USAGE":
         return new RequestAITokenUsage(
           eventSkeleton.userId,
-          eventSkeleton.data,
+          eventSkeleton.data
         );
       default:
         throw EventError.unsupportedEventType(eventSkeleton.type);
@@ -103,18 +103,18 @@ export function createEventInstance(eventSkeleton: {
  */
 export async function storeEvent(
   event: Event,
-  apiKeyId: string,
+  apiKeyId: string
 ): Promise<void> {
   try {
     const adapter = await StorageAdapterFactory.getStorageAdapter(
       event,
-      apiKeyId,
+      apiKeyId
     );
     await adapter.add(event.serialize());
   } catch (error) {
     throw EventError.serializationError(
       "Failed to store event",
-      error as Error,
+      error as Error
     );
   }
 }

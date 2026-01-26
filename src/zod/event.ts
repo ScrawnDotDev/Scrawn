@@ -22,7 +22,7 @@ const SDKCallEvent = BaseEvent.extend({
             z
               .literal(2)
               .transform(
-                () => "MIDDLEWARE_CALL",
+                () => "MIDDLEWARE_CALL"
               ) as z.ZodType<"MIDDLEWARE_CALL">,
           ]),
           debit: z.union([
@@ -49,7 +49,7 @@ const SDKCallEvent = BaseEvent.extend({
 
               if (!tagRow) {
                 throw EventError.validationFailed(
-                  `Tag not found: ${v.debit.value}`,
+                  `Tag not found: ${v.debit.value}`
                 );
               }
 
@@ -119,7 +119,7 @@ const AITokenUsageEvent = BaseEvent.extend({
 
               if (!tagRow) {
                 throw EventError.validationFailed(
-                  `Input tag not found: ${v.inputDebit.value}`,
+                  `Input tag not found: ${v.inputDebit.value}`
                 );
               }
 
@@ -146,7 +146,7 @@ const AITokenUsageEvent = BaseEvent.extend({
 
               if (!tagRow) {
                 throw EventError.validationFailed(
-                  `Output tag not found: ${v.outputDebit.value}`,
+                  `Output tag not found: ${v.outputDebit.value}`
                 );
               }
 

@@ -163,7 +163,7 @@ describe("PostgresAdapter - addPayment handler", () => {
       const adapter = new PostgresAdapter(invalidEvent as any);
       const serialized = invalidEvent.serialize() as any;
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Timestamp is undefined or empty",
+        "Timestamp is undefined or empty"
       );
     });
   });
@@ -176,7 +176,7 @@ describe("PostgresAdapter - addPayment handler", () => {
 
       mockTransaction.returning.mockResolvedValueOnce([]);
       mockTransaction.returning.mockRejectedValueOnce(
-        new Error("Event insert failed"),
+        new Error("Event insert failed")
       );
 
       const adapter = new PostgresAdapter(paymentEvent);
@@ -195,7 +195,7 @@ describe("PostgresAdapter - addPayment handler", () => {
       const adapter = new PostgresAdapter(paymentEvent);
       const serialized = paymentEvent.serialize();
       await expect(adapter.add(serialized)).rejects.toThrow(
-        "Event insert returned no ID",
+        "Event insert returned no ID"
       );
     });
   });

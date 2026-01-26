@@ -25,7 +25,7 @@ const OPERATION = "CreateCheckoutLink";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
-  context: HandlerContext,
+  context: HandlerContext
 ): Promise<CreateCheckoutLinkResponse> {
   try {
     const apiKeyId = context.values.get(apiKeyContextKey);
@@ -39,7 +39,7 @@ export async function createCheckoutLink(
       "Request authenticated",
       {
         apiKeyId,
-      },
+      }
     );
 
     // Read environment configuration
@@ -73,7 +73,7 @@ export async function createCheckoutLink(
       }
       throw PaymentError.validationFailed(
         "Unknown validation error",
-        error as Error,
+        error as Error
       );
     }
 
@@ -87,7 +87,7 @@ export async function createCheckoutLink(
           "LEMON_SQUEEZY_SDK_ERROR",
           "Lemon Squeezy SDK error",
           error as Error,
-          {},
+          {}
         );
       },
     });
@@ -106,7 +106,7 @@ export async function createCheckoutLink(
 
       if (!storageAdapter) {
         throw PaymentError.storageAdapterFailed(
-          "Storage adapter factory returned null or undefined",
+          "Storage adapter factory returned null or undefined"
         );
       }
 
@@ -119,7 +119,7 @@ export async function createCheckoutLink(
       ) {
         throw PaymentError.priceCalculationFailed(
           validatedData.userId,
-          new Error(`Invalid price value: ${custom_price}`),
+          new Error(`Invalid price value: ${custom_price}`)
         );
       }
     } catch (error) {
@@ -129,7 +129,7 @@ export async function createCheckoutLink(
         "PRICE_CALCULATION_FAILED",
         "Failed to calculate price",
         error as Error,
-        { userId: validatedData.userId, apiKeyId },
+        { userId: validatedData.userId, apiKeyId }
       );
 
       // Use duck typing instead of instanceof to work with mocked modules
@@ -144,7 +144,7 @@ export async function createCheckoutLink(
 
       throw PaymentError.priceCalculationFailed(
         validatedData.userId,
-        error as Error,
+        error as Error
       );
     }
 
@@ -169,7 +169,7 @@ export async function createCheckoutLink(
               api_key_id: String(apiKeyId),
             },
           },
-        },
+        }
       );
     } catch (error) {
       let errorMessage = "Unknown error";
@@ -193,19 +193,19 @@ export async function createCheckoutLink(
           price: custom_price,
           storeId: LEMON_SQUEEZY_STORE_ID,
           variantId: LEMON_SQUEEZY_VARIANT_ID,
-        },
+        }
       );
 
       throw PaymentError.lemonSqueezyApiError(
         errorMessage,
-        error instanceof Error ? error : new Error(String(error)),
+        error instanceof Error ? error : new Error(String(error))
       );
     }
 
     // Validate response from Lemon Squeezy with comprehensive checks
     if (!checkoutResponse) {
       throw PaymentError.invalidCheckoutResponse(
-        "Checkout response is null or undefined",
+        "Checkout response is null or undefined"
       );
     }
 
@@ -219,32 +219,32 @@ export async function createCheckoutLink(
     // Validate response structure
     if (!checkoutResponse.data) {
       throw PaymentError.invalidCheckoutResponse(
-        "Missing 'data' field in checkout response",
+        "Missing 'data' field in checkout response"
       );
     }
 
     if (!checkoutResponse.data.data) {
       throw PaymentError.invalidCheckoutResponse(
-        "Missing nested 'data' field in checkout response",
+        "Missing nested 'data' field in checkout response"
       );
     }
 
     if (!checkoutResponse.data.data.attributes) {
       throw PaymentError.invalidCheckoutResponse(
-        "Missing 'attributes' field in checkout response",
+        "Missing 'attributes' field in checkout response"
       );
     }
 
     const checkoutUrl = checkoutResponse.data.data.attributes.url;
     if (!checkoutUrl) {
       throw PaymentError.invalidCheckoutResponse(
-        "No checkout URL found in response attributes",
+        "No checkout URL found in response attributes"
       );
     }
 
     if (typeof checkoutUrl !== "string" || checkoutUrl.trim().length === 0) {
       throw PaymentError.invalidCheckoutResponse(
-        `Invalid checkout URL format: ${typeof checkoutUrl}`,
+        `Invalid checkout URL format: ${typeof checkoutUrl}`
       );
     }
 
@@ -254,7 +254,7 @@ export async function createCheckoutLink(
     } catch (urlError) {
       throw PaymentError.invalidCheckoutResponse(
         `Checkout URL is not a valid URL: ${checkoutUrl}`,
-        urlError instanceof Error ? urlError : undefined,
+        urlError instanceof Error ? urlError : undefined
       );
     }
 
@@ -262,7 +262,7 @@ export async function createCheckoutLink(
       OPERATION,
       "completed",
       "Checkout link created successfully",
-      { userId: validatedData.userId, apiKeyId, checkoutUrl },
+      { userId: validatedData.userId, apiKeyId, checkoutUrl }
     );
 
     return create(CreateCheckoutLinkResponseSchema, {
@@ -281,7 +281,7 @@ export async function createCheckoutLink(
           : "UNKNOWN",
       "CreateCheckoutLink handler failed",
       error instanceof Error ? error : undefined,
-      { apiKeyId },
+      { apiKeyId }
     );
 
     // Re-throw PaymentError as-is
@@ -303,7 +303,7 @@ export async function createCheckoutLink(
 
     // Wrap unexpected errors with context
     throw PaymentError.unknown(
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(String(error))
     );
   }
 }

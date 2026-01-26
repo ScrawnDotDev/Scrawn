@@ -8,7 +8,7 @@ import { logger } from "../../../../errors/logger";
 const OPERATION = "PriceRequestPayment";
 
 export async function handlePriceRequestPayment(
-  event_data: SqlRecord<"REQUEST_PAYMENT">,
+  event_data: SqlRecord<"REQUEST_PAYMENT">
 ): Promise<number> {
   try {
     if (!event_data.userId) {
@@ -19,7 +19,7 @@ export async function handlePriceRequestPayment(
       OPERATION,
       "start",
       "Calculating price for REQUEST_PAYMENT",
-      { userId: event_data.userId },
+      { userId: event_data.userId }
     );
 
     // Calculate SDK call price
@@ -30,8 +30,8 @@ export async function handlePriceRequestPayment(
     if (!sdkStorageAdapter) {
       throw StorageError.unknown(
         new Error(
-          "Storage adapter factory returned null or undefined for SDK calls",
-        ),
+          "Storage adapter factory returned null or undefined for SDK calls"
+        )
       );
     }
 
@@ -40,7 +40,7 @@ export async function handlePriceRequestPayment(
     if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
       throw StorageError.priceCalculationFailed(
         event_data.userId,
-        new Error(`Invalid SDK price value returned: ${sdkPrice}`),
+        new Error(`Invalid SDK price value returned: ${sdkPrice}`)
       );
     }
 
@@ -48,7 +48,7 @@ export async function handlePriceRequestPayment(
       OPERATION,
       "sdk_price_calculated",
       "SDK call price calculated successfully",
-      { userId: event_data.userId, sdkPrice },
+      { userId: event_data.userId, sdkPrice }
     );
 
     // Calculate AI token usage price
@@ -59,8 +59,8 @@ export async function handlePriceRequestPayment(
     if (!aiStorageAdapter) {
       throw StorageError.unknown(
         new Error(
-          "Storage adapter factory returned null or undefined for AI token usage",
-        ),
+          "Storage adapter factory returned null or undefined for AI token usage"
+        )
       );
     }
 
@@ -69,7 +69,7 @@ export async function handlePriceRequestPayment(
     if (typeof aiPrice !== "number" || isNaN(aiPrice)) {
       throw StorageError.priceCalculationFailed(
         event_data.userId,
-        new Error(`Invalid AI price value returned: ${aiPrice}`),
+        new Error(`Invalid AI price value returned: ${aiPrice}`)
       );
     }
 
@@ -77,7 +77,7 @@ export async function handlePriceRequestPayment(
       OPERATION,
       "ai_price_calculated",
       "AI token usage price calculated successfully",
-      { userId: event_data.userId, aiPrice },
+      { userId: event_data.userId, aiPrice }
     );
 
     // Sum both prices
@@ -87,7 +87,7 @@ export async function handlePriceRequestPayment(
       OPERATION,
       "completed",
       "Total price calculated successfully",
-      { userId: event_data.userId, sdkPrice, aiPrice, totalPrice },
+      { userId: event_data.userId, sdkPrice, aiPrice, totalPrice }
     );
 
     return totalPrice;
@@ -104,7 +104,7 @@ export async function handlePriceRequestPayment(
 
     throw StorageError.priceCalculationFailed(
       "Failed to calculate price for REQUEST_PAYMENT event",
-      e instanceof Error ? e : new Error(String(e)),
+      e instanceof Error ? e : new Error(String(e))
     );
   }
 }

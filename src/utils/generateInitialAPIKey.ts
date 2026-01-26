@@ -5,7 +5,7 @@ const HMAC_SECRET = process.env.HMAC_SECRET;
 
 if (!HMAC_SECRET) {
   console.error(
-    "Error: HMAC_SECRET environment variable is not set. (check .env.example file)",
+    "Error: HMAC_SECRET environment variable is not set. (check .env.example file)"
   );
   process.exit(1);
 }
@@ -46,7 +46,7 @@ const apiKeyHash = hashAPIKey(apiKey);
 const name = "Dashboard Key";
 const createdAt = new Date().toISOString();
 const expiresAt = new Date(
-  Date.now() + 365 * 24 * 60 * 60 * 1000,
+  Date.now() + 365 * 24 * 60 * 60 * 1000
 ).toISOString(); // 1 year from now
 
 console.log("\n=== Initial API Key Generated ===");
@@ -58,7 +58,7 @@ console.log(`  Created At: ${createdAt}`);
 console.log(`  Expires At: ${expiresAt}`);
 console.log("\n\n=== SQL INSERT Statement ===\n");
 console.log(
-  `INSERT INTO api_keys (id, name, key, created_at, expires_at, revoked, revoked_at)`,
+  `INSERT INTO api_keys (id, name, key, created_at, expires_at, revoked, revoked_at)`
 );
 console.log(`VALUES (`);
 console.log(`  '${apiKeyId}',`);
@@ -74,11 +74,11 @@ console.log(`Authorization: Bearer ${apiKey}`);
 console.log("\n\n=== IMPORTANT ===");
 console.log("1. The key is stored as an HMAC-SHA256 hash in the database");
 console.log(
-  "2. Run the SQL INSERT statement above in your PostgreSQL database",
+  "2. Run the SQL INSERT statement above in your PostgreSQL database"
 );
 console.log("3. Use the PLAINTEXT API key (above) in the Authorization header");
 console.log(
-  "4. Keep this API key secure - it will be used to generate new API keys",
+  "4. Keep this API key secure - it will be used to generate new API keys"
 );
 console.log("5. The plaintext key is shown only once - save it now!");
 console.log("=================\n");

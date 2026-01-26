@@ -50,7 +50,7 @@ const grpcHandler = connectNodeAdapter({
 // Create a combined handler for both gRPC and HTTP webhooks
 const requestHandler = (
   req: http.IncomingMessage,
-  res: http.ServerResponse,
+  res: http.ServerResponse
 ) => {
   // Handle webhook endpoint
   if (

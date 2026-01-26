@@ -11,7 +11,7 @@ export class Payment implements PaymentEvent {
 
   constructor(
     public userId: UserId,
-    public data: PaymentEventData,
+    public data: PaymentEventData
   ) {
     this.reported_timestamp = DateTime.utc();
   }

@@ -36,7 +36,7 @@ export class PostgresAdapter implements StorageAdapter {
 
       if (!event_data) {
         throw StorageError.serializationFailed(
-          "Event serialization returned null or undefined",
+          "Event serialization returned null or undefined"
         );
       }
     } catch (e) {
@@ -51,7 +51,7 @@ export class PostgresAdapter implements StorageAdapter {
       }
       throw StorageError.serializationFailed(
         "Failed to serialize event data",
-        e instanceof Error ? e : new Error(String(e)),
+        e instanceof Error ? e : new Error(String(e))
       );
     }
 
@@ -93,7 +93,7 @@ export class PostgresAdapter implements StorageAdapter {
 
       if (!event_data) {
         throw StorageError.serializationFailed(
-          "Event serialization returned null or undefined",
+          "Event serialization returned null or undefined"
         );
       }
     } catch (e) {
@@ -108,7 +108,7 @@ export class PostgresAdapter implements StorageAdapter {
       }
       throw StorageError.serializationFailed(
         "Failed to serialize event data for price calculation",
-        e instanceof Error ? e : new Error(String(e)),
+        e instanceof Error ? e : new Error(String(e))
       );
     }
 

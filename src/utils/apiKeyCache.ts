@@ -106,7 +106,7 @@ class APIKeyCache {
       this.cache.delete(oldestKey);
       logger.logDebug(
         `Evicted LRU cache entry (cache full at ${this.maxSize})`,
-        {},
+        {}
       );
     }
   }
@@ -131,7 +131,7 @@ class APIKeyCache {
     if (keysToDelete.length > 0) {
       logger.logDebug(
         `Cleaned up ${keysToDelete.length} expired cache entries`,
-        {},
+        {}
       );
     }
   }

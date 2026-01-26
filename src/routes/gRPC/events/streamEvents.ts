@@ -20,7 +20,7 @@ const OPERATION = "StreamEvents";
 
 export async function streamEvents(
   requestStream: AsyncIterable<StreamEventRequest>,
-  context: HandlerContext,
+  context: HandlerContext
 ): Promise<StreamEventResponse> {
   let eventsProcessed = 0;
 
@@ -34,7 +34,7 @@ export async function streamEvents(
       "Stream authenticated",
       {
         apiKeyId,
-      },
+      }
     );
 
     // Collect all events from the stream
@@ -60,7 +60,7 @@ export async function streamEvents(
           apiKeyId,
           userId: eventSkeleton.userId,
           eventNumber: eventsProcessed,
-        },
+        }
       );
     }
 
@@ -71,7 +71,7 @@ export async function streamEvents(
       {
         apiKeyId: context.values.get(apiKeyContextKey),
         eventsProcessed,
-      },
+      }
     );
 
     return create(StreamEventResponseSchema, {
@@ -88,7 +88,7 @@ export async function streamEvents(
       {
         apiKeyId: context.values.get(apiKeyContextKey),
         eventsProcessed,
-      },
+      }
     );
 
     // Re-throw EventError as-is

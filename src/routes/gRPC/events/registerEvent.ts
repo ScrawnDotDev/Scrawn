@@ -19,7 +19,7 @@ const OPERATION = "RegisterEvent";
 
 export async function registerEvent(
   req: RegisterEventRequest,
-  context: HandlerContext,
+  context: HandlerContext
 ): Promise<RegisterEventResponse> {
   try {
     // Extract API key ID from context
@@ -31,7 +31,7 @@ export async function registerEvent(
       "Request authenticated",
       {
         apiKeyId,
-      },
+      }
     );
 
     // Validate and parse the incoming event
@@ -50,7 +50,7 @@ export async function registerEvent(
       {
         apiKeyId,
         userId: eventSkeleton.userId,
-      },
+      }
     );
 
     return create(RegisterEventResponseSchema, {
@@ -63,7 +63,7 @@ export async function registerEvent(
       error instanceof EventError ? error.type : "UNKNOWN",
       "RegisterEvent handler failed",
       error instanceof Error ? error : undefined,
-      { apiKeyId: context.values.get(apiKeyContextKey) },
+      { apiKeyId: context.values.get(apiKeyContextKey) }
     );
 
     // Re-throw EventError as-is

@@ -32,7 +32,7 @@ export class APIKeyError extends ConnectError {
 
   static invalidExpiration(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.INVALID_EXPIRATION,
@@ -77,7 +77,7 @@ export class APIKeyError extends ConnectError {
 
   static revocationFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.REVOCATION_FAILED,

@@ -166,7 +166,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "MISSING_WEBHOOK_SECRET",
       "Webhook secret not configured",
       undefined,
-      {},
+      {}
     );
   });
 
@@ -194,7 +194,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "INVALID_SIGNATURE",
       "Invalid webhook signature",
       undefined,
-      {},
+      {}
     );
   });
 
@@ -225,7 +225,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "INVALID_JSON",
       "Invalid JSON payload",
       expect.any(Error),
-      {},
+      {}
     );
   });
 
@@ -255,7 +255,7 @@ describe("handleLemonSqueezyWebhook", () => {
     expect((res as any).statusCode).toBe(200);
     expect((res as any).body).toContain("Event ignored");
     expect(
-      storageModule.StorageAdapterFactory.getStorageAdapter,
+      storageModule.StorageAdapterFactory.getStorageAdapter
     ).not.toHaveBeenCalled();
     expect(paymentConstructorCalls.length).toBe(0);
   });
@@ -295,7 +295,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "MISSING_USER_ID",
       "Missing user_id in webhook payload",
       undefined,
-      {},
+      {}
     );
   });
 
@@ -336,7 +336,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "MISSING_API_KEY_ID",
       "Missing apiKeyId in webhook payload",
       undefined,
-      { userId: "user-123" },
+      { userId: "user-123" }
     );
   });
 
@@ -346,7 +346,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const adapterAddMock = vi.fn().mockResolvedValue(undefined);
     vi.mocked(
-      storageModule.StorageAdapterFactory.getStorageAdapter,
+      storageModule.StorageAdapterFactory.getStorageAdapter
     ).mockResolvedValue({
       add: adapterAddMock,
     } as any);
@@ -394,10 +394,10 @@ describe("handleLemonSqueezyWebhook", () => {
     });
 
     expect(
-      storageModule.StorageAdapterFactory.getStorageAdapter,
+      storageModule.StorageAdapterFactory.getStorageAdapter
     ).toHaveBeenCalledTimes(1);
     const adapterCall = vi.mocked(
-      storageModule.StorageAdapterFactory.getStorageAdapter,
+      storageModule.StorageAdapterFactory.getStorageAdapter
     ).mock.calls[0];
     expect(adapterCall[1]).toBe("api-key-456");
 
@@ -414,7 +414,7 @@ describe("handleLemonSqueezyWebhook", () => {
     const dbError = new Error("DB error");
     const adapterAddMock = vi.fn().mockRejectedValue(dbError);
     vi.mocked(
-      storageModule.StorageAdapterFactory.getStorageAdapter,
+      storageModule.StorageAdapterFactory.getStorageAdapter
     ).mockResolvedValue({
       add: adapterAddMock,
     } as any);
@@ -464,7 +464,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "DATABASE_ERROR",
       "Database error while storing payment",
       dbError,
-      { userId: "user-123", apiKeyId: "api-key-456" },
+      { userId: "user-123", apiKeyId: "api-key-456" }
     );
   });
 
@@ -492,7 +492,7 @@ describe("handleLemonSqueezyWebhook", () => {
       "UNEXPECTED_ERROR",
       "Unexpected error in webhook handler",
       expect.any(Error),
-      {},
+      {}
     );
   });
 });

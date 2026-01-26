@@ -42,7 +42,7 @@ export class StorageError extends ConnectError {
 
   static connectionFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.CONNECTION_FAILED,
@@ -56,7 +56,7 @@ export class StorageError extends ConnectError {
 
   static transactionFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.TRANSACTION_FAILED,
@@ -92,7 +92,7 @@ export class StorageError extends ConnectError {
 
   static constraintViolation(
     constraint?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.CONSTRAINT_VIOLATION,
@@ -128,7 +128,7 @@ export class StorageError extends ConnectError {
 
   static serializationFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.SERIALIZATION_FAILED,
@@ -142,7 +142,7 @@ export class StorageError extends ConnectError {
 
   static unknownEventType(
     eventType: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.UNKNOWN_EVENT_TYPE,
@@ -163,7 +163,7 @@ export class StorageError extends ConnectError {
 
   static invalidTimestamp(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.INVALID_TIMESTAMP,
@@ -177,7 +177,7 @@ export class StorageError extends ConnectError {
 
   static userInsertFailed(
     userId?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.USER_INSERT_FAILED,
@@ -191,7 +191,7 @@ export class StorageError extends ConnectError {
 
   static eventInsertFailed(
     details?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.EVENT_INSERT_FAILED,
@@ -205,7 +205,7 @@ export class StorageError extends ConnectError {
 
   static priceCalculationFailed(
     userId?: string,
-    originalError?: Error,
+    originalError?: Error
   ): StorageError {
     return new StorageError({
       type: StorageErrorType.PRICE_CALCULATION_FAILED,
