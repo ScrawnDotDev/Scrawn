@@ -4,6 +4,7 @@ import { getPostgresDB } from "../storage/db/postgres/db";
 import { tagsTable } from "../storage/db/postgres/schema";
 import { eq } from "drizzle-orm";
 import { EventError } from "../errors/event";
+import { tagCache } from "../utils/tagCache";
 
 const BaseEvent = z.object({
   type: z.number(), // overwritten later by discriminators
@@ -39,6 +40,11 @@ const SDKCallEvent = BaseEvent.extend({
         .transform(async (v) => {
           // If a tag is provided, fetch the integer value for the tag and store it into debitAmount
           if (v.debit.case === "tag") {
+            const cachedAmount = tagCache.get(v.debit.value);
+            if (cachedAmount !== undefined) {
+              return { sdkCallType: v.sdkCallType, debitAmount: cachedAmount };
+            }
+
             const db = getPostgresDB();
             try {
               const [tagRow] = await db
@@ -53,6 +59,7 @@ const SDKCallEvent = BaseEvent.extend({
                 );
               }
 
+              tagCache.set(v.debit.value, tagRow.amount);
               return { sdkCallType: v.sdkCallType, debitAmount: tagRow.amount };
             } catch (e) {
               if (e instanceof EventError) {
@@ -110,25 +117,31 @@ const AITokenUsageEvent = BaseEvent.extend({
           // Process input debit
           let inputDebitAmount: number;
           if (v.inputDebit.case === "inputTag") {
-            try {
-              const [tagRow] = await db
-                .select()
-                .from(tagsTable)
-                .where(eq(tagsTable.tag, v.inputDebit.value))
-                .limit(1);
+            const cachedAmount = tagCache.get(v.inputDebit.value);
+            if (cachedAmount !== undefined) {
+              inputDebitAmount = cachedAmount;
+            } else {
+              try {
+                const [tagRow] = await db
+                  .select()
+                  .from(tagsTable)
+                  .where(eq(tagsTable.tag, v.inputDebit.value))
+                  .limit(1);
 
-              if (!tagRow) {
-                throw EventError.validationFailed(
-                  `Input tag not found: ${v.inputDebit.value}`,
-                );
-              }
+                if (!tagRow) {
+                  throw EventError.validationFailed(
+                    `Input tag not found: ${v.inputDebit.value}`,
+                  );
+                }
 
-              inputDebitAmount = tagRow.amount;
-            } catch (e) {
-              if (e instanceof EventError) {
-                throw e;
+                tagCache.set(v.inputDebit.value, tagRow.amount);
+                inputDebitAmount = tagRow.amount;
+              } catch (e) {
+                if (e instanceof EventError) {
+                  throw e;
+                }
+                throw EventError.unknown(e as Error);
               }
-              throw EventError.unknown(e as Error);
             }
           } else {
             inputDebitAmount = Math.floor(v.inputDebit.value * 100);
@@ -137,25 +150,31 @@ const AITokenUsageEvent = BaseEvent.extend({
           // Process output debit
           let outputDebitAmount: number;
           if (v.outputDebit.case === "outputTag") {
-            try {
-              const [tagRow] = await db
-                .select()
-                .from(tagsTable)
-                .where(eq(tagsTable.tag, v.outputDebit.value))
-                .limit(1);
+            const cachedAmount = tagCache.get(v.outputDebit.value);
+            if (cachedAmount !== undefined) {
+              outputDebitAmount = cachedAmount;
+            } else {
+              try {
+                const [tagRow] = await db
+                  .select()
+                  .from(tagsTable)
+                  .where(eq(tagsTable.tag, v.outputDebit.value))
+                  .limit(1);
 
-              if (!tagRow) {
-                throw EventError.validationFailed(
-                  `Output tag not found: ${v.outputDebit.value}`,
-                );
-              }
+                if (!tagRow) {
+                  throw EventError.validationFailed(
+                    `Output tag not found: ${v.outputDebit.value}`,
+                  );
+                }
 
-              outputDebitAmount = tagRow.amount;
-            } catch (e) {
-              if (e instanceof EventError) {
-                throw e;
+                tagCache.set(v.outputDebit.value, tagRow.amount);
+                outputDebitAmount = tagRow.amount;
+              } catch (e) {
+                if (e instanceof EventError) {
+                  throw e;
+                }
+                throw EventError.unknown(e as Error);
               }
-              throw EventError.unknown(e as Error);
             }
           } else {
             outputDebitAmount = Math.floor(v.outputDebit.value * 100);
