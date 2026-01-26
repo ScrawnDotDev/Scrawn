@@ -2,7 +2,7 @@ import type {
   StreamEventRequest,
   StreamEventResponse,
 } from "../../../gen/event/v1/event_pb";
-import type { SqlRecord } from "../../../interface/event/Event";
+
 import { StreamEventResponseSchema } from "../../../gen/event/v1/event_pb";
 import { create } from "@bufbuild/protobuf";
 import { EventError } from "../../../errors/event";
@@ -13,8 +13,8 @@ import {
   extractApiKeyFromContext,
   validateAndParseStreamEvent,
   createEventInstance,
+  storeEvent,
 } from "../../../utils/eventHelpers";
-import { handleAddAiTokenUsage } from "../../../storage/adapter/postgres/handlers";
 
 const OPERATION = "StreamEvents";
 
@@ -45,20 +45,11 @@ export async function streamEvents(
       // Create the appropriate event instance
       const event = createEventInstance(eventSkeleton);
 
-      const { SQL } = event.serialize();
-      if (!SQL) {
-        throw EventError.serializationError(
-          "Event serialization returned null or undefined",
-        );
-      }
-      if (SQL.type !== "AI_TOKEN_USAGE") {
-        throw EventError.unsupportedEventType(SQL.type);
+      if (event.type !== "AI_TOKEN_USAGE") {
+        throw EventError.unsupportedEventType(event.type);
       }
 
-      await handleAddAiTokenUsage(
-        [SQL],
-        apiKeyId,
-      );
+      await storeEvent(event, apiKeyId);
       eventsProcessed += 1;
 
       logger.logOperationInfo(

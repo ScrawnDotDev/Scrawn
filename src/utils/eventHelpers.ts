@@ -28,9 +28,7 @@ export function extractApiKeyFromContext(context: HandlerContext): string {
 /**
  * Validate and parse the incoming event request
  */
-export async function validateAndParseRegisterEvent(
-  req: RegisterEventRequest,
-) {
+export async function validateAndParseRegisterEvent(req: RegisterEventRequest) {
   try {
     return await registerEventSchema.parseAsync(req);
   } catch (error) {
@@ -50,9 +48,7 @@ export async function validateAndParseRegisterEvent(
   }
 }
 
-export async function validateAndParseStreamEvent(
-  req: StreamEventRequest,
-) {
+export async function validateAndParseStreamEvent(req: StreamEventRequest) {
   try {
     return await streamEventSchema.parseAsync(req);
   } catch (error) {
