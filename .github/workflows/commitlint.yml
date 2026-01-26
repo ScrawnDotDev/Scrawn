@@ -1,0 +1,7 @@
+name: commitlint
+
+on: pull_request
+
+jobs:
+  commitlint:
+    uses: ScrawnDotDev/.github/.github/workflows/commitlint.yml@master
