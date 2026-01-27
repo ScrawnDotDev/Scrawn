@@ -1,41 +1,8 @@
 import { z } from "zod";
 import { USER_ID_CONFIG } from "../config/identifiers";
-import { getPostgresDB } from "../storage/db/postgres/db";
-import { tagsTable } from "../storage/db/postgres/schema";
-import { eq } from "drizzle-orm";
-import { EventError } from "../errors/event";
-import { tagCache } from "../utils/tagCache";
-
-const fetchTagAmount = async (
-  tag: string,
-  notFoundMessage: string
-): Promise<number> => {
-  const cachedAmount = tagCache.get(tag);
-  if (cachedAmount !== undefined) {
-    return cachedAmount;
-  }
-
-  const db = getPostgresDB();
-  try {
-    const [tagRow] = await db
-      .select()
-      .from(tagsTable)
-      .where(eq(tagsTable.tag, tag))
-      .limit(1);
-
-    if (!tagRow) {
-      throw EventError.validationFailed(notFoundMessage);
-    }
-
-    tagCache.set(tag, tagRow.amount);
-    return tagRow.amount;
-  } catch (e) {
-    if (e instanceof EventError) {
-      throw e;
-    }
-    throw EventError.unknown(e as Error);
-  }
-};
+import { evaluateExpression } from "../utils/parser";
+import { fetchTagAmount } from "../utils/fetchTagAmount";
+export { fetchTagAmount } from "../utils/fetchTagAmount";
 
 const BaseEvent = z.object({
   type: z.number(), // overwritten later by discriminators
@@ -66,6 +33,10 @@ const SDKCallEvent = BaseEvent.extend({
               case: z.literal("tag"),
               value: z.string(),
             }),
+            z.object({
+              case: z.literal("expr"),
+              value: z.string(),
+            }),
           ]),
         })
         .transform(async (v) => {
@@ -75,6 +46,14 @@ const SDKCallEvent = BaseEvent.extend({
               `Tag not found: ${v.debit.value}`
             );
             return { sdkCallType: v.sdkCallType, debitAmount };
+          }
+
+          if (v.debit.case === "expr") {
+            const debitAmount = await evaluateExpression(v.debit.value);
+            return {
+              sdkCallType: v.sdkCallType,
+              debitAmount: Math.floor(debitAmount),
+            };
           }
 
           return {
@@ -107,6 +86,10 @@ const AITokenUsageEvent = BaseEvent.extend({
               case: z.literal("inputTag"),
               value: z.string(),
             }),
+            z.object({
+              case: z.literal("inputExpr"),
+              value: z.string(),
+            }),
           ]),
           outputDebit: z.union([
             z.object({
@@ -115,6 +98,10 @@ const AITokenUsageEvent = BaseEvent.extend({
             }),
             z.object({
               case: z.literal("outputTag"),
+              value: z.string(),
+            }),
+            z.object({
+              case: z.literal("outputExpr"),
               value: z.string(),
             }),
           ]),
@@ -127,6 +114,10 @@ const AITokenUsageEvent = BaseEvent.extend({
               v.inputDebit.value,
               `Input tag not found: ${v.inputDebit.value}`
             );
+          } else if (v.inputDebit.case === "inputExpr") {
+            inputDebitAmount = Math.floor(
+              await evaluateExpression(v.inputDebit.value)
+            );
           } else {
             inputDebitAmount = Math.floor(v.inputDebit.value * 100);
           }
@@ -137,6 +128,10 @@ const AITokenUsageEvent = BaseEvent.extend({
             outputDebitAmount = await fetchTagAmount(
               v.outputDebit.value,
               `Output tag not found: ${v.outputDebit.value}`
+            );
+          } else if (v.outputDebit.case === "outputExpr") {
+            outputDebitAmount = Math.floor(
+              await evaluateExpression(v.outputDebit.value)
             );
           } else {
             outputDebitAmount = Math.floor(v.outputDebit.value * 100);

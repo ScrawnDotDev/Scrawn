@@ -2,63 +2,48 @@
 // @generated from file payment/v1/payment.proto (package payment.v1, syntax proto3)
 /* eslint-disable */
 
-import type {
-  GenFile,
-  GenMessage,
-  GenService,
-} from "@bufbuild/protobuf/codegenv2";
-import {
-  fileDesc,
-  messageDesc,
-  serviceDesc,
-} from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file payment/v1/payment.proto.
  */
-export const file_payment_v1_payment: GenFile =
-  /*@__PURE__*/
-  fileDesc(
-    "ChhwYXltZW50L3YxL3BheW1lbnQucHJvdG8SCnBheW1lbnQudjEiKwoZQ3JlYXRlQ2hlY2tvdXRMaW5rUmVxdWVzdBIOCgZ1c2VySWQYASABKAkiMgoaQ3JlYXRlQ2hlY2tvdXRMaW5rUmVzcG9uc2USFAoMY2hlY2tvdXRMaW5rGAEgASgJMncKDlBheW1lbnRTZXJ2aWNlEmUKEkNyZWF0ZUNoZWNrb3V0TGluaxIlLnBheW1lbnQudjEuQ3JlYXRlQ2hlY2tvdXRMaW5rUmVxdWVzdBomLnBheW1lbnQudjEuQ3JlYXRlQ2hlY2tvdXRMaW5rUmVzcG9uc2UiAGIGcHJvdG8z"
-  );
+export const file_payment_v1_payment: GenFile = /*@__PURE__*/
+  fileDesc("ChhwYXltZW50L3YxL3BheW1lbnQucHJvdG8SCnBheW1lbnQudjEiKwoZQ3JlYXRlQ2hlY2tvdXRMaW5rUmVxdWVzdBIOCgZ1c2VySWQYASABKAkiMgoaQ3JlYXRlQ2hlY2tvdXRMaW5rUmVzcG9uc2USFAoMY2hlY2tvdXRMaW5rGAEgASgJMncKDlBheW1lbnRTZXJ2aWNlEmUKEkNyZWF0ZUNoZWNrb3V0TGluaxIlLnBheW1lbnQudjEuQ3JlYXRlQ2hlY2tvdXRMaW5rUmVxdWVzdBomLnBheW1lbnQudjEuQ3JlYXRlQ2hlY2tvdXRMaW5rUmVzcG9uc2UiAGIGcHJvdG8z");
 
 /**
  * @generated from message payment.v1.CreateCheckoutLinkRequest
  */
-export type CreateCheckoutLinkRequest =
-  Message<"payment.v1.CreateCheckoutLinkRequest"> & {
-    /**
-     * @generated from field: string userId = 1;
-     */
-    userId: string;
-  };
+export type CreateCheckoutLinkRequest = Message<"payment.v1.CreateCheckoutLinkRequest"> & {
+  /**
+   * @generated from field: string userId = 1;
+   */
+  userId: string;
+};
 
 /**
  * Describes the message payment.v1.CreateCheckoutLinkRequest.
  * Use `create(CreateCheckoutLinkRequestSchema)` to create a new message.
  */
-export const CreateCheckoutLinkRequestSchema: GenMessage<CreateCheckoutLinkRequest> =
-  /*@__PURE__*/
+export const CreateCheckoutLinkRequestSchema: GenMessage<CreateCheckoutLinkRequest> = /*@__PURE__*/
   messageDesc(file_payment_v1_payment, 0);
 
 /**
  * @generated from message payment.v1.CreateCheckoutLinkResponse
  */
-export type CreateCheckoutLinkResponse =
-  Message<"payment.v1.CreateCheckoutLinkResponse"> & {
-    /**
-     * @generated from field: string checkoutLink = 1;
-     */
-    checkoutLink: string;
-  };
+export type CreateCheckoutLinkResponse = Message<"payment.v1.CreateCheckoutLinkResponse"> & {
+  /**
+   * @generated from field: string checkoutLink = 1;
+   */
+  checkoutLink: string;
+};
 
 /**
  * Describes the message payment.v1.CreateCheckoutLinkResponse.
  * Use `create(CreateCheckoutLinkResponseSchema)` to create a new message.
  */
-export const CreateCheckoutLinkResponseSchema: GenMessage<CreateCheckoutLinkResponse> =
-  /*@__PURE__*/
+export const CreateCheckoutLinkResponseSchema: GenMessage<CreateCheckoutLinkResponse> = /*@__PURE__*/
   messageDesc(file_payment_v1_payment, 1);
 
 /**
@@ -74,5 +59,7 @@ export const PaymentService: GenService<{
     methodKind: "unary";
     input: typeof CreateCheckoutLinkRequestSchema;
     output: typeof CreateCheckoutLinkResponseSchema;
-  };
-}> = /*@__PURE__*/ serviceDesc(file_payment_v1_payment, 0);
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_payment_v1_payment, 0);
+

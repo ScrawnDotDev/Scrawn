@@ -2,26 +2,15 @@
 // @generated from file auth/v1/auth.proto (package auth.v1, syntax proto3)
 /* eslint-disable */
 
-import type {
-  GenFile,
-  GenMessage,
-  GenService,
-} from "@bufbuild/protobuf/codegenv2";
-import {
-  fileDesc,
-  messageDesc,
-  serviceDesc,
-} from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file auth/v1/auth.proto.
  */
-export const file_auth_v1_auth: GenFile =
-  /*@__PURE__*/
-  fileDesc(
-    "ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiNgoTQ3JlYXRlQVBJS2V5UmVxdWVzdBIMCgRuYW1lGAEgASgJEhEKCWV4cGlyZXNJbhgCIAEoAyJsChRDcmVhdGVBUElLZXlSZXNwb25zZRIQCghhcGlLZXlJZBgBIAEoCRIOCgZhcGlLZXkYAiABKAkSDAoEbmFtZRgDIAEoCRIRCgljcmVhdGVkQXQYBCABKAkSEQoJZXhwaXJlc0F0GAUgASgJMlwKC0F1dGhTZXJ2aWNlEk0KDENyZWF0ZUFQSUtleRIcLmF1dGgudjEuQ3JlYXRlQVBJS2V5UmVxdWVzdBodLmF1dGgudjEuQ3JlYXRlQVBJS2V5UmVzcG9uc2UiAGIGcHJvdG8z"
-  );
+export const file_auth_v1_auth: GenFile = /*@__PURE__*/
+  fileDesc("ChJhdXRoL3YxL2F1dGgucHJvdG8SB2F1dGgudjEiNgoTQ3JlYXRlQVBJS2V5UmVxdWVzdBIMCgRuYW1lGAEgASgJEhEKCWV4cGlyZXNJbhgCIAEoAyJsChRDcmVhdGVBUElLZXlSZXNwb25zZRIQCghhcGlLZXlJZBgBIAEoCRIOCgZhcGlLZXkYAiABKAkSDAoEbmFtZRgDIAEoCRIRCgljcmVhdGVkQXQYBCABKAkSEQoJZXhwaXJlc0F0GAUgASgJMlwKC0F1dGhTZXJ2aWNlEk0KDENyZWF0ZUFQSUtleRIcLmF1dGgudjEuQ3JlYXRlQVBJS2V5UmVxdWVzdBodLmF1dGgudjEuQ3JlYXRlQVBJS2V5UmVzcG9uc2UiAGIGcHJvdG8z");
 
 /**
  * @generated from message auth.v1.CreateAPIKeyRequest
@@ -44,8 +33,7 @@ export type CreateAPIKeyRequest = Message<"auth.v1.CreateAPIKeyRequest"> & {
  * Describes the message auth.v1.CreateAPIKeyRequest.
  * Use `create(CreateAPIKeyRequestSchema)` to create a new message.
  */
-export const CreateAPIKeyRequestSchema: GenMessage<CreateAPIKeyRequest> =
-  /*@__PURE__*/
+export const CreateAPIKeyRequestSchema: GenMessage<CreateAPIKeyRequest> = /*@__PURE__*/
   messageDesc(file_auth_v1_auth, 0);
 
 /**
@@ -82,8 +70,7 @@ export type CreateAPIKeyResponse = Message<"auth.v1.CreateAPIKeyResponse"> & {
  * Describes the message auth.v1.CreateAPIKeyResponse.
  * Use `create(CreateAPIKeyResponseSchema)` to create a new message.
  */
-export const CreateAPIKeyResponseSchema: GenMessage<CreateAPIKeyResponse> =
-  /*@__PURE__*/
+export const CreateAPIKeyResponseSchema: GenMessage<CreateAPIKeyResponse> = /*@__PURE__*/
   messageDesc(file_auth_v1_auth, 1);
 
 /**
@@ -99,5 +86,7 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof CreateAPIKeyRequestSchema;
     output: typeof CreateAPIKeyResponseSchema;
-  };
-}> = /*@__PURE__*/ serviceDesc(file_auth_v1_auth, 0);
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_auth_v1_auth, 0);
+

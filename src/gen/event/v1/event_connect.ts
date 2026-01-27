@@ -3,12 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import {
-  RegisterEventRequest,
-  RegisterEventResponse,
-  StreamEventRequest,
-  StreamEventResponse,
-} from "./event_pb.js";
+import { RegisterEventRequest, RegisterEventResponse, StreamEventRequest, StreamEventResponse } from "./event_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -39,5 +34,6 @@ export const EventService = {
       O: StreamEventResponse,
       kind: MethodKind.ClientStreaming,
     },
-  },
+  }
 } as const;
+
