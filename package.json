@@ -10,7 +10,9 @@
     "test:ui": "vitest --ui",
     "start": "bun run src/server.ts",
     "init_key": "bun run src/utils/generateInitialAPIKey.ts",
-    "format": "bunx prettier --write ."
+    "format": "bunx prettier --write .",
+    "proto:pull": "git submodule update --remote --merge proto",
+    "proto:push": "cd proto && git add . && git commit -s -m \"$1\" && git push && cd .."
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-connect-es": "^0.13.0",
