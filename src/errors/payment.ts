@@ -169,9 +169,10 @@ export class PaymentError extends ConnectError {
   }
 
   static unknown(originalError?: Error): PaymentError {
+    const details = originalError?.message || "No details available";
     return new PaymentError({
       type: PaymentErrorType.UNKNOWN,
-      message: "An unknown payment processing error occurred",
+      message: `Unexpected payment error: ${details}`,
       code: Code.Internal,
       originalError,
     });

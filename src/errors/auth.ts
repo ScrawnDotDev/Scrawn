@@ -84,9 +84,10 @@ export class AuthError extends ConnectError {
   }
 
   static unknown(originalError?: Error): AuthError {
+    const details = originalError?.message || "No details available";
     return new AuthError({
       type: AuthErrorType.UNKNOWN,
-      message: "An unknown authentication error occurred",
+      message: `Unexpected authentication error: ${details}`,
       code: Code.Internal,
       originalError,
     });

@@ -41,14 +41,23 @@ export async function validateAndParseRegisterEvent(req: RegisterEventRequest) {
       throw error;
     }
     if (error instanceof ZodError) {
+      // Check if the ZodError is wrapping our custom error by looking at the cause
+      const firstIssue = error.issues[0];
+      if (firstIssue && firstIssue.message.startsWith("Event validation failed:")) {
+        // The Zod transform threw an EventError which was caught
+        // Extract just the meaningful part after "Event validation failed:"
+        const cleanMessage = firstIssue.message.replace(/^Event validation failed:\s*/, '');
+        throw EventError.validationFailed(cleanMessage);
+      }
+      
       const issues = error.issues
         .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
         .join("; ");
       throw EventError.validationFailed(issues, error);
     }
     throw EventError.validationFailed(
-      "Unknown validation error",
-      error as Error
+      `Schema validation error: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error : undefined
     );
   }
 }
@@ -61,14 +70,23 @@ export async function validateAndParseStreamEvent(req: StreamEventRequest) {
       throw error;
     }
     if (error instanceof ZodError) {
+      // Check if the ZodError is wrapping our custom error by looking at the cause
+      const firstIssue = error.issues[0];
+      if (firstIssue && firstIssue.message.startsWith("Event validation failed:")) {
+        // The Zod transform threw an EventError which was caught
+        // Extract just the meaningful part after "Event validation failed:"
+        const cleanMessage = firstIssue.message.replace(/^Event validation failed:\s*/, '');
+        throw EventError.validationFailed(cleanMessage);
+      }
+      
       const issues = error.issues
         .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
         .join("; ");
       throw EventError.validationFailed(issues, error);
     }
     throw EventError.validationFailed(
-      "Unknown validation error",
-      error as Error
+      `Schema validation error: ${error instanceof Error ? error.message : String(error)}`,
+      error instanceof Error ? error : undefined
     );
   }
 }
@@ -95,7 +113,7 @@ export function createEventInstance(
     if (error instanceof EventError) {
       throw error;
     }
-    throw EventError.unknown(error as Error);
+    throw EventError.unknown(error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -114,8 +132,8 @@ export async function storeEvent(
     await adapter.add(event.serialize());
   } catch (error) {
     throw EventError.serializationError(
-      "Failed to store event",
-      error as Error
+      error instanceof Error ? `Failed to store event: ${error.message}` : `Failed to store event: ${String(error)}`,
+      error instanceof Error ? error : undefined
     );
   }
 }

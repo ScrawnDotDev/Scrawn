@@ -105,7 +105,7 @@ export function authInterceptor(): Interceptor {
       if (err instanceof AuthError || (err as any)?.type in AuthErrorType) {
         throw err;
       }
-      throw AuthError.unknown(err instanceof Error ? err : undefined);
+      throw AuthError.unknown(err instanceof Error ? err : new Error(String(err)));
     }
 
     return await next(req);

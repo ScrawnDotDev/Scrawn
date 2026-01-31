@@ -229,9 +229,10 @@ export class StorageError extends ConnectError {
   }
 
   static unknown(originalError?: Error): StorageError {
+    const details = originalError?.message || "No details available";
     return new StorageError({
       type: StorageErrorType.UNKNOWN,
-      message: "An unknown storage error occurred",
+      message: `Unexpected storage error: ${details}`,
       code: Code.Internal,
       originalError,
     });

@@ -35,6 +35,9 @@ export async function createAPIKey(
     try {
       validatedData = createAPIKeySchema.parse(req);
     } catch (error) {
+      if (error instanceof APIKeyError) {
+        throw error;
+      }
       if (error instanceof ZodError) {
         const issues = error.issues
           .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
@@ -42,8 +45,8 @@ export async function createAPIKey(
         throw APIKeyError.validationFailed(issues, error);
       }
       throw APIKeyError.validationFailed(
-        "Unknown validation error",
-        error as Error
+        `Schema validation error: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error : undefined
       );
     }
 
@@ -108,6 +111,6 @@ export async function createAPIKey(
     }
 
     // Wrap unexpected errors
-    throw APIKeyError.unknown(error as Error);
+    throw APIKeyError.unknown(error instanceof Error ? error : new Error(String(error)));
   }
 }

@@ -5,6 +5,8 @@ import { Payment } from "../../events/RawEvents/Payment.ts";
 import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
 import type { WideEventBuilder } from "../../context/requestContext.ts";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 // Initialize Lemon Squeezy SDK if API key is available
 const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
 
@@ -200,19 +202,23 @@ export async function handleLemonSqueezyWebhook(
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Webhook processed successfully" }));
     } catch (dbError) {
+      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
       builder.setError(500, {
         type: "DatabaseError",
-        message: "Database error",
+        message: `Failed to store payment event: ${errorMessage}`,
         cause: dbError instanceof Error ? dbError.message : undefined,
+        stack: isDev && dbError instanceof Error ? dbError.stack : undefined,
       });
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Database error" }));
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     builder.setError(500, {
       type: "InternalError",
-      message: "Internal server error",
+      message: `Unexpected webhook error: ${errorMessage}`,
       cause: error instanceof Error ? error.message : undefined,
+      stack: isDev && error instanceof Error ? error.stack : undefined,
     });
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Internal server error" }));

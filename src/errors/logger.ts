@@ -47,6 +47,7 @@ export interface WideEvent {
     type: string;
     message: string;
     cause?: string;
+    stack?: string; // Included in development mode only
   };
 
   // Extensible for additional context

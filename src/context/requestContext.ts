@@ -139,7 +139,7 @@ export class WideEventBuilder {
    */
   setError(
     statusCode: number,
-    error: { type: string; message: string; cause?: string }
+    error: { type: string; message: string; cause?: string; stack?: string }
   ): this {
     this.event.outcome = "error";
     this.event.statusCode = statusCode;

@@ -50,21 +50,47 @@ function connectCodeToHttpStatus(code: Code): number {
   }
 }
 
-/**
- * Extract error details from various error types.
- */
-function extractErrorDetails(error: unknown): {
+interface ErrorDetails {
   type: string;
   message: string;
   cause?: string;
   code: Code;
-} {
+  stack?: string;
+}
+
+const isDev = process.env.NODE_ENV !== "production";
+
+/**
+ * Extract error details from various error types.
+ * Includes originalError from custom error classes and stack traces in development.
+ */
+function extractErrorDetails(error: unknown): ErrorDetails {
+  // Handle our custom error classes (AuthError, APIKeyError, EventError, PaymentError, StorageError)
+  // They extend ConnectError and have `type` and `originalError` properties
   if (error instanceof ConnectError) {
+    const customError = error as ConnectError & {
+      type?: string;
+      originalError?: Error;
+    };
+
+    // Build cause chain: prefer originalError (our custom errors), fallback to cause
+    let causeMessage: string | undefined;
+    if (customError.originalError) {
+      causeMessage = customError.originalError.message;
+      // If originalError itself has a cause, include it
+      if (customError.originalError.cause instanceof Error) {
+        causeMessage += ` -> ${customError.originalError.cause.message}`;
+      }
+    } else if (error.cause instanceof Error) {
+      causeMessage = error.cause.message;
+    }
+
     return {
-      type: (error as ConnectError & { type?: string }).type || error.name,
+      type: customError.type || error.name,
       message: error.message,
-      cause: error.cause instanceof Error ? error.cause.message : undefined,
+      cause: causeMessage,
       code: error.code,
+      stack: isDev ? (customError.originalError?.stack || error.stack) : undefined,
     };
   }
 
@@ -72,8 +98,9 @@ function extractErrorDetails(error: unknown): {
     return {
       type: error.name,
       message: error.message,
-      cause: undefined,
+      cause: error.cause instanceof Error ? error.cause.message : undefined,
       code: Code.Internal,
+      stack: isDev ? error.stack : undefined,
     };
   }
 
@@ -120,6 +147,7 @@ export function loggingInterceptor(): Interceptor {
         type: errorDetails.type,
         message: errorDetails.message,
         cause: errorDetails.cause,
+        stack: errorDetails.stack,
       });
 
       throw error;

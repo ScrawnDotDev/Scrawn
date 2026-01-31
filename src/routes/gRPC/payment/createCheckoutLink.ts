@@ -57,6 +57,9 @@ export async function createCheckoutLink(
     try {
       validatedData = createCheckoutLinkSchema.parse(req);
     } catch (error) {
+      if (error instanceof PaymentError) {
+        throw error;
+      }
       if (error instanceof ZodError) {
         const issues = error.issues
           .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
@@ -64,8 +67,8 @@ export async function createCheckoutLink(
         throw PaymentError.validationFailed(issues, error);
       }
       throw PaymentError.validationFailed(
-        "Unknown validation error",
-        error as Error
+        `Schema validation error: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error : undefined
       );
     }
 

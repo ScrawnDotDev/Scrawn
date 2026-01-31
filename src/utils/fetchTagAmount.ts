@@ -31,6 +31,6 @@ export const fetchTagAmount = async (
     if (e instanceof EventError) {
       throw e;
     }
-    throw EventError.unknown(e as Error);
+    throw EventError.unknown(e instanceof Error ? e : new Error(String(e)));
   }
 };

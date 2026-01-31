@@ -69,6 +69,6 @@ export async function streamEvents(
     }
 
     // Wrap unexpected errors
-    throw EventError.unknown(error as Error);
+    throw EventError.unknown(error instanceof Error ? error : new Error(String(error)));
   }
 }
