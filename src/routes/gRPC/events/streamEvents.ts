@@ -22,16 +22,13 @@ export async function streamEvents(
   let eventsProcessed = 0;
   let userId: string | undefined;
 
-  // Get the wide event builder for adding business context
   const wideEventBuilder = context.values.get(wideEventContextKey);
 
-  try {
-    // Extract API key ID from context
-    const apiKeyId = extractApiKeyFromContext(context);
+  // Extract API key ID from context
+  const apiKeyId = extractApiKeyFromContext(context);
 
-    // Collect all events from the stream
+  try {
     for await (const req of requestStream) {
-      // Validate and parse the incoming event
       const eventSkeleton = await validateAndParseStreamEvent(req);
 
       // Capture userId from first event for logging
@@ -41,7 +38,6 @@ export async function streamEvents(
         wideEventBuilder?.setEventContext({ eventType: "AI_TOKEN_USAGE" });
       }
 
-      // Create the appropriate event instance
       const event = createEventInstance(eventSkeleton);
 
       if (event.type !== "AI_TOKEN_USAGE") {
@@ -52,23 +48,12 @@ export async function streamEvents(
       eventsProcessed += 1;
     }
 
-    // Update wide event with final count
-    wideEventBuilder?.setEventContext({ eventCount: eventsProcessed });
-
     return create(StreamEventResponseSchema, {
       eventsProcessed,
       message: `Successfully processed ${eventsProcessed} events`,
     });
-  } catch (error) {
-    // Update wide event with count even on error
+  } finally {
+    // Always update the count, even on error
     wideEventBuilder?.setEventContext({ eventCount: eventsProcessed });
-
-    // Re-throw EventError as-is
-    if (error instanceof EventError) {
-      throw error;
-    }
-
-    // Wrap unexpected errors
-    throw EventError.unknown(error instanceof Error ? error : new Error(String(error)));
   }
 }

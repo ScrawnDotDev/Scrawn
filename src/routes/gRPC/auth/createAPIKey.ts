@@ -20,97 +20,69 @@ export async function createAPIKey(
   req: CreateAPIKeyRequest,
   context: HandlerContext
 ): Promise<CreateAPIKeyResponse> {
-  // Get the wide event builder for adding business context
   const wideEventBuilder = context.values.get(wideEventContextKey);
 
+  // Get API key ID from context (set by auth interceptor)
+  const apiKeyId = context.values.get(apiKeyContextKey);
+  if (!apiKeyId) {
+    throw AuthError.invalidAPIKey("API key ID not found in context");
+  }
+
+  // Validate the incoming request
+  const validatedData = validateRequest(req);
+
+  // Add business context to wide event
+  wideEventBuilder?.setApiKeyContext({ name: validatedData.name });
+
+  // Generate and hash the API key
+  const apiKey = generateAPIKey();
+  const apiKeyHash = hashAPIKey(apiKey);
+
+  // Calculate expiration date
+  const now = new Date();
+  const expiresInSeconds =
+    typeof validatedData.expiresIn === "bigint"
+      ? Number(validatedData.expiresIn)
+      : validatedData.expiresIn;
+  const expiresAt = new Date(now.getTime() + expiresInSeconds * 1000);
+
+  wideEventBuilder?.setApiKeyContext({ expiration: expiresAt.toISOString() });
+
+  // Create and store the key
+  const addKeyEvent = new AddKey({
+    name: validatedData.name,
+    key: apiKeyHash,
+    expiresAt: expiresAt.toISOString(),
+  });
+
+  const adapter = await StorageAdapterFactory.getStorageAdapter(addKeyEvent);
+  const keyEventData = await adapter.add(addKeyEvent.serialize());
+
+  if (!keyEventData) {
+    throw APIKeyError.creationFailed("Storage returned no ID");
+  }
+
+  return create(CreateAPIKeyResponseSchema, {
+    apiKeyId: keyEventData.id,
+    apiKey: apiKey,
+    name: validatedData.name,
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  });
+}
+
+function validateRequest(req: CreateAPIKeyRequest) {
   try {
-    // Get API key ID from context (set by auth interceptor)
-    const apiKeyId = context.values.get(apiKeyContextKey);
-    if (!apiKeyId) {
-      throw AuthError.invalidAPIKey("API key ID not found in context");
-    }
-
-    // Validate the incoming request against the schema
-    let validatedData;
-    try {
-      validatedData = createAPIKeySchema.parse(req);
-    } catch (error) {
-      if (error instanceof APIKeyError) {
-        throw error;
-      }
-      if (error instanceof ZodError) {
-        const issues = error.issues
-          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-          .join("; ");
-        throw APIKeyError.validationFailed(issues, error);
-      }
-      throw APIKeyError.validationFailed(
-        `Schema validation error: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error : undefined
-      );
-    }
-
-    // Add business context to wide event
-    wideEventBuilder?.setApiKeyContext({
-      name: validatedData.name,
-    });
-
-    // Generate the actual API key
-    const apiKey = generateAPIKey();
-
-    // Hash the API key before storing
-    const apiKeyHash = hashAPIKey(apiKey);
-
-    // Calculate expiration date
-    const now = new Date();
-    const expiresInSeconds =
-      typeof validatedData.expiresIn === "bigint"
-        ? Number(validatedData.expiresIn)
-        : validatedData.expiresIn;
-    const expiresAt = new Date(now.getTime() + expiresInSeconds * 1000);
-
-    // Add expiration context to wide event
-    wideEventBuilder?.setApiKeyContext({
-      expiration: expiresAt.toISOString(),
-    });
-
-    // Create AddKey event (store hash, not plaintext)
-    const addKeyEvent = new AddKey({
-      name: validatedData.name,
-      key: apiKeyHash,
-      expiresAt: expiresAt.toISOString(),
-    });
-
-    // Use storage adapter factory to persist the event
-    let keyEventData: { id: string } | void;
-    try {
-      const adapter =
-        await StorageAdapterFactory.getStorageAdapter(addKeyEvent);
-      keyEventData = await adapter.add(addKeyEvent.serialize());
-      if (!keyEventData) {
-        throw APIKeyError.creationFailed("No ID returned");
-      }
-    } catch (error) {
-      throw APIKeyError.creationFailed(
-        "Failed to store API key",
-        error as Error
-      );
-    }
-
-    return create(CreateAPIKeyResponseSchema, {
-      apiKeyId: keyEventData.id,
-      apiKey: apiKey,
-      name: validatedData.name,
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    });
+    return createAPIKeySchema.parse(req);
   } catch (error) {
-    // Re-throw APIKeyError as-is
-    if (error instanceof APIKeyError) {
-      throw error;
+    if (error instanceof ZodError) {
+      const issues = error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; ");
+      throw APIKeyError.validationFailed(issues);
     }
-
-    // Wrap unexpected errors
-    throw APIKeyError.unknown(error instanceof Error ? error : new Error(String(error)));
+    throw APIKeyError.validationFailed(
+      error instanceof Error ? error.message : String(error)
+    );
   }
 }
