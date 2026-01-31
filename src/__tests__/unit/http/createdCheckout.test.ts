@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac } from "node:crypto";
+import { WideEventBuilder } from "../../../context/requestContext";
 
 // Track Payment constructor calls
 const paymentConstructorCalls: Array<{ userId: string; data: unknown }> = [];
@@ -99,12 +100,18 @@ function emitBody(req: MockRequest, body: string): void {
   });
 }
 
+/**
+ * Create a mock WideEventBuilder for testing.
+ */
+function createMockBuilder(): WideEventBuilder {
+  return new WideEventBuilder("test-request-id", "POST", "/webhooks/lemonsqueezy/createdCheckout");
+}
+
 describe("handleLemonSqueezyWebhook", () => {
   let storageModule: any;
   let lsModule: any;
 
   beforeEach(async () => {
-    vi.resetModules();
     vi.clearAllMocks();
     paymentConstructorCalls.length = 0;
 
@@ -124,6 +131,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: { event_name: "order_created" },
@@ -133,7 +141,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = "any";
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Webhook secret not configured");
@@ -144,6 +152,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: { event_name: "order_created" },
@@ -153,7 +162,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = "invalid-signature";
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(401);
     expect((res as any).body).toContain("Invalid signature");
@@ -167,6 +176,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const rawBody = "{"; // invalid JSON
     const signature = createHmac("sha256", secret)
@@ -176,7 +186,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = signature;
     emitBody(req as MockRequest, rawBody);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Invalid JSON payload");
@@ -190,6 +200,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: { event_name: "subscription_created" },
@@ -203,7 +214,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = signature;
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(200);
     expect((res as any).body).toContain("Event ignored");
@@ -221,6 +232,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: {
@@ -238,7 +250,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = signature;
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Missing user_id in webhook payload");
@@ -252,6 +264,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: {
@@ -271,7 +284,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = signature;
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Missing apiKeyId in webhook payload");
@@ -282,9 +295,9 @@ describe("handleLemonSqueezyWebhook", () => {
     process.env.LEMON_SQUEEZY_WEBHOOK_SECRET = secret;
 
     const adapterAddMock = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(
-      storageModule.StorageAdapterFactory.getStorageAdapter
-    ).mockResolvedValue({
+    const getStorageAdapterMock = storageModule.StorageAdapterFactory
+      .getStorageAdapter as ReturnType<typeof vi.fn>;
+    getStorageAdapterMock.mockResolvedValue({
       add: adapterAddMock,
     } as any);
 
@@ -292,6 +305,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: {
@@ -322,7 +336,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = signature;
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect(paymentConstructorCalls.length).toBe(1);
     expect(paymentConstructorCalls[0]).toEqual({
@@ -333,10 +347,7 @@ describe("handleLemonSqueezyWebhook", () => {
     expect(
       storageModule.StorageAdapterFactory.getStorageAdapter
     ).toHaveBeenCalledTimes(1);
-    const adapterCall = vi.mocked(
-      storageModule.StorageAdapterFactory.getStorageAdapter
-    ).mock.calls[0];
-    expect(adapterCall[1]).toBe("api-key-456");
+    expect(getStorageAdapterMock.mock.calls[0]?.[1]).toBe("api-key-456");
 
     expect(adapterAddMock).toHaveBeenCalledTimes(1);
 
@@ -350,9 +361,9 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const dbError = new Error("DB error");
     const adapterAddMock = vi.fn().mockRejectedValue(dbError);
-    vi.mocked(
-      storageModule.StorageAdapterFactory.getStorageAdapter
-    ).mockResolvedValue({
+    const getStorageAdapterMock = storageModule.StorageAdapterFactory
+      .getStorageAdapter as ReturnType<typeof vi.fn>;
+    getStorageAdapterMock.mockResolvedValue({
       add: adapterAddMock,
     } as any);
 
@@ -360,6 +371,7 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     const payload = JSON.stringify({
       meta: {
@@ -390,7 +402,7 @@ describe("handleLemonSqueezyWebhook", () => {
     (req as any).headers["x-signature"] = signature;
     emitBody(req as MockRequest, payload);
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Database error");
@@ -405,13 +417,14 @@ describe("handleLemonSqueezyWebhook", () => {
 
     const req = new MockRequest() as unknown as IncomingMessage;
     const res = new TestResponse() as unknown as ServerResponse;
+    const builder = createMockBuilder();
 
     // Emit an error instead of data/end so readBody rejects
     setImmediate(() => {
       (req as MockRequest).emit("error", new Error("read error"));
     });
 
-    await handleWebhook(req, res);
+    await handleWebhook(req, res, builder);
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Internal server error");

@@ -1,32 +1,73 @@
 import pino, { type Logger as PinoLogger } from "pino";
 
-interface LogContext {
-  errorType?: string;
-  location?: string;
-  endpoint?: string;
+/**
+ * Wide Event interface for structured logging.
+ * Each request emits exactly one wide event at completion containing all relevant context.
+ * 
+ * @see https://stripe.com/blog/canonical-log-lines
+ * @see https://loggingsucks.com
+ */
+export interface WideEvent {
+  // Request identification
+  requestId: string;
+  method: string;
+  path: string;
+  timestamp: string;
+
+  // Environment context
+  env: string;
+
+  // Auth context (added during request processing)
+  apiKeyId?: string | number;
+  cacheHit?: boolean;
+
+  // User/business context (added during request processing)
+  userId?: string | number;
+  eventType?: string;
+  eventCount?: number;
+  creditAmount?: number;
+  debitAmount?: number;
+  priceAmount?: number;
+
+  // API key creation context
+  apiKeyName?: string;
+  apiKeyExpiration?: string;
+
+  // Webhook context
+  webhookEvent?: string;
+  orderId?: string;
+
+  // Outcome (added at request completion)
+  statusCode?: number;
+  outcome: "success" | "error";
+  durationMs: number;
+
+  // Error details (if applicable)
+  error?: {
+    type: string;
+    message: string;
+    cause?: string;
+  };
+
+  // Extensible for additional context
   [key: string]: unknown;
 }
 
-interface OperationContext extends LogContext {
-  operation: string;
-  stage?: string;
-  endpoint?: string;
-  userId?: string | number;
-  apiKeyId?: string | number;
-  eventId?: string | number;
-  requestId?: string;
-}
-
-class ErrorLogger {
-  private logger: PinoLogger;
-  private errorCounts = new Map<string, number>();
-  private suppressedErrors = new Set<string>();
-  private maxDuplicates = 3;
+/**
+ * Wide Event Logger following the canonical log lines pattern.
+ * Emits one structured JSON event per request with all relevant context.
+ * 
+ * Uses only two log levels:
+ * - info: successful requests
+ * - error: failed requests
+ */
+class WideEventLogger {
+  private pino: PinoLogger;
 
   constructor() {
     const isDev = process.env.NODE_ENV !== "production";
 
-    this.logger = pino({
+    this.pino = pino({
       level: process.env.LOG_LEVEL || "info",
       transport: isDev
         ? {
@@ -39,119 +80,54 @@ class ErrorLogger {
             },
           }
         : undefined,
+      // In production, output raw JSON for log aggregation systems
+      formatters: {
+        level: (label) => ({ level: label }),
+      },
     });
   }
 
-  private getErrorKey(errorType: string, message: string): string {
-    return `${errorType}:${message}`;
-  }
+  /**
+   * Emit a wide event. Uses error level for failed requests, info for successful.
+   */
+  emit(event: WideEvent): void {
+    // Remove undefined values for cleaner output
+    const cleanEvent = Object.fromEntries(
+      Object.entries(event).filter(([, value]) => value !== undefined)
+    );
 
-  private shouldLog(errorType: string, message: string): boolean {
-    const key = this.getErrorKey(errorType, message);
-    const count = this.errorCounts.get(key) || 0;
-
-    if (count >= this.maxDuplicates) {
-      this.suppressedErrors.add(key);
-      return false;
+    if (event.outcome === "error") {
+      this.pino.error(cleanEvent);
+    } else {
+      this.pino.info(cleanEvent);
     }
-
-    this.errorCounts.set(key, count + 1);
-    return true;
   }
 
-  logError(
-    errorType: string,
-    message: string,
-    originalError?: Error,
-    context?: LogContext
-  ): void {
-    if (!this.shouldLog(errorType, message)) {
-      return;
-    }
-
-    const logContext: Record<string, unknown> = {
-      errorType,
-      ...context,
-    };
-
-    if (originalError) {
-      logContext.cause = originalError.message;
-      logContext.location = this.extractLocation(originalError);
-    }
-
-    this.logger.error(logContext, message);
+  /**
+   * Log server lifecycle events (startup, shutdown).
+   * These are the only non-request logs allowed.
+   */
+  lifecycle(message: string, context?: Record<string, unknown>): void {
+    this.pino.info({ ...context, lifecycle: true }, message);
   }
 
-  logWarning(message: string, context?: LogContext): void {
-    this.logger.warn(context || {}, message);
-  }
-
-  logInfo(message: string, context?: LogContext): void {
-    this.logger.info(context || {}, message);
-  }
-
-  logDebug(message: string, context?: LogContext): void {
-    this.logger.debug(context || {}, message);
-  }
-
-  private extractLocation(error: Error): string {
-    if (!error?.stack) return "unknown location";
-
-    const lines = error.stack.split("\n");
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i]?.trim();
-      if (line?.startsWith("at ")) {
-        return line.replace("at ", "").split(" ")[0] || "unknown location";
-      }
-    }
-    return "unknown location";
-  }
-
-  resetErrorCounts(): void {
-    this.errorCounts.clear();
-    this.suppressedErrors.clear();
-  }
-
-  getSuppressedErrorCount(): number {
-    return this.suppressedErrors.size;
-  }
-
-  getSuppressedErrors(): string[] {
-    return Array.from(this.suppressedErrors);
-  }
-
-  logOperationError(
-    operation: string,
-    stage: string,
-    errorType: string,
-    message: string,
-    originalError?: Error,
-    extra?: Omit<OperationContext, "operation" | "stage">
-  ): void {
-    this.logError(errorType, message, originalError, {
-      operation,
-      stage,
-      ...extra,
-    });
-  }
-
-  logOperationInfo(
-    operation: string,
-    stage: string,
-    message: string,
-    extra?: Omit<OperationContext, "operation" | "stage">
-  ): void {
-    this.logInfo(message, { operation, stage, ...extra });
-  }
-
-  logOperationDebug(
-    operation: string,
-    stage: string,
-    message: string,
-    extra?: Omit<OperationContext, "operation" | "stage">
-  ): void {
-    this.logDebug(message, { operation, stage, ...extra });
+  /**
+   * Log fatal errors that prevent the server from operating.
+   */
+  fatal(message: string, error?: Error): void {
+    this.pino.fatal(
+      {
+        error: error
+          ? {
+              type: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : undefined,
+      },
+      message
+    );
   }
 }
 
-export const logger = new ErrorLogger();
+export const logger = new WideEventLogger();

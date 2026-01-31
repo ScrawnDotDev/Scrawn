@@ -10,7 +10,7 @@ import {
 } from "../../../zod/payment";
 import { PaymentError } from "../../../errors/payment";
 import { AuthError } from "../../../errors/auth";
-import { custom, ZodError } from "zod";
+import { ZodError } from "zod";
 import type { HandlerContext } from "@connectrpc/connect";
 import {
   lemonSqueezySetup,
@@ -19,17 +19,20 @@ import {
 import { StorageAdapterFactory } from "../../../factory";
 import { RequestPayment } from "../../../events/RequestEvents/RequestPayment";
 import { apiKeyContextKey } from "../../../context/auth";
+import { wideEventContextKey } from "../../../context/requestContext";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
   context: HandlerContext
 ): Promise<CreateCheckoutLinkResponse> {
+  // Get the wide event builder for adding business context
+  const wideEventBuilder = context.values.get(wideEventContextKey);
+
   try {
     const apiKeyId = context.values.get(apiKeyContextKey);
     if (!apiKeyId) {
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
-
 
     // Read environment configuration
     const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
@@ -66,6 +69,9 @@ export async function createCheckoutLink(
       );
     }
 
+    // Add user context to wide event
+    wideEventBuilder?.setUser(validatedData.userId);
+
     // Configure Lemon Squeezy SDK
     lemonSqueezySetup({
       apiKey: LEMON_SQUEEZY_API_KEY,
@@ -96,6 +102,9 @@ export async function createCheckoutLink(
           new Error(`Invalid price value: ${custom_price}`)
         );
       }
+
+      // Add price context to wide event
+      wideEventBuilder?.setPaymentContext({ priceAmount: custom_price });
     } catch (error) {
       // Use duck typing instead of instanceof to work with mocked modules
       if (

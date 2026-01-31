@@ -13,19 +13,22 @@ import { StorageAdapterFactory } from "../../../factory";
 import { AddKey } from "../../../events/RawEvents/AddKey";
 import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../../../context/auth";
+import { wideEventContextKey } from "../../../context/requestContext";
 import { hashAPIKey } from "../../../utils/hashAPIKey";
 
 export async function createAPIKey(
   req: CreateAPIKeyRequest,
   context: HandlerContext
 ): Promise<CreateAPIKeyResponse> {
+  // Get the wide event builder for adding business context
+  const wideEventBuilder = context.values.get(wideEventContextKey);
+
   try {
     // Get API key ID from context (set by auth interceptor)
     const apiKeyId = context.values.get(apiKeyContextKey);
     if (!apiKeyId) {
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
-
 
     // Validate the incoming request against the schema
     let validatedData;
@@ -44,6 +47,11 @@ export async function createAPIKey(
       );
     }
 
+    // Add business context to wide event
+    wideEventBuilder?.setApiKeyContext({
+      name: validatedData.name,
+    });
+
     // Generate the actual API key
     const apiKey = generateAPIKey();
 
@@ -57,6 +65,11 @@ export async function createAPIKey(
         ? Number(validatedData.expiresIn)
         : validatedData.expiresIn;
     const expiresAt = new Date(now.getTime() + expiresInSeconds * 1000);
+
+    // Add expiration context to wide event
+    wideEventBuilder?.setApiKeyContext({
+      expiration: expiresAt.toISOString(),
+    });
 
     // Create AddKey event (store hash, not plaintext)
     const addKeyEvent = new AddKey({

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { authInterceptor, no_auth } from "../../../interceptors/auth";
 import * as dbModule from "../../../storage/db/postgres/db";
 import * as hashModule from "../../../utils/hashAPIKey";
@@ -10,6 +10,10 @@ describe("authInterceptor", () => {
       ? new Map<string, string>([["Authorization", auth]])
       : new Map<string, string>(),
     contextValues: new Map(),
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   beforeEach(() => {

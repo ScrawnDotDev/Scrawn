@@ -1,5 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { hashAPIKey, verifyAPIKey } from "../../../utils/hashAPIKey";
+
+beforeAll(() => {
+  // Set up test environment variable for HMAC hashing
+  process.env.HMAC_SECRET = "test-hmac-secret-for-unit-tests";
+});
 
 describe("hashAPIKey", () => {
   it("produces deterministic hash for same input", () => {

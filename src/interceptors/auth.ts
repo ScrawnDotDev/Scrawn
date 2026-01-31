@@ -1,5 +1,6 @@
-import { type Interceptor } from "@connectrpc/connect";
+import type { Interceptor } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../context/auth";
+import { wideEventContextKey } from "../context/requestContext";
 import { AuthError, AuthErrorType } from "../errors/auth";
 import { apiKeyCache } from "../utils/apiKeyCache";
 import { getPostgresDB } from "../storage/db/postgres/db";
@@ -16,6 +17,9 @@ export function authInterceptor(): Interceptor {
         return await next(req);
       }
     }
+
+    // Get the wide event builder if available (set by logging interceptor)
+    const wideEventBuilder = req.contextValues.get(wideEventContextKey);
 
     try {
       // Extract and validate authorization header
@@ -42,6 +46,10 @@ export function authInterceptor(): Interceptor {
       const cached = apiKeyCache.get(apiKeyHash);
       if (cached) {
         req.contextValues.set(apiKeyContextKey, cached.id);
+
+        // Add auth context to wide event (cache hit)
+        wideEventBuilder?.setAuth(cached.id, true);
+
         return await next(req);
       }
 
@@ -89,6 +97,9 @@ export function authInterceptor(): Interceptor {
 
       // Attach API key ID to context for use in handlers
       req.contextValues.set(apiKeyContextKey, apiKeyRecord.id);
+
+      // Add auth context to wide event (cache miss - fetched from DB)
+      wideEventBuilder?.setAuth(apiKeyRecord.id, false);
     } catch (err) {
       // Re-throw AuthError as-is, wrap other errors
       if (err instanceof AuthError || (err as any)?.type in AuthErrorType) {
