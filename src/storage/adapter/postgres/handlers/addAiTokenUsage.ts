@@ -7,9 +7,6 @@ import {
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
-import { logger } from "../../../../errors/logger";
-
-const OPERATION = "AddAiTokenUsage";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -28,23 +25,10 @@ export async function handleAddAiTokenUsage(
   const connectionObject = getPostgresDB();
 
   if (events.length === 0) {
-    logger.logOperationInfo(OPERATION, "skipped", "No events to process", {
-      apiKeyId,
-    });
     return;
   }
 
   try {
-    logger.logOperationInfo(
-      OPERATION,
-      "start",
-      `Processing ${events.length} AI_TOKEN_USAGE event(s)`,
-      {
-        eventCount: events.length,
-        apiKeyId,
-      }
-    );
-
     // Validate all events before processing
     for (const event_data of events) {
       // Validate input tokens is not negative
@@ -133,17 +117,6 @@ export async function handleAddAiTokenUsage(
 
     const aggregatedEvents = Array.from(aggregationMap.values());
 
-    logger.logOperationInfo(
-      OPERATION,
-      "aggregated",
-      `Aggregated ${events.length} event(s) into ${aggregatedEvents.length} unique (userId, model) combination(s)`,
-      {
-        originalCount: events.length,
-        aggregatedCount: aggregatedEvents.length,
-        apiKeyId,
-      }
-    );
-
     await connectionObject.transaction(async (txn) => {
       // Collect unique user IDs
       const uniqueUserIds = Array.from(
@@ -158,12 +131,6 @@ export async function handleAddAiTokenUsage(
             .values(uniqueUserIds.map((id) => ({ id })))
             .onConflictDoNothing();
 
-          logger.logOperationDebug(
-            OPERATION,
-            "users_ensured",
-            "Users ensured in database",
-            { userCount: uniqueUserIds.length }
-          );
         }
       } catch (e) {
         if (
@@ -171,12 +138,6 @@ export async function handleAddAiTokenUsage(
           e.message.includes('Failed query: insert into "users" ("id")')
         ) {
           // Users already exist, ignore the error
-          logger.logOperationDebug(
-            OPERATION,
-            "users_exist",
-            "Users already exist, continuing",
-            { userCount: uniqueUserIds.length }
-          );
         } else {
           throw StorageError.userInsertFailed(
             uniqueUserIds.join(", "),
@@ -217,13 +178,6 @@ export async function handleAddAiTokenUsage(
         );
       }
 
-      logger.logOperationInfo(
-        OPERATION,
-        "events_inserted",
-        `${eventIDs.length} event row(s) inserted`,
-        { eventCount: eventIDs.length, apiKeyId }
-      );
-
       // Prepare AI token usage values for batch insert
       const aiTokenUsageValues = aggregatedEvents.map((aggEvent, index) => {
         const eventId = eventIDs[index];
@@ -247,15 +201,6 @@ export async function handleAddAiTokenUsage(
       try {
         await txn.insert(aiTokenUsageEventsTable).values(aiTokenUsageValues);
 
-        logger.logOperationInfo(
-          OPERATION,
-          "ai_token_usage_inserted",
-          `${aiTokenUsageValues.length} AI token usage event(s) inserted successfully`,
-          {
-            eventCount: aiTokenUsageValues.length,
-            apiKeyId,
-          }
-        );
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to batch insert AI token usage events`,
@@ -274,16 +219,6 @@ export async function handleAddAiTokenUsage(
       return { id: firstEvent.id };
     });
 
-    logger.logOperationInfo(
-      OPERATION,
-      "completed",
-      `AI_TOKEN_USAGE batch transaction completed successfully - processed ${events.length} event(s), inserted ${aggregatedEvents.length} row(s)`,
-      {
-        originalCount: events.length,
-        aggregatedCount: aggregatedEvents.length,
-        apiKeyId,
-      }
-    );
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
     if (

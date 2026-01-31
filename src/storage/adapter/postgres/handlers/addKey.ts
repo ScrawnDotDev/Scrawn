@@ -2,9 +2,6 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { apiKeysTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
-import { logger } from "../../../../errors/logger";
-
-const OPERATION = "AddKey";
 
 export async function handleAddKey(
   event_data: SqlRecord<"ADD_KEY">
@@ -32,10 +29,6 @@ export async function handleAddKey(
     if (event_data.data.key.trim().length === 0) {
       throw StorageError.invalidData("API key cannot be empty");
     }
-
-    logger.logOperationInfo(OPERATION, "start", "Processing ADD_KEY event", {
-      keyName: event_data.data.name,
-    });
 
     return await connectionObject.transaction(async (txn) => {
       // Validate and prepare timestamp
@@ -94,13 +87,6 @@ export async function handleAddKey(
           "API key insert returned object without id field"
         );
       }
-
-      logger.logOperationInfo(
-        OPERATION,
-        "key_inserted",
-        "API key inserted successfully",
-        { apiKeyId: apiKeyRecord.id, keyName: keyData.data.name }
-      );
 
       return apiKeyRecord;
     });

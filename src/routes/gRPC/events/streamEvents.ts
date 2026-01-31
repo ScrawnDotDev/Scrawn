@@ -8,15 +8,12 @@ import { create } from "@bufbuild/protobuf";
 import { EventError } from "../../../errors/event";
 import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../../../context/auth";
-import { logger } from "../../../errors/logger";
 import {
   extractApiKeyFromContext,
   validateAndParseStreamEvent,
   createEventInstance,
   storeEvent,
 } from "../../../utils/eventHelpers";
-
-const OPERATION = "StreamEvents";
 
 export async function streamEvents(
   requestStream: AsyncIterable<StreamEventRequest>,
@@ -28,14 +25,6 @@ export async function streamEvents(
     // Extract API key ID from context
     const apiKeyId = extractApiKeyFromContext(context);
 
-    logger.logOperationInfo(
-      OPERATION,
-      "authenticated",
-      "Stream authenticated",
-      {
-        apiKeyId,
-      }
-    );
 
     // Collect all events from the stream
     for await (const req of requestStream) {
@@ -52,45 +41,13 @@ export async function streamEvents(
       await storeEvent(event, apiKeyId);
       eventsProcessed += 1;
 
-      logger.logOperationInfo(
-        OPERATION,
-        "event_processed",
-        "Event processed and stored",
-        {
-          apiKeyId,
-          userId: eventSkeleton.userId,
-          eventNumber: eventsProcessed,
-        }
-      );
     }
-
-    logger.logOperationInfo(
-      OPERATION,
-      "completed",
-      "Stream processing completed",
-      {
-        apiKeyId: context.values.get(apiKeyContextKey),
-        eventsProcessed,
-      }
-    );
 
     return create(StreamEventResponseSchema, {
       eventsProcessed,
       message: `Successfully processed ${eventsProcessed} events`,
     });
   } catch (error) {
-    logger.logOperationError(
-      OPERATION,
-      "failed",
-      error instanceof EventError ? error.type : "UNKNOWN",
-      "StreamEvents handler failed",
-      error instanceof Error ? error : undefined,
-      {
-        apiKeyId: context.values.get(apiKeyContextKey),
-        eventsProcessed,
-      }
-    );
-
     // Re-throw EventError as-is
     if (error instanceof EventError) {
       throw error;

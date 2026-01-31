@@ -3,17 +3,6 @@ import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac } from "node:crypto";
 
-// Shared mocks - initialize functions after vi is available
-const loggerMock = {
-  logOperationInfo: vi.fn(),
-  logOperationError: vi.fn(),
-  logWarning: vi.fn(),
-  logDebug: vi.fn(),
-};
-
-const getStorageAdapterMock = vi.fn();
-const lemonSqueezySetupMock = vi.fn();
-
 // Track Payment constructor calls
 const paymentConstructorCalls: Array<{ userId: string; data: unknown }> = [];
 
@@ -40,16 +29,6 @@ class PaymentMock {
     };
   }
 }
-
-// Mock modules
-vi.mock("../../../errors/logger.ts", () => ({
-  logger: {
-    logOperationInfo: vi.fn(),
-    logOperationError: vi.fn(),
-    logWarning: vi.fn(),
-    logDebug: vi.fn(),
-  },
-}));
 
 vi.mock("../../../factory/StorageAdapterFactory.ts", () => ({
   StorageAdapterFactory: {
@@ -121,7 +100,6 @@ function emitBody(req: MockRequest, body: string): void {
 }
 
 describe("handleLemonSqueezyWebhook", () => {
-  let loggerModule: any;
   let storageModule: any;
   let lsModule: any;
 
@@ -131,7 +109,6 @@ describe("handleLemonSqueezyWebhook", () => {
     paymentConstructorCalls.length = 0;
 
     // Import mocked modules
-    loggerModule = await import("../../../errors/logger.ts");
     storageModule = await import("../../../factory/StorageAdapterFactory.ts");
     lsModule = await import("@lemonsqueezy/lemonsqueezy.js");
 
@@ -160,14 +137,6 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Webhook secret not configured");
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "config",
-      "MISSING_WEBHOOK_SECRET",
-      "Webhook secret not configured",
-      undefined,
-      {}
-    );
   });
 
   it("returns 401 for invalid signature", async () => {
@@ -188,14 +157,6 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(401);
     expect((res as any).body).toContain("Invalid signature");
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "validate_signature",
-      "INVALID_SIGNATURE",
-      "Invalid webhook signature",
-      undefined,
-      {}
-    );
   });
 
   it("returns 400 for invalid JSON payload", async () => {
@@ -219,14 +180,6 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Invalid JSON payload");
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "parse_payload",
-      "INVALID_JSON",
-      "Invalid JSON payload",
-      expect.any(Error),
-      {}
-    );
   });
 
   it("ignores non-order_created events", async () => {
@@ -289,14 +242,6 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Missing user_id in webhook payload");
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "validate_payload",
-      "MISSING_USER_ID",
-      "Missing user_id in webhook payload",
-      undefined,
-      {}
-    );
   });
 
   it("returns 400 when apiKeyId is missing", async () => {
@@ -330,14 +275,6 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(400);
     expect((res as any).body).toContain("Missing apiKeyId in webhook payload");
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "validate_payload",
-      "MISSING_API_KEY_ID",
-      "Missing apiKeyId in webhook payload",
-      undefined,
-      { userId: "user-123" }
-    );
   });
 
   it("stores payment and returns 200 on success", async () => {
@@ -458,14 +395,6 @@ describe("handleLemonSqueezyWebhook", () => {
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Database error");
 
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "database",
-      "DATABASE_ERROR",
-      "Database error while storing payment",
-      dbError,
-      { userId: "user-123", apiKeyId: "api-key-456" }
-    );
   });
 
   it("returns 500 on unexpected errors (e.g. readBody error)", async () => {
@@ -486,13 +415,5 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Internal server error");
-    expect(loggerModule.logger.logOperationError).toHaveBeenCalledWith(
-      "LemonSqueezyWebhook",
-      "failed",
-      "UNEXPECTED_ERROR",
-      "Unexpected error in webhook handler",
-      expect.any(Error),
-      {}
-    );
   });
 });

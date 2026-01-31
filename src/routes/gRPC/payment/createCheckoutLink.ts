@@ -19,9 +19,6 @@ import {
 import { StorageAdapterFactory } from "../../../factory";
 import { RequestPayment } from "../../../events/RequestEvents/RequestPayment";
 import { apiKeyContextKey } from "../../../context/auth";
-import { logger } from "../../../errors/logger";
-
-const OPERATION = "CreateCheckoutLink";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
@@ -33,14 +30,6 @@ export async function createCheckoutLink(
       throw AuthError.invalidAPIKey("API key ID not found in context");
     }
 
-    logger.logOperationInfo(
-      OPERATION,
-      "authenticated",
-      "Request authenticated",
-      {
-        apiKeyId,
-      }
-    );
 
     // Read environment configuration
     const LEMON_SQUEEZY_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
@@ -80,21 +69,6 @@ export async function createCheckoutLink(
     // Configure Lemon Squeezy SDK
     lemonSqueezySetup({
       apiKey: LEMON_SQUEEZY_API_KEY,
-      onError: (error) => {
-        logger.logOperationError(
-          OPERATION,
-          "lemon_squeezy_sdk",
-          "LEMON_SQUEEZY_SDK_ERROR",
-          "Lemon Squeezy SDK error",
-          error as Error,
-          {}
-        );
-      },
-    });
-
-    logger.logOperationInfo(OPERATION, "validated", "Request validated", {
-      userId: validatedData.userId,
-      apiKeyId,
     });
 
     // Get custom price from storage
@@ -123,15 +97,6 @@ export async function createCheckoutLink(
         );
       }
     } catch (error) {
-      logger.logOperationError(
-        OPERATION,
-        "fetch_price",
-        "PRICE_CALCULATION_FAILED",
-        "Failed to calculate price",
-        error as Error,
-        { userId: validatedData.userId, apiKeyId }
-      );
-
       // Use duck typing instead of instanceof to work with mocked modules
       if (
         error &&
@@ -147,12 +112,6 @@ export async function createCheckoutLink(
         error as Error
       );
     }
-
-    logger.logOperationInfo(OPERATION, "price_resolved", "Price calculated", {
-      userId: validatedData.userId,
-      price: custom_price,
-      apiKeyId,
-    });
 
     // Create checkout session
     // Create checkout session with detailed error context
@@ -180,21 +139,6 @@ export async function createCheckoutLink(
       } else if (error && typeof error === "object" && "message" in error) {
         errorMessage = String(error.message);
       }
-
-      logger.logOperationError(
-        OPERATION,
-        "create_checkout",
-        "LEMON_SQUEEZY_API_ERROR",
-        "Lemon Squeezy API call failed",
-        error instanceof Error ? error : new Error(errorMessage),
-        {
-          userId: validatedData.userId,
-          apiKeyId,
-          price: custom_price,
-          storeId: LEMON_SQUEEZY_STORE_ID,
-          variantId: LEMON_SQUEEZY_VARIANT_ID,
-        }
-      );
 
       throw PaymentError.lemonSqueezyApiError(
         errorMessage,
@@ -258,32 +202,10 @@ export async function createCheckoutLink(
       );
     }
 
-    logger.logOperationInfo(
-      OPERATION,
-      "completed",
-      "Checkout link created successfully",
-      { userId: validatedData.userId, apiKeyId, checkoutUrl }
-    );
-
     return create(CreateCheckoutLinkResponseSchema, {
       checkoutLink: checkoutUrl,
     });
   } catch (error) {
-    const apiKeyId = context.values.get(apiKeyContextKey);
-
-    logger.logOperationError(
-      OPERATION,
-      "failed",
-      error instanceof PaymentError
-        ? error.type
-        : error instanceof AuthError
-          ? error.type
-          : "UNKNOWN",
-      "CreateCheckoutLink handler failed",
-      error instanceof Error ? error : undefined,
-      { apiKeyId }
-    );
-
     // Re-throw PaymentError as-is
     // Use duck typing instead of instanceof to work with mocked modules
     if (
