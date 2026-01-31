@@ -2,7 +2,12 @@ import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../context/auth";
 import { AuthError } from "../errors/auth";
 import { EventError } from "../errors/event";
-import { registerEventSchema, streamEventSchema } from "../zod/event";
+import {
+  registerEventSchema,
+  streamEventSchema,
+  type RegisterEventSchemaType,
+  type StreamEventSchemaType,
+} from "../zod/event";
 import { ZodError } from "zod";
 import type { Event } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
@@ -71,24 +76,20 @@ export async function validateAndParseStreamEvent(req: StreamEventRequest) {
 /**
  * Create the appropriate event instance based on the event skeleton
  */
-export function createEventInstance(eventSkeleton: {
-  type: string;
-  userId: string;
-  data: any;
-}): Event {
+
+export function createEventInstance(
+  eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
+): Event {
   try {
     switch (eventSkeleton.type) {
       case "SDK_CALL":
         return new SDKCall(eventSkeleton.userId, eventSkeleton.data);
       case "AI_TOKEN_USAGE":
         return new AITokenUsage(eventSkeleton.userId, eventSkeleton.data);
-      case "REQUEST_AI_TOKEN_USAGE":
-        return new RequestAITokenUsage(
-          eventSkeleton.userId,
-          eventSkeleton.data
-        );
       default:
-        throw EventError.unsupportedEventType(eventSkeleton.type);
+        throw EventError.unsupportedEventType(
+          "EXHAUSTIVE_CHECK_EVENT_INSTANCE"
+        );
     }
   } catch (error) {
     if (error instanceof EventError) {
