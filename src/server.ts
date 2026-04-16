@@ -1,4 +1,5 @@
 import * as http from "node:http";
+import * as http2 from "node:http2";
 import type { ConnectRouter } from "@connectrpc/connect";
 import { connectNodeAdapter } from "@connectrpc/connect-node";
 import { createValidateInterceptor } from "@connectrpc/validate";
@@ -61,15 +62,18 @@ const webhookHandler = withHttpLogging(handleLemonSqueezyWebhook);
 
 // Create a combined handler for both gRPC and HTTP webhooks
 const requestHandler = (
-  req: http.IncomingMessage,
-  res: http.ServerResponse
+  req: http.IncomingMessage | http2.Http2ServerRequest,
+  res: http.ServerResponse | http2.Http2ServerResponse
 ) => {
   // Handle webhook endpoint
   if (
     req.url === "/webhooks/lemonsqueezy/createdCheckout" &&
     req.method === "POST"
   ) {
-    webhookHandler(req, res);
+    webhookHandler(
+      req as unknown as http.IncomingMessage,
+      res as unknown as http.ServerResponse
+    );
     return;
   }
 
@@ -77,13 +81,17 @@ const requestHandler = (
   grpcHandler(req, res);
 };
 
-const PORT = 8069;
-http.createServer(requestHandler).listen(PORT);
+const PORT = Number(process.env.PORT ?? 8069);
+
+http2.createServer(requestHandler).listen(PORT);
 
 logger.lifecycle("Server started", {
-  port: PORT,
+  grpcH2Port: PORT,
   env: process.env.NODE_ENV || "development",
 });
 logger.lifecycle("Webhook endpoint available", {
-  path: "/webhooks/lemonsqueezy/createdCheckout",
+  url: `http://localhost:${PORT}/webhooks/lemonsqueezy/createdCheckout`,
+});
+logger.lifecycle("gRPC h2c endpoint available", {
+  url: `http://localhost:${PORT}`,
 });
