@@ -77,7 +77,9 @@ function getConfig(): LemonSqueezyConfig {
   return { apiKey, storeId, variantId };
 }
 
-function validateRequest(req: CreateCheckoutLinkRequest): CreateCheckoutLinkSchemaType {
+function validateRequest(
+  req: CreateCheckoutLinkRequest
+): CreateCheckoutLinkSchemaType {
   try {
     return createCheckoutLinkSchema.parse(req);
   } catch (error) {
@@ -104,7 +106,10 @@ async function calculatePrice(userId: string): Promise<number> {
   const price = await storageAdapter.price(event.serialize());
 
   if (typeof price !== "number" || isNaN(price) || price < 0) {
-    throw PaymentError.priceCalculationFailed(userId, new Error(`Invalid price: ${price}`));
+    throw PaymentError.priceCalculationFailed(
+      userId,
+      new Error(`Invalid price: ${price}`)
+    );
   }
 
   return price;
@@ -142,15 +147,23 @@ async function createCheckoutSession(
 
   const checkoutUrl = checkoutResponse.data?.data?.attributes?.url;
 
-  if (!checkoutUrl || typeof checkoutUrl !== "string" || checkoutUrl.trim().length === 0) {
-    throw PaymentError.invalidCheckoutResponse("No valid checkout URL in response");
+  if (
+    !checkoutUrl ||
+    typeof checkoutUrl !== "string" ||
+    checkoutUrl.trim().length === 0
+  ) {
+    throw PaymentError.invalidCheckoutResponse(
+      "No valid checkout URL in response"
+    );
   }
 
   // Validate URL format
   try {
     new URL(checkoutUrl);
   } catch {
-    throw PaymentError.invalidCheckoutResponse(`Invalid URL format: ${checkoutUrl}`);
+    throw PaymentError.invalidCheckoutResponse(
+      `Invalid URL format: ${checkoutUrl}`
+    );
   }
 
   return checkoutUrl;

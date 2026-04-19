@@ -206,7 +206,9 @@ async function resolveTagsInExpression(exprString: string): Promise<string> {
  * await parseAndEvaluateExpr("add(mul(tag(PREMIUM_CALL),3),250)")
  * // Returns: 550 (100*3 + 250)
  */
-export async function parseAndEvaluateExpr(exprString: string): Promise<number> {
+export async function parseAndEvaluateExpr(
+  exprString: string
+): Promise<number> {
   // Step 1: Validate syntax
   validateExprSyntax(exprString);
 

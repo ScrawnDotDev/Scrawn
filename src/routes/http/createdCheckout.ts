@@ -202,7 +202,8 @@ export async function handleLemonSqueezyWebhook(
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ message: "Webhook processed successfully" }));
     } catch (dbError) {
-      const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+      const errorMessage =
+        dbError instanceof Error ? dbError.message : String(dbError);
       builder.setError(500, {
         type: "DatabaseError",
         message: `Failed to store payment event: ${errorMessage}`,

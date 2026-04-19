@@ -90,7 +90,9 @@ function extractErrorDetails(error: unknown): ErrorDetails {
       message: error.message,
       cause: causeMessage,
       code: error.code,
-      stack: isDev ? (customError.originalError?.stack || error.stack) : undefined,
+      stack: isDev
+        ? customError.originalError?.stack || error.stack
+        : undefined,
     };
   }
 
@@ -114,13 +116,13 @@ function extractErrorDetails(error: unknown): ErrorDetails {
 
 /**
  * Logging interceptor that implements the wide events pattern.
- * 
+ *
  * This interceptor:
  * 1. Generates a unique request ID
  * 2. Creates a WideEventBuilder and attaches it to the request context
  * 3. Captures timing information
  * 4. Emits a single wide event at request completion (success or failure)
- * 
+ *
  * Place this interceptor FIRST in the chain to capture all requests,
  * including those that fail authentication.
  */

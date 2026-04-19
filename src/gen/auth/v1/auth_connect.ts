@@ -23,6 +23,5 @@ export const AuthService = {
       O: CreateAPIKeyResponse,
       kind: MethodKind.Unary,
     },
-  }
+  },
 } as const;
-

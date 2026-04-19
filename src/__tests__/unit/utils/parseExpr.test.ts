@@ -199,9 +199,9 @@ describe("parseExpr", () => {
           EventError.validationFailed("Tag not found: UNKNOWN_TAG")
         );
 
-        await expect(
-          parseAndEvaluateExpr("tag(UNKNOWN_TAG)")
-        ).rejects.toThrow(/Tag not found/);
+        await expect(parseAndEvaluateExpr("tag(UNKNOWN_TAG)")).rejects.toThrow(
+          /Tag not found/
+        );
       });
     });
 

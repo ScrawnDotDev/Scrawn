@@ -104,7 +104,11 @@ function emitBody(req: MockRequest, body: string): void {
  * Create a mock WideEventBuilder for testing.
  */
 function createMockBuilder(): WideEventBuilder {
-  return new WideEventBuilder("test-request-id", "POST", "/webhooks/lemonsqueezy/createdCheckout");
+  return new WideEventBuilder(
+    "test-request-id",
+    "POST",
+    "/webhooks/lemonsqueezy/createdCheckout"
+  );
 }
 
 describe("handleLemonSqueezyWebhook", () => {
@@ -406,7 +410,6 @@ describe("handleLemonSqueezyWebhook", () => {
 
     expect((res as any).statusCode).toBe(500);
     expect((res as any).body).toContain("Database error");
-
   });
 
   it("returns 500 on unexpected errors (e.g. readBody error)", async () => {

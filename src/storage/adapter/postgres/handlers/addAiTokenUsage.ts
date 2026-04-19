@@ -130,7 +130,6 @@ export async function handleAddAiTokenUsage(
             .insert(usersTable)
             .values(uniqueUserIds.map((id) => ({ id })))
             .onConflictDoNothing();
-
         }
       } catch (e) {
         if (
@@ -200,7 +199,6 @@ export async function handleAddAiTokenUsage(
       // Batch insert AI token usage events
       try {
         await txn.insert(aiTokenUsageEventsTable).values(aiTokenUsageValues);
-
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to batch insert AI token usage events`,
@@ -218,7 +216,6 @@ export async function handleAddAiTokenUsage(
 
       return { id: firstEvent.id };
     });
-
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
     if (

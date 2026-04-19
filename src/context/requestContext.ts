@@ -71,10 +71,7 @@ export class WideEventBuilder {
   /**
    * Set event processing context.
    */
-  setEventContext(data: {
-    eventType?: string;
-    eventCount?: number;
-  }): this {
+  setEventContext(data: { eventType?: string; eventCount?: number }): this {
     if (data.eventType !== undefined) this.event.eventType = data.eventType;
     if (data.eventCount !== undefined) this.event.eventCount = data.eventCount;
     return this;

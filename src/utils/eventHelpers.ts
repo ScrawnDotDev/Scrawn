@@ -67,10 +67,13 @@ function convertValidationError(error: unknown): EventError {
 
   if (error instanceof ZodError) {
     const firstIssue = error.issues[0];
-    
+
     // Check if Zod wrapped our custom EventError from a transform
     if (firstIssue?.message.startsWith("Event validation failed:")) {
-      const cleanMessage = firstIssue.message.replace(/^Event validation failed:\s*/, "");
+      const cleanMessage = firstIssue.message.replace(
+        /^Event validation failed:\s*/,
+        ""
+      );
       return EventError.validationFailed(cleanMessage);
     }
 
@@ -104,7 +107,13 @@ export function createEventInstance(
 /**
  * Store the event using the appropriate storage adapter
  */
-export async function storeEvent(event: Event, apiKeyId: string): Promise<void> {
-  const adapter = await StorageAdapterFactory.getStorageAdapter(event, apiKeyId);
+export async function storeEvent(
+  event: Event,
+  apiKeyId: string
+): Promise<void> {
+  const adapter = await StorageAdapterFactory.getStorageAdapter(
+    event,
+    apiKeyId
+  );
   await adapter.add(event.serialize());
 }

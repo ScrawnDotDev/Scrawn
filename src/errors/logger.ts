@@ -3,7 +3,7 @@ import pino, { type Logger as PinoLogger } from "pino";
 /**
  * Wide Event interface for structured logging.
  * Each request emits exactly one wide event at completion containing all relevant context.
- * 
+ *
  * @see https://stripe.com/blog/canonical-log-lines
  * @see https://loggingsucks.com
  */
@@ -57,7 +57,7 @@ export interface WideEvent {
 /**
  * Wide Event Logger following the canonical log lines pattern.
  * Emits one structured JSON event per request with all relevant context.
- * 
+ *
  * Uses only two log levels:
  * - info: successful requests
  * - error: failed requests

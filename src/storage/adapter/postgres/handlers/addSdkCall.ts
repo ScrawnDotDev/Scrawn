@@ -32,7 +32,6 @@ export async function handleAddSdkCall(
             id: event_data.userId,
           })
           .onConflictDoNothing();
-
       } catch (e) {
         if (
           e instanceof Error &&
@@ -95,7 +94,6 @@ export async function handleAddSdkCall(
           type: sdkData.data.sdkCallType,
           debitAmount: sdkData.data.debitAmount,
         });
-
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to insert SDK call event for event ID ${eventID.id}`,
@@ -105,7 +103,6 @@ export async function handleAddSdkCall(
 
       return { id: eventID };
     });
-
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
     if (

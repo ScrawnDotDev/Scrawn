@@ -40,7 +40,6 @@ export async function handleAddPayment(
             id: event_data.userId,
           })
           .onConflictDoNothing();
-
       } catch (e) {
         if (
           e instanceof Error &&
@@ -100,7 +99,6 @@ export async function handleAddPayment(
           id: eventID.id,
           creditAmount: event_data.data.creditAmount,
         });
-
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to insert payment event for event ID ${eventID.id}`,
@@ -110,7 +108,6 @@ export async function handleAddPayment(
 
       return { id: eventID };
     });
-
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
     if (
