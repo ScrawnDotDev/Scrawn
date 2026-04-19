@@ -104,7 +104,7 @@ export class Cache {
 
   static getStore<K, V>(
     name: string,
-    config?: Partial<CacheConfig<K, V>>,
+    config?: Partial<CacheConfig<K, V>>
   ): CacheStore<K, V> {
     const existing = Cache.stores.get(name);
     if (existing) return existing as CacheStore<K, V>;

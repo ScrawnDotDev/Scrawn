@@ -99,9 +99,10 @@ export class APIKeyError extends ConnectError {
   }
 
   static unknown(originalError?: Error): APIKeyError {
+    const details = originalError?.message || "No details available";
     return new APIKeyError({
       type: APIKeyErrorType.UNKNOWN,
-      message: "An unknown API key processing error occurred",
+      message: `Unexpected API key error: ${details}`,
       code: Code.Internal,
       originalError,
     });

@@ -6,9 +6,6 @@ import {
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
-import { logger } from "../../../../errors/logger";
-
-const OPERATION = "AddPayment";
 
 export async function handleAddPayment(
   event_data: SqlRecord<"PAYMENT">,
@@ -34,11 +31,6 @@ export async function handleAddPayment(
       );
     }
 
-    logger.logOperationInfo(OPERATION, "start", "Processing PAYMENT event", {
-      userId: event_data.userId,
-      apiKeyId,
-    });
-
     await connectionObject.transaction(async (txn) => {
       // Insert user if not exists
       try {
@@ -48,25 +40,12 @@ export async function handleAddPayment(
             id: event_data.userId,
           })
           .onConflictDoNothing();
-
-        logger.logOperationDebug(
-          OPERATION,
-          "user_ensured",
-          "User ensured in database",
-          { userId: event_data.userId }
-        );
       } catch (e) {
         if (
           e instanceof Error &&
           e.message.includes('Failed query: insert into "users" ("id")')
         ) {
           // User already exists, ignore the error
-          logger.logOperationDebug(
-            OPERATION,
-            "user_exists",
-            "User already exists, continuing",
-            { userId: event_data.userId }
-          );
         } else {
           throw StorageError.userInsertFailed(
             event_data.userId,
@@ -114,30 +93,12 @@ export async function handleAddPayment(
         throw StorageError.emptyResult("Event insert returned no ID");
       }
 
-      logger.logOperationInfo(
-        OPERATION,
-        "event_inserted",
-        "Event row inserted",
-        { eventId: eventID.id, userId: event_data.userId, apiKeyId }
-      );
-
       // Insert payment event
       try {
         await txn.insert(paymentEventsTable).values({
           id: eventID.id,
           creditAmount: event_data.data.creditAmount,
         });
-
-        logger.logOperationInfo(
-          OPERATION,
-          "payment_inserted",
-          "Payment event inserted successfully",
-          {
-            eventId: eventID.id,
-            creditAmount: event_data.data.creditAmount,
-            userId: event_data.userId,
-          }
-        );
       } catch (e) {
         throw StorageError.insertFailed(
           `Failed to insert payment event for event ID ${eventID.id}`,
@@ -147,13 +108,6 @@ export async function handleAddPayment(
 
       return { id: eventID };
     });
-
-    logger.logOperationInfo(
-      OPERATION,
-      "completed",
-      "PAYMENT transaction completed successfully",
-      { userId: event_data.userId, apiKeyId }
-    );
   } catch (e) {
     // Use duck typing instead of instanceof to work with mocked modules
     if (

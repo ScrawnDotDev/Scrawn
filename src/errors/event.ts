@@ -110,9 +110,10 @@ export class EventError extends ConnectError {
   }
 
   static unknown(originalError?: Error): EventError {
+    const details = originalError?.message || "No details available";
     return new EventError({
       type: EventErrorType.UNKNOWN,
-      message: "An unknown event processing error occurred",
+      message: `Unexpected event processing error: ${details}`,
       code: Code.Internal,
       originalError,
     });

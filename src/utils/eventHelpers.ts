@@ -2,12 +2,16 @@ import type { HandlerContext } from "@connectrpc/connect";
 import { apiKeyContextKey } from "../context/auth";
 import { AuthError } from "../errors/auth";
 import { EventError } from "../errors/event";
-import { registerEventSchema, streamEventSchema } from "../zod/event";
+import {
+  registerEventSchema,
+  streamEventSchema,
+  type RegisterEventSchemaType,
+  type StreamEventSchemaType,
+} from "../zod/event";
 import { ZodError } from "zod";
 import type { Event } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
 import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
-import { RequestAITokenUsage } from "../events/RequestEvents/RequestAITokenUsage";
 import { StorageAdapterFactory } from "../factory";
 import type {
   RegisterEventRequest,
@@ -26,75 +30,77 @@ export function extractApiKeyFromContext(context: HandlerContext): string {
 }
 
 /**
- * Validate and parse the incoming event request
+ * Validate and parse the incoming register event request.
+ * Handles Zod validation errors and extracts clean error messages.
  */
-export async function validateAndParseRegisterEvent(req: RegisterEventRequest) {
+export async function validateAndParseRegisterEvent(
+  req: RegisterEventRequest
+): Promise<RegisterEventSchemaType> {
   try {
     return await registerEventSchema.parseAsync(req);
   } catch (error) {
-    if (error instanceof EventError) {
-      throw error;
-    }
-    if (error instanceof ZodError) {
-      const issues = error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join("; ");
-      throw EventError.validationFailed(issues, error);
-    }
-    throw EventError.validationFailed(
-      "Unknown validation error",
-      error as Error
-    );
+    throw convertValidationError(error);
   }
 }
 
-export async function validateAndParseStreamEvent(req: StreamEventRequest) {
+/**
+ * Validate and parse the incoming stream event request.
+ */
+export async function validateAndParseStreamEvent(
+  req: StreamEventRequest
+): Promise<StreamEventSchemaType> {
   try {
     return await streamEventSchema.parseAsync(req);
   } catch (error) {
-    if (error instanceof EventError) {
-      throw error;
-    }
-    if (error instanceof ZodError) {
-      const issues = error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join("; ");
-      throw EventError.validationFailed(issues, error);
-    }
-    throw EventError.validationFailed(
-      "Unknown validation error",
-      error as Error
-    );
+    throw convertValidationError(error);
   }
+}
+
+/**
+ * Convert Zod validation errors to EventError.
+ * Detects wrapped EventErrors from Zod transforms and extracts clean messages.
+ */
+function convertValidationError(error: unknown): EventError {
+  if (error instanceof EventError) {
+    return error;
+  }
+
+  if (error instanceof ZodError) {
+    const firstIssue = error.issues[0];
+
+    // Check if Zod wrapped our custom EventError from a transform
+    if (firstIssue?.message.startsWith("Event validation failed:")) {
+      const cleanMessage = firstIssue.message.replace(
+        /^Event validation failed:\s*/,
+        ""
+      );
+      return EventError.validationFailed(cleanMessage);
+    }
+
+    const issues = error.issues
+      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+      .join("; ");
+    return EventError.validationFailed(issues);
+  }
+
+  return EventError.validationFailed(
+    error instanceof Error ? error.message : String(error)
+  );
 }
 
 /**
  * Create the appropriate event instance based on the event skeleton
  */
-export function createEventInstance(eventSkeleton: {
-  type: string;
-  userId: string;
-  data: any;
-}): Event {
-  try {
-    switch (eventSkeleton.type) {
-      case "SDK_CALL":
-        return new SDKCall(eventSkeleton.userId, eventSkeleton.data);
-      case "AI_TOKEN_USAGE":
-        return new AITokenUsage(eventSkeleton.userId, eventSkeleton.data);
-      case "REQUEST_AI_TOKEN_USAGE":
-        return new RequestAITokenUsage(
-          eventSkeleton.userId,
-          eventSkeleton.data
-        );
-      default:
-        throw EventError.unsupportedEventType(eventSkeleton.type);
-    }
-  } catch (error) {
-    if (error instanceof EventError) {
-      throw error;
-    }
-    throw EventError.unknown(error as Error);
+export function createEventInstance(
+  eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
+): Event {
+  switch (eventSkeleton.type) {
+    case "SDK_CALL":
+      return new SDKCall(eventSkeleton.userId, eventSkeleton.data);
+    case "AI_TOKEN_USAGE":
+      return new AITokenUsage(eventSkeleton.userId, eventSkeleton.data);
+    default:
+      throw EventError.unsupportedEventType("Unknown event type");
   }
 }
 
@@ -105,20 +111,9 @@ export async function storeEvent(
   event: Event,
   apiKeyId: string
 ): Promise<void> {
-  try {
-    const adapter = await StorageAdapterFactory.getStorageAdapter(
-      event,
-      apiKeyId
-    );
-    await adapter.add(event.serialize());
-  } catch (error) {
-    throw EventError.serializationError(
-      "Failed to store event",
-      error as Error
-    );
-  }
+  const adapter = await StorageAdapterFactory.getStorageAdapter(
+    event,
+    apiKeyId
+  );
+  await adapter.add(event.serialize());
 }
-
-/**
- * Store multiple events in a batch - groups by type and uses batch operations when possible
- */

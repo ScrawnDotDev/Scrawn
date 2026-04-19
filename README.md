@@ -78,7 +78,7 @@ The server will start on `http://localhost:8069`
 
 ## Endpoints
 
-- **gRPC services**: `http://localhost:8069` (all gRPC endpoints)
+- **Connect / gRPC-Web / gRPC (h2c / HTTP/2 cleartext)**: `http://localhost:8069`
 - **Webhook**: `http://localhost:8069/webhooks/lemonsqueezy/createdCheckout`
 
 ## Documentation

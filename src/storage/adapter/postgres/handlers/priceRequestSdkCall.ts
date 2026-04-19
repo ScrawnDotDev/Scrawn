@@ -3,9 +3,6 @@ import { sdkCallEventsTable, eventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq, sum } from "drizzle-orm";
 import { type SqlRecord } from "../../../../interface/event/Event";
-import { logger } from "../../../../errors/logger";
-
-const OPERATION = "PriceRequestSdkCall";
 
 export async function handlePriceRequestSdkCall(
   event_data: SqlRecord<"REQUEST_SDK_CALL">
@@ -27,13 +24,6 @@ export async function handlePriceRequestSdkCall(
         `Invalid userId format: ${typeof event_data.userId}`
       );
     }
-
-    logger.logOperationInfo(
-      OPERATION,
-      "start",
-      "Querying price for REQUEST_SDK_CALL",
-      { userId: event_data.userId }
-    );
 
     let result;
     try {
@@ -65,24 +55,12 @@ export async function handlePriceRequestSdkCall(
     }
 
     if (result.length === 0 || !result[0]) {
-      logger.logOperationInfo(
-        OPERATION,
-        "no_events",
-        "No SDK call events found, returning 0",
-        { userId: event_data.userId }
-      );
       return 0;
     }
 
     const priceValue = result[0].price;
 
     if (priceValue === null || priceValue === undefined) {
-      logger.logOperationInfo(
-        OPERATION,
-        "null_price",
-        "Price is null/undefined, returning 0",
-        { userId: event_data.userId }
-      );
       return 0;
     }
 
@@ -102,20 +80,6 @@ export async function handlePriceRequestSdkCall(
         new Error(`Price parsed to NaN from value: ${priceValue}`)
       );
     }
-
-    if (parsedPrice < 0) {
-      logger.logWarning("Negative price calculated", {
-        userId: event_data.userId,
-        price: parsedPrice,
-      });
-    }
-
-    logger.logOperationInfo(
-      OPERATION,
-      "completed",
-      "Price calculated successfully",
-      { userId: event_data.userId, price: parsedPrice }
-    );
 
     return parsedPrice;
   } catch (e) {
