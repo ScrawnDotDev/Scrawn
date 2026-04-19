@@ -86,7 +86,9 @@ export function extractTagNames(exprString: string): string[] {
   TAG_PATTERN.lastIndex = 0;
 
   while ((match = TAG_PATTERN.exec(exprString)) !== null) {
-    tags.add(match[1]);
+    if (match[1]) {
+      tags.add(match[1]);
+    }
   }
 
   return Array.from(tags);
@@ -129,8 +131,8 @@ export function validateExprSyntax(exprString: string): void {
   let match: RegExpExecArray | null;
 
   while ((match = functionPattern.exec(exprString)) !== null) {
-    const funcName = match[1].toLowerCase();
-    if (!ALLOWED_FUNCTIONS.has(funcName)) {
+    const funcName = match[1]?.toLowerCase();
+    if (!funcName || !ALLOWED_FUNCTIONS.has(funcName)) {
       throw EventError.validationFailed(
         `Unknown function in expression: ${match[1]}`
       );
@@ -141,7 +143,7 @@ export function validateExprSyntax(exprString: string): void {
   const tagNamePattern = /tag\(([^)]*)\)/gi;
   while ((match = tagNamePattern.exec(exprString)) !== null) {
     const tagName = match[1];
-    if (!/^[A-Z_][A-Z0-9_]*$/.test(tagName)) {
+    if (!tagName || !/^[A-Z_][A-Z0-9_]*$/.test(tagName)) {
       throw EventError.validationFailed(
         `Invalid tag name format: ${tagName}. Tag names must be UPPER_SNAKE_CASE`
       );
