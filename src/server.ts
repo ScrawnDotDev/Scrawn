@@ -1,7 +1,9 @@
-import * as http from "node:http";
 import * as http2 from "node:http2";
 import type { ConnectRouter } from "@connectrpc/connect";
 import { connectNodeAdapter } from "@connectrpc/connect-node";
+import { fastify } from "fastify";
+import fastifyRawBody from "fastify-raw-body";
+import { fastifyConnectPlugin } from "@connectrpc/connect-fastify";
 import { createValidateInterceptor } from "@connectrpc/validate";
 import { EventService } from "./gen/event/v1/event_pb.ts";
 import { AuthService } from "./gen/auth/v1/auth_pb.ts";
@@ -14,7 +16,10 @@ import { createAPIKey } from "./routes/gRPC/auth/createAPIKey.ts";
 import { createCheckoutLink } from "./routes/gRPC/payment/createCheckoutLink.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
 import { handleLemonSqueezyWebhook } from "./routes/http/createdCheckout.ts";
-import { withHttpLogging } from "./middleware/httpLogging.ts";
+import {
+  createWideEventBuilder,
+  generateRequestId,
+} from "./context/requestContext.ts";
 import { logger } from "./errors/logger.ts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -32,66 +37,137 @@ if (!HMAC_SECRET) {
 
 getPostgresDB(DATABASE_URL);
 
-const grpcHandler = connectNodeAdapter({
-  interceptors: [
-    loggingInterceptor(), // First - captures all requests including auth failures
-    createValidateInterceptor(),
-    authInterceptor(),
-  ],
-  routes: (router: ConnectRouter) => {
-    // EventService implementation
-    router.service(EventService, {
-      registerEvent,
-      streamEvents,
-    });
+const PORT = Number(process.env.PORT ?? 8069);
+const GRPC_PORT = Number(process.env.GRPC_PORT ?? 8070);
 
-    // AuthService implementation
-    router.service(AuthService, {
-      createAPIKey,
-    });
+function registerRoutes(router: ConnectRouter): void {
+  router.service(EventService, {
+    registerEvent,
+    streamEvents,
+  });
 
-    // PaymentService implementation
-    router.service(PaymentService, {
-      createCheckoutLink,
-    });
-  },
-});
+  router.service(AuthService, {
+    createAPIKey,
+  });
 
-// Wrap webhook handler with HTTP logging middleware
-const webhookHandler = withHttpLogging(handleLemonSqueezyWebhook);
+  router.service(PaymentService, {
+    createCheckoutLink,
+  });
+}
 
-// Create a combined handler for both gRPC and HTTP webhooks
-const requestHandler = (
-  req: http.IncomingMessage | http2.Http2ServerRequest,
-  res: http.ServerResponse | http2.Http2ServerResponse
-) => {
-  // Handle webhook endpoint
-  if (
-    req.url === "/webhooks/lemonsqueezy/createdCheckout" &&
-    req.method === "POST"
-  ) {
-    webhookHandler(
-      req as unknown as http.IncomingMessage,
-      res as unknown as http.ServerResponse
+function startRawGrpcServer(): void {
+  const grpcHandler = connectNodeAdapter({
+    interceptors: [
+      loggingInterceptor(),
+      createValidateInterceptor(),
+      authInterceptor(),
+    ],
+    routes: registerRoutes,
+  });
+
+  http2.createServer(grpcHandler).listen(GRPC_PORT);
+
+  logger.lifecycle("Raw gRPC h2c endpoint available", {
+    url: `http://localhost:${GRPC_PORT}`,
+  });
+}
+
+async function main(): Promise<void> {
+  startRawGrpcServer();
+
+  const server = fastify({
+    http2: true,
+  });
+
+  await server.register(fastifyConnectPlugin, {
+    interceptors: [
+      loggingInterceptor(), // First - captures all requests including auth failures
+      createValidateInterceptor(),
+      authInterceptor(),
+    ],
+    routes: registerRoutes,
+  });
+
+  await server.register(fastifyRawBody, {
+    field: "rawBody",
+    global: false,
+    encoding: "utf8",
+    runFirst: true,
+  });
+
+  server.get("/", async (_request, reply) => {
+    reply.type("text/plain");
+    return "Hello World!";
+  });
+
+  server.post(
+    "/webhooks/lemonsqueezy/createdCheckout",
+    { config: { rawBody: true } },
+    async (request, reply) => {
+    const builder = createWideEventBuilder(
+      generateRequestId(),
+      request.method,
+      request.url
     );
-    return;
-  }
 
-  // Handle all other requests as gRPC
-  grpcHandler(req, res);
+    try {
+      const signatureHeader = request.headers["x-signature"];
+      const signature =
+        typeof signatureHeader === "string"
+          ? signatureHeader
+          : Array.isArray(signatureHeader)
+            ? signatureHeader[0]
+            : undefined;
+
+      const requestWithRawBody = request as typeof request & {
+        rawBody?: string;
+      };
+      const rawBody = requestWithRawBody.rawBody;
+
+      if (!rawBody) {
+        builder.setError(400, {
+          type: "ParseError",
+          message: "Missing raw webhook payload",
+        });
+        reply.code(400);
+        return { error: "Missing raw webhook payload" };
+      }
+
+      const result = await handleLemonSqueezyWebhook(
+        rawBody,
+        signature,
+        builder
+      );
+
+      reply.code(result.statusCode);
+      return result.body;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      builder.setError(500, {
+        type: "InternalError",
+        message: err.message,
+      });
+      reply.code(500);
+      return { error: "Internal server error" };
+    } finally {
+      logger.emit(builder.build());
+    }
+    }
+  );
+
+  await server.listen({ host: "localhost", port: PORT });
+
+  logger.lifecycle("Server started", {
+    httpPort: PORT,
+    grpcH2Port: GRPC_PORT,
+    env: process.env.NODE_ENV || "development",
+  });
+  logger.lifecycle("Webhook endpoint available", {
+    url: `http://localhost:${PORT}/webhooks/lemonsqueezy/createdCheckout`,
+  });
+  logger.lifecycle("Connect endpoint available", {
+    url: `http://localhost:${PORT}`,
+  });
 };
 
-const PORT = Number(process.env.PORT ?? 8069);
-
-http2.createServer(requestHandler).listen(PORT);
-
-logger.lifecycle("Server started", {
-  grpcH2Port: PORT,
-  env: process.env.NODE_ENV || "development",
-});
-logger.lifecycle("Webhook endpoint available", {
-  url: `http://localhost:${PORT}/webhooks/lemonsqueezy/createdCheckout`,
-});
-logger.lifecycle("gRPC h2c endpoint available", {
-  url: `http://localhost:${PORT}`,
-});
+void main();

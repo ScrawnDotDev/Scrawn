@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import type { IncomingMessage, ServerResponse } from "node:http";
 import { lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
 import { Payment } from "../../events/RawEvents/Payment.ts";
 import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
@@ -40,6 +39,11 @@ interface LemonSqueezyWebhookPayload {
   };
 }
 
+interface WebhookResponse {
+  statusCode: number;
+  body: { message?: string; error?: string };
+}
+
 /**
  * Verifies the webhook signature from Lemon Squeezy
  */
@@ -64,40 +68,16 @@ function verifyWebhookSignature(
 }
 
 /**
- * Reads the request body as a string
- */
-function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk: Buffer) => {
-      body += chunk.toString();
-    });
-    req.on("end", () => {
-      resolve(body);
-    });
-    req.on("error", (error: Error) => {
-      reject(error);
-    });
-  });
-}
-
-/**
  * Handles the Lemon Squeezy order-created webhook.
  * This handler is designed to work with the HTTP logging middleware,
  * which provides a WideEventBuilder for adding business context.
  */
 export async function handleLemonSqueezyWebhook(
-  req: IncomingMessage,
-  res: ServerResponse,
+  rawBody: string,
+  signature: string | undefined,
   builder: WideEventBuilder
-): Promise<void> {
+): Promise<WebhookResponse> {
   try {
-    // Read the raw body
-    const rawBody = await readBody(req);
-
-    // Verify webhook signature
-    const signature = req.headers["x-signature"] as string | undefined;
-
     // Read webhook secret at runtime for testability
     const LEMON_SQUEEZY_WEBHOOK_SECRET =
       process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
@@ -107,9 +87,10 @@ export async function handleLemonSqueezyWebhook(
         type: "ConfigurationError",
         message: "Webhook secret not configured",
       });
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Webhook secret not configured" }));
-      return;
+      return {
+        statusCode: 500,
+        body: { error: "Webhook secret not configured" },
+      };
     }
 
     const isValid = verifyWebhookSignature(
@@ -123,52 +104,58 @@ export async function handleLemonSqueezyWebhook(
         type: "AuthenticationError",
         message: "Invalid signature",
       });
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Invalid signature" }));
-      return;
+      return { statusCode: 401, body: { error: "Invalid signature" } };
     }
 
-    // Parse the payload
-    let payload: LemonSqueezyWebhookPayload;
+    
+    let webhookPayload: LemonSqueezyWebhookPayload;
     try {
-      payload = JSON.parse(rawBody);
+      webhookPayload = JSON.parse(rawBody) as LemonSqueezyWebhookPayload;
     } catch {
       builder.setError(400, {
         type: "ParseError",
         message: "Invalid JSON payload",
       });
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Invalid JSON payload" }));
-      return;
+      return { statusCode: 400, body: { error: "Invalid JSON payload" } };
+    }
+
+    if (!webhookPayload.meta || !webhookPayload.data?.attributes) {
+      builder.setError(400, {
+        type: "ParseError",
+        message: "Invalid webhook payload shape",
+      });
+      return {
+        statusCode: 400,
+        body: { error: "Invalid webhook payload shape" },
+      };
     }
 
     // Add webhook event context
     builder.setWebhookContext({
-      webhookEvent: payload.meta.event_name,
-      orderId: payload.data.id,
+      webhookEvent: webhookPayload.meta.event_name,
+      orderId: webhookPayload.data.id,
     });
 
     // Handle only order-created events
-    if (payload.meta.event_name !== "order_created") {
+    if (webhookPayload.meta.event_name !== "order_created") {
       builder.setSuccess(200);
       builder.addContext({ ignored: true });
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "Event ignored" }));
-      return;
+      return { statusCode: 200, body: { message: "Event ignored" } };
     }
 
     // Extract user ID from custom data
-    const userId = payload.meta.custom_data?.user_id;
-    const apiKeyId = payload.meta.custom_data?.api_key_id;
+    const userId = webhookPayload.meta.custom_data?.user_id;
+    const apiKeyId = webhookPayload.meta.custom_data?.api_key_id;
 
     if (!userId) {
       builder.setError(400, {
         type: "ValidationError",
         message: "Missing user_id in webhook payload",
       });
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Missing user_id in webhook payload" }));
-      return;
+      return {
+        statusCode: 400,
+        body: { error: "Missing user_id in webhook payload" },
+      };
     }
 
     if (!apiKeyId) {
@@ -176,16 +163,17 @@ export async function handleLemonSqueezyWebhook(
         type: "ValidationError",
         message: "Missing apiKeyId in webhook payload",
       });
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Missing apiKeyId in webhook payload" }));
-      return;
+      return {
+        statusCode: 400,
+        body: { error: "Missing apiKeyId in webhook payload" },
+      };
     }
 
     // Add user and payment context to wide event
     builder.setUser(userId);
 
     // Extract payment amount (convert from cents to the integer format used in DB)
-    const creditAmount = Math.round(payload.data.attributes.total);
+    const creditAmount = Math.round(webhookPayload.data.attributes.total);
     builder.setPaymentContext({ creditAmount });
 
     // Create and store the payment event
@@ -199,8 +187,10 @@ export async function handleLemonSqueezyWebhook(
       await adapter.add(paymentEvent.serialize());
 
       builder.setSuccess(200);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "Webhook processed successfully" }));
+      return {
+        statusCode: 200,
+        body: { message: "Webhook processed successfully" },
+      };
     } catch (dbError) {
       const errorMessage =
         dbError instanceof Error ? dbError.message : String(dbError);
@@ -210,8 +200,7 @@ export async function handleLemonSqueezyWebhook(
         cause: dbError instanceof Error ? dbError.message : undefined,
         stack: isDev && dbError instanceof Error ? dbError.stack : undefined,
       });
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Database error" }));
+      return { statusCode: 500, body: { error: "Database error" } };
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -221,7 +210,6 @@ export async function handleLemonSqueezyWebhook(
       cause: error instanceof Error ? error.message : undefined,
       stack: isDev && error instanceof Error ? error.stack : undefined,
     });
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Internal server error" }));
+    return { statusCode: 500, body: { error: "Internal server error" } };
   }
 }
