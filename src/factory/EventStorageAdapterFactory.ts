@@ -1,4 +1,4 @@
-import type { Event } from "../interface/event/Event.ts";
+import type { EventKind } from "../interface/event/Event.ts";
 import { PostgresAdapter } from "../storage/adapter/postgres/postgres.ts";
 
 /**
@@ -15,31 +15,22 @@ export class StorageAdapterFactory {
    * @param apiKeyId - Optional API key ID to associate with the event
    * @returns The storage adapter instance for the event type
    */
-  public static async getStorageAdapter(event: Event, apiKeyId?: string) {
-    switch (event.type) {
+  public static async getEventStorageAdapter(RequestType: EventKind) {
+    switch (RequestType) {
       case "SDK_CALL": {
-        return new PostgresAdapter(event, apiKeyId);
+        return new PostgresAdapter();
       }
       case "AI_TOKEN_USAGE": {
-        return new PostgresAdapter(event, apiKeyId);
+        return new PostgresAdapter();
       }
       case "PAYMENT": {
-        return new PostgresAdapter(event, apiKeyId);
+        return new PostgresAdapter();
       }
       case "ADD_KEY": {
-        return new PostgresAdapter(event);
-      }
-      case "REQUEST_PAYMENT": {
-        return new PostgresAdapter(event);
-      }
-      case "REQUEST_SDK_CALL": {
-        return new PostgresAdapter(event);
-      }
-      case "REQUEST_AI_TOKEN_USAGE": {
-        return new PostgresAdapter(event);
+        return new PostgresAdapter();
       }
       default: {
-        throw new Error(`Unknown event type: ${event}`);
+        throw new Error(`Unknown event type: ${RequestType}`);
       }
     }
   }

@@ -55,8 +55,10 @@ export async function createAPIKey(
     expiresAt: expiresAt.toISOString(),
   });
 
-  const adapter = await StorageAdapterFactory.getStorageAdapter(addKeyEvent);
-  const keyEventData = await adapter.add(addKeyEvent.serialize());
+  const adapter = await StorageAdapterFactory.getEventStorageAdapter(
+    addKeyEvent.type
+  );
+  const keyEventData = await adapter.add(addKeyEvent.serialize(), "");
 
   if (!keyEventData) {
     throw APIKeyError.creationFailed("Storage returned no ID");

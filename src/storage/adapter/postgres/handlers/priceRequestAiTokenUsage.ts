@@ -6,26 +6,22 @@ import {
 import { StorageError } from "../../../../errors/storage";
 import { eq, sum, sql } from "drizzle-orm";
 import { type SqlRecord } from "../../../../interface/event/Event";
+import { type UserId } from "../../../../config/identifiers";
 
 export async function handlePriceRequestAiTokenUsage(
-  event_data: SqlRecord<"REQUEST_AI_TOKEN_USAGE">
+  userId: UserId
 ): Promise<number> {
   const connectionObject = getPostgresDB();
 
   try {
-    if (!event_data.userId) {
+    if (!userId) {
       throw StorageError.invalidData(
         "Missing userId in REQUEST_AI_TOKEN_USAGE event"
       );
     }
 
-    if (
-      typeof event_data.userId !== "string" ||
-      event_data.userId.trim().length === 0
-    ) {
-      throw StorageError.invalidData(
-        `Invalid userId format: ${typeof event_data.userId}`
-      );
+    if (typeof userId !== "string" || userId.trim().length === 0) {
+      throw StorageError.invalidData(`Invalid userId format: ${typeof userId}`);
     }
 
     let result;
@@ -38,24 +34,24 @@ export async function handlePriceRequestAiTokenUsage(
         })
         .from(aiTokenUsageEventsTable)
         .leftJoin(eventsTable, eq(aiTokenUsageEventsTable.id, eventsTable.id))
-        .where(eq(eventsTable.userId, event_data.userId))
+        .where(eq(eventsTable.userId, userId))
         .groupBy(eventsTable.userId);
     } catch (e) {
       throw StorageError.queryFailed(
-        `Failed to query REQUEST_AI_TOKEN_USAGE events for user ${event_data.userId}`,
+        `Failed to query REQUEST_AI_TOKEN_USAGE events for user ${userId}`,
         e instanceof Error ? e : new Error(String(e))
       );
     }
 
     if (!result) {
       throw StorageError.emptyResult(
-        `Price query returned null for user ${event_data.userId}`
+        `Price query returned null for user ${userId}`
       );
     }
 
     if (!Array.isArray(result)) {
       throw StorageError.queryFailed(
-        `Query result is not an array for user ${event_data.userId}`
+        `Query result is not an array for user ${userId}`
       );
     }
 
@@ -74,14 +70,14 @@ export async function handlePriceRequestAiTokenUsage(
       parsedPrice = parseInt(priceValue);
     } catch (e) {
       throw StorageError.priceCalculationFailed(
-        event_data.userId,
+        userId,
         new Error(`Failed to parse price value: ${priceValue}`)
       );
     }
 
     if (isNaN(parsedPrice)) {
       throw StorageError.priceCalculationFailed(
-        event_data.userId,
+        userId,
         new Error(`Price parsed to NaN from value: ${priceValue}`)
       );
     }

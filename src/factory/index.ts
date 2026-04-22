@@ -1,1 +1,1 @@
-export { StorageAdapterFactory } from "./StorageAdapterFactory.ts";
+export { StorageAdapterFactory } from "./EventStorageAdapterFactory.ts";

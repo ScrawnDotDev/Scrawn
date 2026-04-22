@@ -17,9 +17,9 @@ import {
   createCheckout,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import { StorageAdapterFactory } from "../../../factory";
-import { RequestPayment } from "../../../events/RequestEvents/RequestPayment";
 import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
+import type { UserId } from "../../../config/identifiers";
 
 export async function createCheckoutLink(
   req: CreateCheckoutLinkRequest,
@@ -95,15 +95,15 @@ function validateRequest(
   }
 }
 
-async function calculatePrice(userId: string): Promise<number> {
-  const event = new RequestPayment(userId, null);
-  const storageAdapter = await StorageAdapterFactory.getStorageAdapter(event);
+async function calculatePrice(userId: UserId): Promise<number> {
+  const storageAdapter =
+    await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
 
   if (!storageAdapter) {
     throw PaymentError.storageAdapterFailed("Storage adapter not available");
   }
 
-  const price = await storageAdapter.price(event.serialize());
+  const price = await storageAdapter.price(userId, "PAYMENT");
 
   if (typeof price !== "number" || isNaN(price) || price < 0) {
     throw PaymentError.priceCalculationFailed(
