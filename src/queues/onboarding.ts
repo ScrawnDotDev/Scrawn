@@ -30,7 +30,7 @@ export async function addOnboardingCronJob(
     `onboarding-${cronExpression}`,
     {
       cronExpression,
-      createdAt: DateTime.now().toISO(),
+      createdAt: DateTime.utc().toISO(),
     },
     {
       repeat: repeatOptions,
