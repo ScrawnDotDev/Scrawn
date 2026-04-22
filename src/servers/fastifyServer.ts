@@ -4,6 +4,7 @@ import { fastifyConnectPlugin } from "@connectrpc/connect-fastify";
 import { registerGrpcRoutes } from "../routes/gRPC/registerRoutes.ts";
 import { createConnectInterceptors } from "../interceptors/connectInterceptors.ts";
 import { registerWebhookRoutes } from "../routes/http/registerWebhookRoutes.ts";
+import { registerApiRoutes } from "../routes/http/api/registerApiRoutes.ts";
 import { logger } from "../errors/logger.ts";
 
 export async function startFastifyServer(port: number, grpcPort: number): Promise<void> {
@@ -29,6 +30,7 @@ export async function startFastifyServer(port: number, grpcPort: number): Promis
   });
 
   await registerWebhookRoutes(server);
+  await registerApiRoutes(server);
 
   await server.listen({ host: "localhost", port });
 
@@ -39,6 +41,9 @@ export async function startFastifyServer(port: number, grpcPort: number): Promis
   });
   logger.lifecycle("Webhook endpoint available", {
     url: `http://localhost:${port}/webhooks/lemonsqueezy/createdCheckout`,
+  });
+  logger.lifecycle("API endpoint available", {
+    url: `http://localhost:${port}/api/v1/internals/onboarding`,
   });
   logger.lifecycle("Connect endpoint available", {
     url: `http://localhost:${port}`,
