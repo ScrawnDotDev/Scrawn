@@ -123,7 +123,7 @@ export const paymentEventsRelation = relations(
 
 export const tagsTable = pgTable("tags", {
   id: uuid("id").primaryKey().defaultRandom(),
-  tag: text("key").notNull(),
+  key: text("key").notNull(),
   amount: integer("amount").notNull(),
 });
 
@@ -147,3 +147,9 @@ export const aiTokenUsageEventsRelation = relations(
     }),
   })
 );
+
+export const metadataTable = pgTable("metadata", {
+  id: uuid("id").primaryKey(),
+  payment_cron: text("payment_cron").notNull(),
+  payment_webhook: text("payment_webhook").notNull()
+});

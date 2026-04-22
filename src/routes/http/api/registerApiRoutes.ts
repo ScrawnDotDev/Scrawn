@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { handleOnboarding } from "./onboarding.ts";
 
 export async function registerApiRoutes(
@@ -6,7 +6,10 @@ export async function registerApiRoutes(
 ): Promise<void> {
   server.post(
     "/api/v1/internals/onboarding",
-    async (request, reply) => {
+    async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => {
       return handleOnboarding(request, reply);
     }
   );

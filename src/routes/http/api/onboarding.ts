@@ -5,7 +5,10 @@ import {
   type OnboardingCronSchemaType,
 } from "../../../zod/internals.ts";
 import { addOnboardingCronJob } from "../../../queues/onboarding.ts";
-import { createWideEventBuilder, generateRequestId } from "../../../context/requestContext.ts";
+import {
+  createWideEventBuilder,
+  generateRequestId,
+} from "../../../context/requestContext.ts";
 import { logger } from "../../../errors/logger.ts";
 
 export async function handleOnboarding(
@@ -20,7 +23,7 @@ export async function handleOnboarding(
 
   try {
     const body = await request.body;
-    const validated = onboardingCronSchema.parse(body) as OnboardingCronSchemaType;
+    const validated = onboardingCronSchema.parse(body);
 
     const crons: string[] = [];
 
@@ -29,7 +32,7 @@ export async function handleOnboarding(
       crons.push(cronExpression);
     }
 
-    builder.setSuccess({
+    builder.setSuccess(200).addContext({
       cronCount: crons.length,
     });
 

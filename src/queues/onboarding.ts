@@ -1,4 +1,4 @@
-import { Queue, CronRepeatOptions } from "bullmq";
+import { Queue, type RepeatOptions } from "bullmq";
 import { DateTime } from "luxon";
 import { getRedisConnection } from "../storage/db/redis.ts";
 
@@ -21,12 +21,12 @@ export function getOnboardingQueue(): Queue<OnboardingJobData> {
 export async function addOnboardingCronJob(
   cronExpression: string
 ): Promise<void> {
-  const repeatOptions: CronRepeatOptions = {
+  const repeatOptions: RepeatOptions = {
     pattern: cronExpression,
   };
 
   const queue = getOnboardingQueue();
-  await queue.upsertJob(
+  await queue.add(
     `onboarding-${cronExpression}`,
     {
       cronExpression,
