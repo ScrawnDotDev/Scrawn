@@ -111,9 +111,8 @@ export async function storeEvent(
   event: Event,
   apiKeyId: string
 ): Promise<void> {
-  const adapter = await StorageAdapterFactory.getStorageAdapter(
-    event,
-    apiKeyId
+  const adapter = await StorageAdapterFactory.getEventStorageAdapter(
+    event.type
   );
-  await adapter.add(event.serialize());
+  await adapter.add(event.serialize(), apiKeyId);
 }

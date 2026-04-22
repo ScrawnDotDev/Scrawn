@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { lemonSqueezySetup } from "@lemonsqueezy/lemonsqueezy.js";
 import { Payment } from "../../events/RawEvents/Payment.ts";
-import { StorageAdapterFactory } from "../../factory/StorageAdapterFactory.ts";
+import { StorageAdapterFactory } from "../../factory/EventStorageAdapterFactory.ts";
 import type { WideEventBuilder } from "../../context/requestContext.ts";
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -107,7 +107,6 @@ export async function handleLemonSqueezyWebhook(
       return { statusCode: 401, body: { error: "Invalid signature" } };
     }
 
-    
     let webhookPayload: LemonSqueezyWebhookPayload;
     try {
       webhookPayload = JSON.parse(rawBody) as LemonSqueezyWebhookPayload;
@@ -179,12 +178,10 @@ export async function handleLemonSqueezyWebhook(
     // Create and store the payment event
     try {
       const paymentEvent = new Payment(userId, { creditAmount });
-      const adapter = await StorageAdapterFactory.getStorageAdapter(
-        paymentEvent,
-        apiKeyId
-      );
+      const adapter =
+        await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
 
-      await adapter.add(paymentEvent.serialize());
+      await adapter.add(paymentEvent.serialize(), apiKeyId);
 
       builder.setSuccess(200);
       return {

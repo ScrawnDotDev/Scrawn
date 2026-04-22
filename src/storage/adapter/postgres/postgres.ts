@@ -14,21 +14,15 @@ import {
 import type {
   SerializedEvent,
   EventKind,
+  SqlRecord,
 } from "../../../interface/event/Event";
+import type { UserId } from "../../../config/identifiers";
 
 export class PostgresAdapter implements StorageAdapter {
-  name: string;
-  connectionObject;
-  apiKeyId?: string;
+  connectionObject = getPostgresDB();
 
-  constructor(event: Event, apiKeyId?: string) {
-    this.name = event.type;
-    this.connectionObject = getPostgresDB();
-    this.apiKeyId = apiKeyId;
-  }
-
-  async add(serialized: SerializedEvent<EventKind>) {
-    let event_data;
+  async add(serialized: SerializedEvent<EventKind>, apiKeyId: string) {
+    let event_data: SqlRecord<EventKind>;
 
     try {
       const { SQL } = serialized;
@@ -57,10 +51,17 @@ export class PostgresAdapter implements StorageAdapter {
 
     switch (event_data.type) {
       case "SDK_CALL": {
-        if (!this.apiKeyId) {
+        if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddSdkCall(event_data, this.apiKeyId);
+        return await handleAddSdkCall(event_data, apiKeyId);
+      }
+
+      case "AI_TOKEN_USAGE": {
+        if (!apiKeyId) {
+          throw StorageError.missingApiKeyId();
+        }
+        return await handleAddAiTokenUsage([event_data], apiKeyId);
       }
 
       case "ADD_KEY": {
@@ -68,65 +69,32 @@ export class PostgresAdapter implements StorageAdapter {
       }
 
       case "PAYMENT": {
-        return await handleAddPayment(event_data, this.apiKeyId);
-      }
-
-      case "AI_TOKEN_USAGE": {
-        if (!this.apiKeyId) {
-          throw StorageError.missingApiKeyId();
-        }
-        return await handleAddAiTokenUsage([event_data], this.apiKeyId);
+        return await handleAddPayment(event_data, apiKeyId);
       }
 
       default: {
+        //@ts-ignore
         throw StorageError.unknownEventType(event_data.type);
       }
     }
   }
 
-  async price(serialized: SerializedEvent<EventKind>): Promise<number> {
-    let event_data;
-
-    try {
-      const { SQL } = serialized;
-      event_data = SQL;
-
-      if (!event_data) {
-        throw StorageError.serializationFailed(
-          "Event serialization returned null or undefined"
-        );
-      }
-    } catch (e) {
-      // Use duck typing instead of instanceof to work with mocked modules
-      if (
-        e &&
-        typeof e === "object" &&
-        "type" in e &&
-        (e as any).name === "StorageError"
-      ) {
-        throw e;
-      }
-      throw StorageError.serializationFailed(
-        "Failed to serialize event data for price calculation",
-        e instanceof Error ? e : new Error(String(e))
-      );
-    }
-
-    switch (event_data.type) {
-      case "REQUEST_PAYMENT": {
-        return await handlePriceRequestPayment(event_data);
+  async price(userID: UserId, event_type: EventKind): Promise<number> {
+    switch (event_type) {
+      case "PAYMENT": {
+        return await handlePriceRequestPayment(userID);
       }
 
-      case "REQUEST_SDK_CALL": {
-        return await handlePriceRequestSdkCall(event_data);
+      case "SDK_CALL": {
+        return await handlePriceRequestSdkCall(userID);
       }
 
-      case "REQUEST_AI_TOKEN_USAGE": {
-        return await handlePriceRequestAiTokenUsage(event_data);
+      case "AI_TOKEN_USAGE": {
+        return await handlePriceRequestAiTokenUsage(userID);
       }
 
       default: {
-        throw StorageError.unknownEventType(event_data.type);
+        throw StorageError.unknownEventType(event_type);
       }
     }
   }

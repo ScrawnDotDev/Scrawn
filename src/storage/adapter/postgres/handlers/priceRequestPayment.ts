@@ -1,21 +1,19 @@
 import { StorageError } from "../../../../errors/storage";
-import { RequestSDKCall } from "../../../../events/RequestEvents/RequestSDKCall";
-import { RequestAITokenUsage } from "../../../../events/RequestEvents/RequestAITokenUsage";
 import { StorageAdapterFactory } from "../../../../factory";
 import { type SqlRecord } from "../../../../interface/event/Event";
+import type { UserId } from "../../../../config/identifiers";
 
 export async function handlePriceRequestPayment(
-  event_data: SqlRecord<"REQUEST_PAYMENT">
+  userId: UserId
 ): Promise<number> {
   try {
-    if (!event_data.userId) {
+    if (!userId) {
       throw StorageError.invalidData("Missing userId in REQUEST_PAYMENT event");
     }
 
     // Calculate SDK call price
-    const sdkEvent = new RequestSDKCall(event_data.userId, null);
     const sdkStorageAdapter =
-      await StorageAdapterFactory.getStorageAdapter(sdkEvent);
+      await StorageAdapterFactory.getEventStorageAdapter("SDK_CALL");
 
     if (!sdkStorageAdapter) {
       throw StorageError.unknown(
@@ -25,19 +23,18 @@ export async function handlePriceRequestPayment(
       );
     }
 
-    const sdkPrice = await sdkStorageAdapter.price(sdkEvent.serialize());
+    const sdkPrice = await sdkStorageAdapter.price(userId, "SDK_CALL");
 
     if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
       throw StorageError.priceCalculationFailed(
-        event_data.userId,
+        userId,
         new Error(`Invalid SDK price value returned: ${sdkPrice}`)
       );
     }
 
     // Calculate AI token usage price
-    const aiEvent = new RequestAITokenUsage(event_data.userId, null);
     const aiStorageAdapter =
-      await StorageAdapterFactory.getStorageAdapter(aiEvent);
+      await StorageAdapterFactory.getEventStorageAdapter("AI_TOKEN_USAGE");
 
     if (!aiStorageAdapter) {
       throw StorageError.unknown(
@@ -47,11 +44,11 @@ export async function handlePriceRequestPayment(
       );
     }
 
-    const aiPrice = await aiStorageAdapter.price(aiEvent.serialize());
+    const aiPrice = await aiStorageAdapter.price(userId, "AI_TOKEN_USAGE");
 
     if (typeof aiPrice !== "number" || isNaN(aiPrice)) {
       throw StorageError.priceCalculationFailed(
-        event_data.userId,
+        userId,
         new Error(`Invalid AI price value returned: ${aiPrice}`)
       );
     }
