@@ -10,6 +10,14 @@ vi.mock("../../../factory/StorageAdapterFactory.ts", () => ({
   },
 }));
 
+vi.mock("../../../factory/eventTypeMap.ts", () => ({
+  REQUEST_EVENT_BASE_MAP: {
+    REQUEST_SDK_CALL: "SDK_CALL",
+    REQUEST_AI_TOKEN_USAGE: "AI_TOKEN_USAGE",
+    REQUEST_PAYMENT: "PAYMENT",
+  },
+}));
+
 vi.mock("../../../events/RawEvents/Payment.ts", () => ({
   Payment: class Payment {
     public userId: string;

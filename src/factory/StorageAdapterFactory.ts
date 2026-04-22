@@ -1,46 +1,38 @@
 import type { Event } from "../interface/event/Event.ts";
+import type { StorageAdapter } from "../interface/storage/Storage.ts";
 import { PostgresAdapter } from "../storage/adapter/postgres/postgres.ts";
 
-/**
- * StorageAdapterFactory - Facade for the new SQL adapter factory
- *
- * Maintains backward compatibility while delegating to the new
- * dependency-injected SQL adapter factory
- */
+export const REQUEST_EVENT_BASE_MAP: Record<string, string> = {
+  REQUEST_SDK_CALL: "SDK_CALL",
+  REQUEST_AI_TOKEN_USAGE: "AI_TOKEN_USAGE",
+  REQUEST_PAYMENT: "PAYMENT",
+};
+
+const ADAPTER_KEY_MAP: Record<string, string> = {
+  SDK_CALL: "postgres_adapter",
+  AI_TOKEN_USAGE: "postgres_adapter",
+  PAYMENT: "postgres_adapter",
+  ADD_KEY: "postgres_adapter",
+};
+
+const ADAPTER_FACTORIES: Record<
+  string,
+  (event: Event, apiKeyId?: string) => StorageAdapter
+> = {
+  postgres_adapter: (event, apiKeyId) => new PostgresAdapter(event, apiKeyId),
+};
+
 export class StorageAdapterFactory {
-  /**
-   * Get the appropriate storage adapter for a given event
-   *
-   * @param event - The event to get a storage adapter for
-   * @param apiKeyId - Optional API key ID to associate with the event
-   * @returns The storage adapter instance for the event type
-   */
   public static async getStorageAdapter(event: Event, apiKeyId?: string) {
-    switch (event.type) {
-      case "SDK_CALL": {
-        return new PostgresAdapter(event, apiKeyId);
-      }
-      case "AI_TOKEN_USAGE": {
-        return new PostgresAdapter(event, apiKeyId);
-      }
-      case "PAYMENT": {
-        return new PostgresAdapter(event, apiKeyId);
-      }
-      case "ADD_KEY": {
-        return new PostgresAdapter(event);
-      }
-      case "REQUEST_PAYMENT": {
-        return new PostgresAdapter(event);
-      }
-      case "REQUEST_SDK_CALL": {
-        return new PostgresAdapter(event);
-      }
-      case "REQUEST_AI_TOKEN_USAGE": {
-        return new PostgresAdapter(event);
-      }
-      default: {
-        throw new Error(`Unknown event type: ${event}`);
-      }
+    const baseEventType = REQUEST_EVENT_BASE_MAP[event.type] ?? event.type;
+    const adapterKey = ADAPTER_KEY_MAP[baseEventType];
+    if (!adapterKey) {
+      throw new Error(`Unknown event type: ${event.type}`);
     }
+    const createAdapter = ADAPTER_FACTORIES[adapterKey];
+    if (!createAdapter) {
+      throw new Error(`No adapter factory found for key: ${adapterKey}`);
+    }
+    return createAdapter(event, apiKeyId);
   }
 }
