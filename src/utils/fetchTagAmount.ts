@@ -17,7 +17,7 @@ export async function fetchTagAmount(
   const [tagRow] = await db
     .select()
     .from(tagsTable)
-    .where(eq(tagsTable.tag, tag))
+    .where(eq(tagsTable.key, tag))
     .limit(1);
 
   if (!tagRow) {

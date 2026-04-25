@@ -10,6 +10,7 @@ import {
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
+  handleAddMetadata,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -21,7 +22,7 @@ import type { UserId } from "../../../config/identifiers";
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
 
-  async add(serialized: SerializedEvent<EventKind>, apiKeyId: string) {
+  async add(serialized: SerializedEvent<EventKind>, apiKeyId?: string) {
     let event_data: SqlRecord<EventKind>;
 
     try {
@@ -70,6 +71,10 @@ export class PostgresAdapter implements StorageAdapter {
 
       case "PAYMENT": {
         return await handleAddPayment(event_data, apiKeyId);
+      }
+
+      case "METADATA": {
+        return await handleAddMetadata(event_data);
       }
 
       default: {

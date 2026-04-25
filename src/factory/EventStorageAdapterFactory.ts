@@ -1,12 +1,6 @@
 import type { EventKind } from "../interface/event/Event.ts";
 import { PostgresAdapter } from "../storage/adapter/postgres/postgres.ts";
 
-/**
- * StorageAdapterFactory - Facade for the new SQL adapter factory
- *
- * Maintains backward compatibility while delegating to the new
- * dependency-injected SQL adapter factory
- */
 export class StorageAdapterFactory {
   /**
    * Get the appropriate storage adapter for a given event
@@ -27,6 +21,9 @@ export class StorageAdapterFactory {
         return new PostgresAdapter();
       }
       case "ADD_KEY": {
+        return new PostgresAdapter();
+      }
+      case "METADATA": {
         return new PostgresAdapter();
       }
       default: {
