@@ -23,6 +23,9 @@ export class StorageAdapterFactory {
       case "ADD_KEY": {
         return new PostgresAdapter();
       }
+      case "METADATA": {
+        return new PostgresAdapter();
+      }
       default: {
         throw new Error(`Unknown event type: ${RequestType}`);
       }

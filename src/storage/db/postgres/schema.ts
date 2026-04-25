@@ -149,7 +149,7 @@ export const aiTokenUsageEventsRelation = relations(
 );
 
 export const metadataTable = pgTable("metadata", {
-  id: uuid("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   payment_cron: text("payment_cron").notNull(),
-  payment_webhook: text("payment_webhook").notNull()
+  payment_webhook: text("payment_webhook"),
 });

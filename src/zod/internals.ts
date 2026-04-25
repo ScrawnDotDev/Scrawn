@@ -15,6 +15,7 @@ export const onboardingCronSchema = z.object({
     .array(cronField)
     .min(1, "At least one cron expression is required")
     .max(100, "Maximum 100 cron expressions allowed"),
+  webhookUrl: z.url("Invalid webhook URL").or(z.literal("")),
 });
 
 export type OnboardingCronSchemaType = z.infer<typeof onboardingCronSchema>;
