@@ -27,8 +27,8 @@ if (!REDIS_URL) {
 getPostgresDB(DATABASE_URL);
 getRedisConnection(REDIS_URL);
 
-const PORT = Number(process.env.PORT ?? 8069);
-const GRPC_PORT = Number(process.env.GRPC_PORT ?? 8070);
+const PORT = Number(process.env.PORT ?? 8070);
+const GRPC_PORT = Number(process.env.GRPC_PORT ?? 8069);
 
 let onboardingWorker: OnboardingWorker | undefined;
 

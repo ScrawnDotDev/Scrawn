@@ -1,21 +1,11 @@
 import { fastify } from "fastify";
 import fastifyRawBody from "fastify-raw-body";
-import { fastifyConnectPlugin } from "@connectrpc/connect-fastify";
-import { registerGrpcRoutes } from "../routes/gRPC/registerRoutes.ts";
-import { createConnectInterceptors } from "../interceptors/connectInterceptors.ts";
 import { registerWebhookRoutes } from "../routes/http/registerWebhookRoutes.ts";
 import { registerApiRoutes } from "../routes/http/api/registerApiRoutes.ts";
 import { logger } from "../errors/logger.ts";
 
 export async function startFastifyServer(port: number, grpcPort: number): Promise<void> {
-  const server = fastify({
-    http2: true,
-  });
-
-  await server.register(fastifyConnectPlugin, {
-    interceptors: createConnectInterceptors(),
-    routes: registerGrpcRoutes,
-  });
+  const server = fastify();
 
   await server.register(fastifyRawBody, {
     field: "rawBody",
@@ -44,8 +34,5 @@ export async function startFastifyServer(port: number, grpcPort: number): Promis
   });
   logger.lifecycle("API endpoint available", {
     url: `http://localhost:${port}/api/v1/internals/onboarding`,
-  });
-  logger.lifecycle("Connect endpoint available", {
-    url: `http://localhost:${port}`,
   });
 }

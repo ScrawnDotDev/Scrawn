@@ -74,12 +74,12 @@ bun run dev:backend
 bun start
 ```
 
-The server will start on `http://localhost:8069`
+The server will start on `http://localhost:8070`
 
 ## Endpoints
 
-- **Connect / gRPC-Web / gRPC (h2c / HTTP/2 cleartext)**: `http://localhost:8069`
-- **Webhook**: `http://localhost:8069/webhooks/lemonsqueezy/createdCheckout`
+- **Connect / gRPC-Web / gRPC (h2c / HTTP/2 cleartext)**: `http://localhost:8069` (raw gRPC)
+- **Webhook**: `http://localhost:8070/webhooks/lemonsqueezy/createdCheckout`
 
 ## Documentation
 

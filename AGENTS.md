@@ -5,7 +5,7 @@
 - **Test all**: `bun test`
 - **Test single file**: `vitest src/__tests__/unit/path/to/test.test.ts`
 - **Test with UI**: `bun run test:ui`
-- **Dev server**: `bun run dev:backend` (auto-reload on port 8069)
+- **Dev server**: `bun run dev:backend` (auto-reload on port 8070)
 - **Generate protobuf**: `bun run gen` (from proto/ directory)
 - **DB migrations**: `bunx drizzle-kit push`
 
