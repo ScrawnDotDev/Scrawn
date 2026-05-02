@@ -6,14 +6,14 @@ import { DateTime } from "luxon";
 import type { UserId } from "../../config/identifiers";
 
 export class Payment implements PaymentEvent {
-  public reported_timestamp: DateTime;
+  public ingested_timestamp: DateTime;
   public readonly type = "PAYMENT" as const;
 
   constructor(
     public userId: UserId,
     public data: PaymentEventData
   ) {
-    this.reported_timestamp = DateTime.utc();
+    this.ingested_timestamp = DateTime.utc();
   }
 
   serialize() {
@@ -21,7 +21,7 @@ export class Payment implements PaymentEvent {
       SQL: {
         type: this.type,
         userId: this.userId,
-        reported_timestamp: this.reported_timestamp,
+        reported_timestamp: this.ingested_timestamp,
         data: this.data,
       },
     };

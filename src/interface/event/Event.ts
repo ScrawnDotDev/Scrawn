@@ -102,7 +102,7 @@ export type SerializedEvent<K extends EventKind = EventKind> = {
  */
 export interface Event<K extends EventKind = EventKind> {
   readonly type: K;
-  readonly reported_timestamp: DateTime;
+  readonly ingested_timestamp: DateTime;
   readonly data: EventData<K>;
 
   serialize(): SerializedEvent<K>;
@@ -113,6 +113,7 @@ export interface Event<K extends EventKind = EventKind> {
  */
 export interface SDKCallEvent extends Event<"SDK_CALL"> {
   readonly userId: UserId;
+  readonly reportedTimestamp: DateTime;
 }
 
 /**
@@ -120,6 +121,7 @@ export interface SDKCallEvent extends Event<"SDK_CALL"> {
  */
 export interface AITokenUsageEvent extends Event<"AI_TOKEN_USAGE"> {
   readonly userId: UserId;
+  readonly reportedTimestamp: DateTime;
 }
 
 /**

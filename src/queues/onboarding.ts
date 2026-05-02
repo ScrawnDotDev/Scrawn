@@ -21,13 +21,22 @@ export function getOnboardingQueue(): Queue<OnboardingJobData> {
 export async function addOnboardingCronJob(
   cronExpression: string
 ): Promise<void> {
+  const queue = getOnboardingQueue();
+
+  const existingJobs = await queue.getRepeatableJobs();
+  const jobName = `onboarding-${cronExpression}`;
+  const alreadyExists = existingJobs.some((job) => job.name === jobName);
+
+  if (alreadyExists) {
+    return;
+  }
+
   const repeatOptions: RepeatOptions = {
     pattern: cronExpression,
   };
 
-  const queue = getOnboardingQueue();
   await queue.add(
-    `onboarding-${cronExpression}`,
+    jobName,
     {
       cronExpression,
       createdAt: DateTime.utc().toISO(),

@@ -96,9 +96,17 @@ export function createEventInstance(
 ): Event {
   switch (eventSkeleton.type) {
     case "SDK_CALL":
-      return new SDKCall(eventSkeleton.userId, eventSkeleton.data);
+      return new SDKCall(
+        eventSkeleton.userId,
+        eventSkeleton.reportedTimestamp,
+        eventSkeleton.data
+      );
     case "AI_TOKEN_USAGE":
-      return new AITokenUsage(eventSkeleton.userId, eventSkeleton.data);
+      return new AITokenUsage(
+        eventSkeleton.userId,
+        eventSkeleton.reportedTimestamp,
+        eventSkeleton.data
+      );
     default:
       throw EventError.unsupportedEventType("Unknown event type");
   }

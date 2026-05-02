@@ -1,10 +1,8 @@
-import type {
+import {
   StreamEventRequest,
   StreamEventResponse,
 } from "../../../gen/event/v1/event_pb";
 
-import { StreamEventResponseSchema } from "../../../gen/event/v1/event_pb";
-import { create } from "@bufbuild/protobuf";
 import { EventError } from "../../../errors/event";
 import type { HandlerContext } from "@connectrpc/connect";
 import { wideEventContextKey } from "../../../context/requestContext";
@@ -48,7 +46,7 @@ export async function streamEvents(
       eventsProcessed += 1;
     }
 
-    return create(StreamEventResponseSchema, {
+    return new StreamEventResponse({
       eventsProcessed,
       message: `Successfully processed ${eventsProcessed} events`,
     });

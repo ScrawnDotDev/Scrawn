@@ -6,6 +6,7 @@ import {
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
+import { DateTime } from "luxon";
 
 export async function handleAddSdkCall(
   event_data: SqlRecord<"SDK_CALL">,
@@ -70,6 +71,7 @@ export async function handleAddSdkCall(
           .insert(eventsTable)
           .values({
             reported_timestamp,
+            ingested_timestamp: DateTime.utc().toString(),
             userId: event_data.userId,
             api_keyId: apiKeyId,
           })

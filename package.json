@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-connect-es": "^0.13.0",
-    "@bufbuild/protoc-gen-es": "^2.9.0",
+    "@bufbuild/protoc-gen-es": "^1.9.0",
     "@types/bun": "latest",
     "@types/expr-eval": "^1.1.2",
     "@types/luxon": "^3.7.1",
@@ -31,12 +31,13 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.9.0",
-    "@connectrpc/connect": "^2.1.0",
-    "@connectrpc/connect-fastify": "^2.1.1",
-    "@connectrpc/connect-node": "^2.1.1",
-    "@connectrpc/validate": "^0.2.0",
+    "@bufbuild/protobuf": "1.9.0",
+    "@connectrpc/connect": "1.4.0",
+    "@connectrpc/connect-fastify": "1.4.0",
+    "@connectrpc/connect-node": "1.4.0",
+    "@connectrpc/validate": "0.2.0",
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260502.1",
     "bullmq": "^5.75.2",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",

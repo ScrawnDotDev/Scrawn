@@ -6,6 +6,7 @@ import {
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
+import { DateTime } from "luxon";
 
 export async function handleAddPayment(
   event_data: SqlRecord<"PAYMENT">,
@@ -78,6 +79,7 @@ export async function handleAddPayment(
           .insert(eventsTable)
           .values({
             reported_timestamp,
+            ingested_timestamp: DateTime.utc().toString(),
             userId: event_data.userId,
             api_keyId: apiKeyId,
           })

@@ -6,14 +6,15 @@ import { DateTime } from "luxon";
 import type { UserId } from "../../config/identifiers";
 
 export class SDKCall implements SDKCallEvent {
-  public reported_timestamp: DateTime;
+  public ingested_timestamp: DateTime;
   public readonly type = "SDK_CALL" as const;
 
   constructor(
     public userId: UserId,
+    public reportedTimestamp: DateTime,
     public data: SDKCallEventData
   ) {
-    this.reported_timestamp = DateTime.utc();
+    this.ingested_timestamp = DateTime.utc();
   }
 
   serialize() {
@@ -21,7 +22,7 @@ export class SDKCall implements SDKCallEvent {
       SQL: {
         type: this.type,
         userId: this.userId,
-        reported_timestamp: this.reported_timestamp,
+        reported_timestamp: this.reportedTimestamp,
         data: this.data,
       },
     };

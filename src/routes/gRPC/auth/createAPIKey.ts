@@ -1,9 +1,7 @@
-import type {
+import {
   CreateAPIKeyRequest,
   CreateAPIKeyResponse,
 } from "../../../gen/auth/v1/auth_pb";
-import { CreateAPIKeyResponseSchema } from "../../../gen/auth/v1/auth_pb";
-import { create } from "@bufbuild/protobuf";
 import { createAPIKeySchema } from "../../../zod/apikey";
 import { APIKeyError } from "../../../errors/apikey";
 import { AuthError } from "../../../errors/auth";
@@ -64,7 +62,7 @@ export async function createAPIKey(
     throw APIKeyError.creationFailed("Storage returned no ID");
   }
 
-  return create(CreateAPIKeyResponseSchema, {
+  return new CreateAPIKeyResponse({
     apiKeyId: keyEventData.id,
     apiKey: apiKey,
     name: validatedData.name,

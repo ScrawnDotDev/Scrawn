@@ -1,7 +1,7 @@
 import { getPostgresDB } from "../../../db/postgres/db";
-import { sdkCallEventsTable, eventsTable } from "../../../db/postgres/schema";
+import { sdkCallEventsTable, eventsTable, usersTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { eq, sum } from "drizzle-orm";
+import { eq, sum, gt, sql } from "drizzle-orm";
 import { type UserId } from "../../../../config/identifiers";
 
 export async function handlePriceRequestSdkCall(
@@ -27,8 +27,14 @@ export async function handlePriceRequestSdkCall(
           price: sum(sdkCallEventsTable.debitAmount),
         })
         .from(sdkCallEventsTable)
-        .leftJoin(eventsTable, eq(sdkCallEventsTable.id, eventsTable.id))
-        .where(eq(eventsTable.userId, userId))
+        .innerJoin(eventsTable, eq(sdkCallEventsTable.id, eventsTable.id))
+        .innerJoin(
+          usersTable,
+          eq(eventsTable.userId, usersTable.id)
+        )
+        .where(
+          sql`${eventsTable.reported_timestamp} > ${usersTable.last_billed_timestamp} AND ${eventsTable.userId} = ${userId}`
+        )
         .groupBy(eventsTable.userId);
     } catch (e) {
       throw StorageError.queryFailed(

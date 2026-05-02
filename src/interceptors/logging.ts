@@ -129,7 +129,7 @@ function extractErrorDetails(error: unknown): ErrorDetails {
 export function loggingInterceptor(): Interceptor {
   return (next) => async (req) => {
     const requestId = generateRequestId();
-    const method = req.method.kind; // "unary", "server_streaming", "client_streaming", "bidi_streaming"
+    const method = String(req.method.kind); // "unary", "server_streaming", "client_streaming", "bidi_streaming"
     const url = req.url;
 
     const builder = createWideEventBuilder(requestId, method, url);

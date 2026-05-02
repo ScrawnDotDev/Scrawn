@@ -1,9 +1,7 @@
-import type {
+import {
   CreateCheckoutLinkRequest,
   CreateCheckoutLinkResponse,
 } from "../../../gen/payment/v1/payment_pb";
-import { CreateCheckoutLinkResponseSchema } from "../../../gen/payment/v1/payment_pb";
-import { create } from "@bufbuild/protobuf";
 import {
   createCheckoutLinkSchema,
   type CreateCheckoutLinkSchemaType,
@@ -54,7 +52,7 @@ export async function createCheckoutLink(
     apiKeyId
   );
 
-  return create(CreateCheckoutLinkResponseSchema, {
+  return new CreateCheckoutLinkResponse({
     checkoutLink: checkoutUrl,
   });
 }

@@ -2,6 +2,7 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import {
   aiTokenUsageEventsTable,
   eventsTable,
+  usersTable,
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq, sum, sql } from "drizzle-orm";
@@ -33,8 +34,14 @@ export async function handlePriceRequestAiTokenUsage(
           ),
         })
         .from(aiTokenUsageEventsTable)
-        .leftJoin(eventsTable, eq(aiTokenUsageEventsTable.id, eventsTable.id))
-        .where(eq(eventsTable.userId, userId))
+        .innerJoin(eventsTable, eq(aiTokenUsageEventsTable.id, eventsTable.id))
+        .innerJoin(
+          usersTable,
+          eq(eventsTable.userId, usersTable.id)
+        )
+        .where(
+          sql`${eventsTable.reported_timestamp} > ${usersTable.last_billed_timestamp} AND ${eventsTable.userId} = ${userId}`
+        )
         .groupBy(eventsTable.userId);
     } catch (e) {
       throw StorageError.queryFailed(

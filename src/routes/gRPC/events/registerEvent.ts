@@ -1,9 +1,7 @@
-import type {
+import {
   RegisterEventRequest,
   RegisterEventResponse,
 } from "../../../gen/event/v1/event_pb";
-import { RegisterEventResponseSchema } from "../../../gen/event/v1/event_pb";
-import { create } from "@bufbuild/protobuf";
 import type { HandlerContext } from "@connectrpc/connect";
 import { wideEventContextKey } from "../../../context/requestContext";
 import {
@@ -25,6 +23,7 @@ export async function registerEvent(
   // Validate and parse the incoming event
   const eventSkeleton = await validateAndParseRegisterEvent(req);
 
+  console.log(eventSkeleton);
   // Add business context to wide event
   wideEventBuilder?.setUser(eventSkeleton.userId);
   wideEventBuilder?.setEventContext({ eventType: eventSkeleton.type });
@@ -35,7 +34,7 @@ export async function registerEvent(
   // Store the event
   await storeEvent(event, apiKeyId);
 
-  return create(RegisterEventResponseSchema, {
+  return new RegisterEventResponse({
     random: "Event stored successfully",
   });
 }

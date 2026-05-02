@@ -17,6 +17,11 @@ export class OnboardingWorker {
       {
         connection: getRedisConnection(),
         concurrency: 1,
+        limiter: {
+          max: 1,
+          duration: 1800000,
+        },
+        maxStalledCount: 2,
       }
     );
   }

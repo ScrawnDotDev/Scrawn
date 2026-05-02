@@ -7,6 +7,7 @@ import {
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
+import { DateTime } from "luxon";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -148,6 +149,7 @@ export async function handleAddAiTokenUsage(
       // Prepare event values for batch insert
       const eventValues = aggregatedEvents.map((aggEvent) => ({
         reported_timestamp: aggEvent.reported_timestamp,
+        ingested_timestamp: DateTime.utc().toString(),
         userId: aggEvent.userId,
         api_keyId: apiKeyId,
       }));
