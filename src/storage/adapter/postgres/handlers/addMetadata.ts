@@ -9,8 +9,8 @@ export async function handleAddMetadata(
 ): Promise<void> {
   const connectionObject = getPostgresDB();
 
-  const paymentCron = event_data?.data?.payment_cron;
-  const paymentWebhook = event_data?.data?.payment_webhook;
+  const paymentCron = event_data.data.payment_cron;
+  const paymentWebhook = event_data.data.payment_webhook;
 
   if (!paymentCron || paymentCron.trim().length === 0) {
     throw StorageError.invalidData("Invalid payment_cron: value is required");

@@ -23,7 +23,6 @@ export async function registerEvent(
   // Validate and parse the incoming event
   const eventSkeleton = await validateAndParseRegisterEvent(req);
 
-  console.log(eventSkeleton);
   // Add business context to wide event
   wideEventBuilder?.setUser(eventSkeleton.userId);
   wideEventBuilder?.setEventContext({ eventType: eventSkeleton.type });

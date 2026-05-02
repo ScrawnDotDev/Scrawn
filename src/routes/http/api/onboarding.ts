@@ -34,9 +34,10 @@ export async function handleOnboarding(
       crons.push(cronExpression);
     }
 
-    const webhookUrl = validated.webhookUrl && validated.webhookUrl !== ""
-      ? validated.webhookUrl
-      : null;
+    const webhookUrl =
+      validated.webhookUrl && validated.webhookUrl !== ""
+        ? validated.webhookUrl
+        : null;
 
     const metadataEvent = new Metadata({
       payment_cron: crons.join(","),
@@ -46,7 +47,7 @@ export async function handleOnboarding(
     const adapter = await StorageAdapterFactory.getEventStorageAdapter(
       metadataEvent.type
     );
-    await adapter.add(metadataEvent.serialize());
+    await adapter.add(metadataEvent.serialize(), "");
 
     builder.setSuccess(200).addContext({
       cronCount: crons.length,

@@ -2,10 +2,7 @@
 
 ## Commands
 
-- **Test all**: `bun test`
-- **Test single file**: `vitest src/__tests__/unit/path/to/test.test.ts`
-- **Test with UI**: `bun run test:ui`
-- **Dev server**: `bun run dev:backend` (auto-reload on port 8070)
+- **Dev server**: `bun run dev:backend` (gRPC - 8069, HTTP - 8070)
 - **Generate protobuf**: `bun run gen` (from proto/ directory)
 - **DB migrations**: `bunx drizzle-kit push`
 
@@ -20,3 +17,4 @@
 - **Testing**: Use Vitest with mocks via `vi.fn()`; mock database transactions in beforeEach; test success, validation errors, and database errors
 - **Naming**: camelCase for variables/functions, PascalCase for classes/types/enums, SCREAMING_SNAKE_CASE for constants
 - **Database**: Use Drizzle ORM with transactions; validate all inputs before DB operations; handle unique constraint violations explicitly
+- **Dates**: Only use the DateTime module, never bother using the built in default date object. Also ALWAYS use utc(), do not try to do any local time fuckery
