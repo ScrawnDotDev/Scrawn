@@ -30,7 +30,7 @@ export async function startFastifyServer(port: number, grpcPort: number): Promis
     env: process.env.NODE_ENV || "development",
   });
   logger.lifecycle("Webhook endpoint available", {
-    url: `http://localhost:${port}/webhooks/lemonsqueezy/createdCheckout`,
+    url: `http://localhost:${port}/webhooks/payment/createdCheckout`,
   });
   logger.lifecycle("API endpoint available", {
     url: `http://localhost:${port}/api/v1/internals/onboarding`,

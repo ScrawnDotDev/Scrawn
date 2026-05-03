@@ -1,13 +1,13 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { createWideEventBuilder, generateRequestId } from "../../context/requestContext.ts";
 import { logger } from "../../errors/logger.ts";
-import { handleLemonSqueezyWebhook } from "./createdCheckout.ts";
+import { handleDodoWebhook } from "./createdCheckout.ts";
 
 export async function registerWebhookRoutes(
   server: ReturnType<typeof import("fastify")["fastify"]>
 ): Promise<void> {
   server.post(
-    "/webhooks/lemonsqueezy/createdCheckout",
+    "/webhooks/payment/createdCheckout",
     { config: { rawBody: true } },
     async (
       request: FastifyRequest,
@@ -20,12 +20,19 @@ export async function registerWebhookRoutes(
       );
 
       try {
-        const signatureHeader = request.headers["x-signature"];
+        const signatureHeader = request.headers["webhook-signature"];
+        const timestampHeader = request.headers["webhook-timestamp"];
         const signature =
           typeof signatureHeader === "string"
             ? signatureHeader
             : Array.isArray(signatureHeader)
               ? signatureHeader[0]
+              : undefined;
+        const timestamp =
+          typeof timestampHeader === "string"
+            ? timestampHeader
+            : Array.isArray(timestampHeader)
+              ? timestampHeader[0]
               : undefined;
 
         const requestWithRawBody = request as typeof request & {
@@ -42,7 +49,7 @@ export async function registerWebhookRoutes(
           return { error: "Missing raw webhook payload" };
         }
 
-        const result = await handleLemonSqueezyWebhook(rawBody, signature, builder);
+        const result = await handleDodoWebhook(rawBody, signature, timestamp, builder);
 
         reply.code(result.statusCode);
         return result.body;

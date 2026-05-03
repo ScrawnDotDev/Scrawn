@@ -4,10 +4,11 @@ export enum PaymentErrorType {
   INVALID_USER_ID = "INVALID_USER_ID",
   CHECKOUT_CREATION_FAILED = "CHECKOUT_CREATION_FAILED",
   VALIDATION_FAILED = "VALIDATION_FAILED",
-  LEMON_SQUEEZY_API_ERROR = "LEMON_SQUEEZY_API_ERROR",
+  PAYMENT_PROVIDER_API_ERROR = "PAYMENT_PROVIDER_API_ERROR",
   MISSING_API_KEY = "MISSING_API_KEY",
   MISSING_STORE_ID = "MISSING_STORE_ID",
   MISSING_VARIANT_ID = "MISSING_VARIANT_ID",
+  MISSING_PRODUCT_ID = "MISSING_PRODUCT_ID",
   INVALID_CHECKOUT_RESPONSE = "INVALID_CHECKOUT_RESPONSE",
   PRICE_CALCULATION_FAILED = "PRICE_CALCULATION_FAILED",
   STORAGE_ADAPTER_FAILED = "STORAGE_ADAPTER_FAILED",
@@ -71,15 +72,15 @@ export class PaymentError extends ConnectError {
     });
   }
 
-  static lemonSqueezyApiError(
+  static paymentProviderApiError(
     details?: string,
     originalError?: Error
   ): PaymentError {
     return new PaymentError({
-      type: PaymentErrorType.LEMON_SQUEEZY_API_ERROR,
+      type: PaymentErrorType.PAYMENT_PROVIDER_API_ERROR,
       message: details
-        ? `Lemon Squeezy API error: ${details}`
-        : "Lemon Squeezy API error",
+        ? `Payment provider API error: ${details}`
+        : "Payment provider API error",
       code: Code.Internal,
       originalError,
     });
@@ -88,7 +89,7 @@ export class PaymentError extends ConnectError {
   static missingApiKey(originalError?: Error): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.MISSING_API_KEY,
-      message: "Lemon Squeezy API key is not configured",
+      message: "Payment provider API key is not configured",
       code: Code.FailedPrecondition,
       originalError,
     });
@@ -97,7 +98,7 @@ export class PaymentError extends ConnectError {
   static missingStoreId(originalError?: Error): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.MISSING_STORE_ID,
-      message: "Lemon Squeezy store ID is not configured",
+      message: "Payment provider store ID is not configured",
       code: Code.FailedPrecondition,
       originalError,
     });
@@ -106,7 +107,16 @@ export class PaymentError extends ConnectError {
   static missingVariantId(originalError?: Error): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.MISSING_VARIANT_ID,
-      message: "Lemon Squeezy variant ID is not configured",
+      message: "Payment provider variant ID is not configured",
+      code: Code.FailedPrecondition,
+      originalError,
+    });
+  }
+
+  static missingProductId(originalError?: Error): PaymentError {
+    return new PaymentError({
+      type: PaymentErrorType.MISSING_PRODUCT_ID,
+      message: "Dodo product ID is not configured",
       code: Code.FailedPrecondition,
       originalError,
     });
