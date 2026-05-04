@@ -79,8 +79,6 @@ export async function createProviderCheckout(
     );
   }
 
-  console.log("BIG BOLD WORDS", session);
-
   return {
     sessionId: session.session_id,
     checkoutUrl: session.checkout_url,

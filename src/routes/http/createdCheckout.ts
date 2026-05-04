@@ -102,8 +102,6 @@ export async function handleDodoWebhook(
 
     const db = getPostgresDB();
 
-    console.log("[WEBHOOK] Looking up session:", checkout_session_id);
-
     const sessions = await db
       .select({
         id: sessionsTable.id,
@@ -115,7 +113,6 @@ export async function handleDodoWebhook(
       .where(eq(sessionsTable.sessionId, checkout_session_id))
       .limit(1);
 
-    console.log("[WEBHOOK] Session query result:", sessions);
 
     if (sessions.length === 0 || !sessions[0]) {
       builder.setError(404, {
@@ -129,10 +126,8 @@ export async function handleDodoWebhook(
     }
 
     const session = sessions[0];
-    console.log("[WEBHOOK] Session found:", session);
 
     if (session.processed) {
-      console.log("[WEBHOOK] Session already processed, ignoring");
       builder.setSuccess(200);
       builder.addContext({ ignored: true });
       return { statusCode: 200, body: { message: "Session already processed" } };
@@ -141,10 +136,8 @@ export async function handleDodoWebhook(
     const userId = session.userId;
     const billedUpto = session.billed_upto;
 
-    console.log("[WEBHOOK] UserId:", userId, "billedUpto:", billedUpto);
 
     if (!userId) {
-      console.log("[WEBHOOK] ERROR: User ID is null/undefined for session");
       builder.setError(500, {
         type: "InternalServerError",
         message: `User ID not found for session: ${checkout_session_id}`,
@@ -156,7 +149,6 @@ export async function handleDodoWebhook(
     }
 
     if (!billedUpto) {
-      console.log("[WEBHOOK] ERROR: billed_upto is null/undefined for session");
       builder.setError(500, {
         type: "InternalServerError",
         message: `billed_upto not found for session: ${checkout_session_id}`,
@@ -167,13 +159,11 @@ export async function handleDodoWebhook(
       };
     }
 
-    console.log("[WEBHOOK] Updating user last_billed_timestamp to:", billedUpto);
     await db
       .update(usersTable)
       .set({ last_billed_timestamp: billedUpto })
       .where(eq(usersTable.id, userId));
 
-    console.log("[WEBHOOK] Marking session as processed");
     await db
       .update(sessionsTable)
       .set({ processed: true })
@@ -182,15 +172,12 @@ export async function handleDodoWebhook(
     builder.setUser(userId);
     builder.setPaymentContext({ creditAmount });
 
-    console.log("[WEBHOOK] Creating payment event for userId:", userId, "creditAmount:", creditAmount);
     try {
       const paymentEvent = new Payment(userId, { creditAmount });
-      console.log("[WEBHOOK] Payment event serialized:", paymentEvent.serialize());
       const adapter =
         await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
 
-      console.log("[WEBHOOK] Adding payment event to storage");
-      await adapter.add(paymentEvent.serialize(), "");
+      await adapter.add(paymentEvent.serialize());
 
       builder.setSuccess(200);
       return {
@@ -198,7 +185,6 @@ export async function handleDodoWebhook(
         body: { message: "Webhook processed successfully" },
       };
     } catch (dbError) {
-      console.log("[WEBHOOK] ERROR storing payment event:", dbError);
       const errorMessage =
         dbError instanceof Error ? dbError.message : String(dbError);
       builder.setError(500, {
