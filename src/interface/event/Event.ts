@@ -32,6 +32,11 @@ export type MetadataEventData = {
   payment_webhook: string | null;
 };
 
+export type UserEventData = {
+  name: string;
+  email: string;
+};
+
 /**
  * Event kind discriminator
  */
@@ -40,7 +45,8 @@ export type EventKind =
   | "AI_TOKEN_USAGE"
   | "ADD_KEY"
   | "PAYMENT"
-  | "METADATA";
+  | "METADATA"
+  | "USER";
 
 /**
  * Mapping of event kinds to their data structures
@@ -51,6 +57,7 @@ export type EventDataMap = {
   ADD_KEY: AddKeyEventData;
   PAYMENT: PaymentEventData;
   METADATA: MetadataEventData;
+  USER: UserEventData;
 };
 
 /**
@@ -83,6 +90,7 @@ type SqlRecordMap = {
   AI_TOKEN_USAGE: SqlRecordWithUserId<"AI_TOKEN_USAGE">;
   PAYMENT: SqlRecordWithUserId<"PAYMENT">;
   METADATA: BaseSqlRecord<"METADATA">;
+  USER: BaseSqlRecord<"USER">;
 };
 
 /**
@@ -140,3 +148,8 @@ export interface PaymentEvent extends Event<"PAYMENT"> {
  * Metadata Event
  */
 export interface MetadataEvent extends Event<"METADATA"> {}
+
+/**
+ * User Event
+ */
+export interface UserEvent extends Event<"USER"> {}

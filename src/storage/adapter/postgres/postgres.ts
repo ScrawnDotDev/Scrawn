@@ -11,6 +11,7 @@ import {
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
   handleAddMetadata,
+  handleAddUser,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -77,9 +78,12 @@ export class PostgresAdapter implements StorageAdapter {
         return await handleAddMetadata(event_data);
       }
 
+      case "USER": {
+        return await handleAddUser(event_data);
+      }
+
       default: {
-        //@ts-ignore
-        throw StorageError.unknownEventType(event_data.type);
+        throw StorageError.unknownEventType(event_data);
       }
     }
   }

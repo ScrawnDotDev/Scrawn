@@ -4,6 +4,7 @@ import {
   eventsTable,
   sdkCallEventsTable,
 } from "../../../db/postgres/schema";
+import { eq } from "drizzle-orm";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
@@ -25,26 +26,17 @@ export async function handleAddSdkCall(
     }
 
     await connectionObject.transaction(async (txn) => {
-      // Insert user if not exists
-      try {
-        await txn
-          .insert(usersTable)
-          .values({
-            id: event_data.userId,
-          })
-          .onConflictDoNothing();
-      } catch (e) {
-        if (
-          e instanceof Error &&
-          e.message.includes('Failed query: insert into "users" ("id")')
-        ) {
-          // User already exists, ignore the error
-        } else {
-          throw StorageError.userInsertFailed(
-            event_data.userId,
-            e instanceof Error ? e : new Error(String(e))
-          );
-        }
+      // Check user exists
+      const existingUser = await txn
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.id, event_data.userId))
+        .limit(1);
+
+      if (existingUser.length === 0) {
+        throw StorageError.dataNotFound(
+          `User with ID ${event_data.userId} not found`
+        );
       }
 
       // Validate and prepare timestamp

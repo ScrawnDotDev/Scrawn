@@ -12,7 +12,7 @@ import { USER_ID_CONFIG } from "../../../config/identifiers";
 import { DateTime } from "luxon";
 
 export const usersTable = pgTable("users", {
-  id: USER_ID_CONFIG.dbType("id").primaryKey(),
+  id: USER_ID_CONFIG.dbType("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   last_billed_timestamp: timestamp("last_billed_timestamp", {

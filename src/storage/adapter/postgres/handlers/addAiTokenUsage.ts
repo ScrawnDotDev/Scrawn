@@ -4,6 +4,7 @@ import {
   eventsTable,
   aiTokenUsageEventsTable,
 } from "../../../db/postgres/schema";
+import { eq, inArray } from "drizzle-orm";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
@@ -124,24 +125,18 @@ export async function handleAddAiTokenUsage(
         new Set(aggregatedEvents.map((event) => event.userId))
       );
 
-      // Batch insert users if not exists
-      try {
-        if (uniqueUserIds.length > 0) {
-          await txn
-            .insert(usersTable)
-            .values(uniqueUserIds.map((id) => ({ id })))
-            .onConflictDoNothing();
-        }
-      } catch (e) {
-        if (
-          e instanceof Error &&
-          e.message.includes('Failed query: insert into "users" ("id")')
-        ) {
-          // Users already exist, ignore the error
-        } else {
-          throw StorageError.userInsertFailed(
-            uniqueUserIds.join(", "),
-            e instanceof Error ? e : new Error(String(e))
+      // Check all users exist
+      if (uniqueUserIds.length > 0) {
+        const existingUsers = await txn
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(inArray(usersTable.id, uniqueUserIds));
+
+        if (existingUsers.length !== uniqueUserIds.length) {
+          const foundIds = new Set(existingUsers.map((u) => u.id));
+          const missingIds = uniqueUserIds.filter((id) => !foundIds.has(id));
+          throw StorageError.dataNotFound(
+            `Users with IDs ${missingIds.join(", ")} not found`
           );
         }
       }
