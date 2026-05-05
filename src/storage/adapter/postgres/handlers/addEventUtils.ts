@@ -2,9 +2,38 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { eventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { DateTime } from "luxon";
-import { StorageAdapterFactory } from "../../../../factory";
 import { User } from "../../../../events/RawEvents/User";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { PgDatabase } from "drizzle-orm/pg-core";
+import { handleAddUser } from "./addUser";
+
+export type TransactionFn<T> = (
+  txn: PgTransaction<any, any, any>
+) => Promise<T>;
+
+export async function executeInTransaction<T>(
+  connectionObject: PgDatabase<any, any>,
+  operationName: string,
+  fn: TransactionFn<T>
+): Promise<T> {
+  try {
+    return await connectionObject.transaction(fn);
+  } catch (e) {
+    if (
+      e &&
+      typeof e === "object" &&
+      "type" in e &&
+      (e as any).name === "StorageError"
+    ) {
+      throw e;
+    }
+
+    throw StorageError.transactionFailed(
+      `Transaction failed while ${operationName}`,
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
 
 export async function validateAndPrepareTimestamp(
   reported_timestamp: DateTime
@@ -67,7 +96,6 @@ export async function insertEvent(
 export async function ensureUserExists(
   userId: string
 ): Promise<void> {
-  const adapter = await StorageAdapterFactory.getEventStorageAdapter("USER");
   const userEvent = new User({ id: userId });
-  await adapter.add(userEvent.serialize(), "");
+  await handleAddUser(userEvent.serialize().SQL);
 }

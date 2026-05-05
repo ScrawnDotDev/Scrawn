@@ -1,6 +1,6 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 
-export enum EventErrorType {
+enum EventErrorType {
   INVALID_PAYLOAD = "INVALID_PAYLOAD",
   UNSUPPORTED_EVENT_TYPE = "UNSUPPORTED_EVENT_TYPE",
   VALIDATION_FAILED = "VALIDATION_FAILED",

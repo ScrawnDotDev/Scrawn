@@ -1,6 +1,6 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 
-export enum StorageErrorType {
+enum StorageErrorType {
   CONNECTION_FAILED = "CONNECTION_FAILED",
   TRANSACTION_FAILED = "TRANSACTION_FAILED",
   INSERT_FAILED = "INSERT_FAILED",

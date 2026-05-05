@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/fallow/schema.json",
+  "ignorePatterns": [
+    "src/gen/**/*_connect.ts",
+    "src/gen/**/file_*.ts"
+  ]
+}

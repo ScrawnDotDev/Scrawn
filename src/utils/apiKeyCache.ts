@@ -1,4 +1,5 @@
 import { Cache } from "./cacheStore";
+import { DateTime } from "luxon";
 
 interface CachedAPIKey {
   id: string;
@@ -8,7 +9,7 @@ interface CachedAPIKey {
 const store = Cache.getStore<string, CachedAPIKey>("api-keys", {
   max: 1000,
   ttlMs: 5 * 60 * 1000,
-  validate: (value) => Date.now() <= new Date(value.expiresAt).getTime(),
+  validate: (value) => DateTime.utc() <= DateTime.fromISO(value.expiresAt),
 });
 
 export const apiKeyCache = {

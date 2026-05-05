@@ -20,4 +20,4 @@ export const createAPIKeySchema = z.object({
     ),
 });
 
-export type CreateAPIKeySchemaType = z.infer<typeof createAPIKeySchema>;
+

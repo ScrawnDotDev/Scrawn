@@ -7,6 +7,7 @@ import {
   validateAndPrepareTimestamp,
   insertEvent,
   ensureUserExists,
+  executeInTransaction,
 } from "./addEventUtils";
 
 export async function handleAddSdkCall(
@@ -15,16 +16,18 @@ export async function handleAddSdkCall(
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
-  try {
-    const debitAmount = event_data.data.debitAmount;
-    if (typeof debitAmount === "number" && debitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
-        new Error(`debitAmount ${debitAmount} is negative`)
-      );
-    }
+  const debitAmount = event_data.data.debitAmount;
+  if (typeof debitAmount === "number" && debitAmount < 0) {
+    throw StorageError.insertFailed(
+      `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
+      new Error(`debitAmount ${debitAmount} is negative`)
+    );
+  }
 
-    await connectionObject.transaction(async (txn) => {
+  return await executeInTransaction(
+    connectionObject,
+    "storing SDK_CALL event",
+    async (txn) => {
       await ensureUserExists(event_data.userId);
 
       const reported_timestamp = await validateAndPrepareTimestamp(
@@ -54,20 +57,6 @@ export async function handleAddSdkCall(
       }
 
       return { id: eventID.id };
-    });
-  } catch (e) {
-    if (
-      e &&
-      typeof e === "object" &&
-      "type" in e &&
-      (e as any).name === "StorageError"
-    ) {
-      throw e;
     }
-
-    throw StorageError.transactionFailed(
-      "Transaction failed while storing SDK_CALL event",
-      e instanceof Error ? e : new Error(String(e))
-    );
-  }
+  );
 }

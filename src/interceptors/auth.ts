@@ -7,7 +7,9 @@ import { getPostgresDB } from "../storage/db/postgres/db";
 import { apiKeysTable } from "../storage/db/postgres/schema";
 import { eq } from "drizzle-orm";
 import { hashAPIKey } from "../utils/hashAPIKey";
+import { DateTime } from "luxon";
 
+// fallow-ignore-next-line unused-exports
 export const no_auth: string[] = [] as const;
 
 export function authInterceptor(): Interceptor {
@@ -59,7 +61,7 @@ export function authInterceptor(): Interceptor {
       throw AuthError.revokedAPIKey();
     }
 
-    if (new Date() > new Date(apiKeyRecord.expiresAt)) {
+    if (DateTime.utc() > DateTime.fromISO(apiKeyRecord.expiresAt)) {
       throw AuthError.expiredAPIKey();
     }
 

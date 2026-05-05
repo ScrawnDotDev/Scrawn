@@ -7,6 +7,7 @@ import {
   validateAndPrepareTimestamp,
   insertEvent,
   ensureUserExists,
+  executeInTransaction,
 } from "./addEventUtils";
 
 export async function handleAddPayment(
@@ -15,24 +16,26 @@ export async function handleAddPayment(
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
-  try {
-    const creditAmount = event_data?.data?.creditAmount;
+  const creditAmount = event_data?.data?.creditAmount;
 
-    if (
-      creditAmount === undefined ||
-      creditAmount === null ||
-      typeof creditAmount !== "number" ||
-      !Number.isFinite(creditAmount) ||
-      creditAmount < 0
-    ) {
-      throw StorageError.invalidData(
-        `Invalid creditAmount: must be a positive finite number, got ${String(
-          creditAmount
-        )}`
-      );
-    }
+  if (
+    creditAmount === undefined ||
+    creditAmount === null ||
+    typeof creditAmount !== "number" ||
+    !Number.isFinite(creditAmount) ||
+    creditAmount < 0
+  ) {
+    throw StorageError.invalidData(
+      `Invalid creditAmount: must be a positive finite number, got ${String(
+        creditAmount
+      )}`
+    );
+  }
 
-    await connectionObject.transaction(async (txn) => {
+  return await executeInTransaction(
+    connectionObject,
+    "storing PAYMENT event",
+    async (txn) => {
       await ensureUserExists(event_data.userId);
 
       const reported_timestamp = await validateAndPrepareTimestamp(
@@ -59,20 +62,6 @@ export async function handleAddPayment(
       }
 
       return { id: eventID.id };
-    });
-  } catch (e) {
-    if (
-      e &&
-      typeof e === "object" &&
-      "type" in e &&
-      (e as any).name === "StorageError"
-    ) {
-      throw e;
     }
-
-    throw StorageError.transactionFailed(
-      "Transaction failed while storing PAYMENT event",
-      e instanceof Error ? e : new Error(String(e))
-    );
-  }
+  );
 }

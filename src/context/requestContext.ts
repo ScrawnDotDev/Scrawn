@@ -1,6 +1,7 @@
 import { createContextKey } from "@connectrpc/connect";
 import { randomUUID } from "node:crypto";
 import type { WideEvent } from "../errors/logger";
+import { DateTime } from "luxon";
 
 /**
  * Context key for accessing the WideEventBuilder during request processing.
@@ -41,12 +42,12 @@ export class WideEventBuilder {
   private startTime: number;
 
   constructor(requestId: string, method: string, url: string) {
-    this.startTime = Date.now();
+    this.startTime = DateTime.utc().toMillis();
     this.event = {
       requestId,
       method,
       path: extractPath(url),
-      timestamp: new Date().toISOString(),
+      timestamp: DateTime.utc().toISO(),
       env: process.env.NODE_ENV || "development",
     };
   }
@@ -151,7 +152,7 @@ export class WideEventBuilder {
    * Build the final wide event with duration calculation.
    */
   build(): WideEvent {
-    const durationMs = Date.now() - this.startTime;
+    const durationMs = DateTime.utc().toMillis() - this.startTime;
 
     return {
       ...this.event,

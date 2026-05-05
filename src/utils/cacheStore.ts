@@ -1,15 +1,15 @@
-export interface CacheConfig<K, V> {
+interface CacheConfig<K, V> {
   max: number;
   ttlMs: number;
   validate?: (value: V) => boolean;
 }
 
-export const DEFAULT_CACHE_CONFIG: CacheConfig<unknown, unknown> = {
+const DEFAULT_CACHE_CONFIG: CacheConfig<unknown, unknown> = {
   max: 500,
   ttlMs: 10 * 60 * 1000,
 };
 
-export class CacheStore<K, V> {
+class CacheStore<K, V> {
   private readonly max: number;
   private readonly ttlMs: number;
   private readonly validate?: (value: V) => boolean;

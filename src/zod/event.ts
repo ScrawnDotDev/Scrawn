@@ -3,8 +3,6 @@ import { DateTime } from "luxon";
 import { USER_ID_CONFIG } from "../config/identifiers";
 import { fetchTagAmount } from "../utils/fetchTagAmount";
 import { parseAndEvaluateExpr } from "../utils/parseExpr";
-export { fetchTagAmount } from "../utils/fetchTagAmount";
-export { parseAndEvaluateExpr } from "../utils/parseExpr";
 
 const BaseEvent = z.object({
   type: z.number(), // overwritten later by discriminators

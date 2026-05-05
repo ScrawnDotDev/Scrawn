@@ -1,6 +1,6 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 
-export enum AuthErrorType {
+enum AuthErrorType {
   MISSING_HEADER = "MISSING_HEADER",
   INVALID_HEADER_FORMAT = "INVALID_HEADER_FORMAT",
   INVALID_API_KEY = "INVALID_API_KEY",

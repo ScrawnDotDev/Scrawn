@@ -1,22 +1,21 @@
 import { getPostgresDB } from "../../../db/postgres/db";
-import {
-  eventsTable,
-  usersTable,
-} from "../../../db/postgres/schema";
+import { eventsTable, usersTable } from "../../../db/postgres/schema";
+import { sdkCallEventsTable, aiTokenUsageEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq, sum, sql, and, type SQL } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 
+type PriceEventTable = typeof sdkCallEventsTable | typeof aiTokenUsageEventsTable;
+
 export async function handlePriceRequest(
   userId: UserId,
-  eventTable: { id: AnyPgColumn },
-  priceColumn: SQL | AnyPgColumn,
+  priceTable: PriceEventTable,
+  priceColumn: SQL,
   eventType: string,
   beforeTimestamp: DateTime
 ): Promise<number> {
-  const connectionObject = getPostgresDB();
+  const db = getPostgresDB();
 
   try {
     if (!userId) {
@@ -31,19 +30,19 @@ export async function handlePriceRequest(
     try {
       const baseCondition = sql`${eventsTable.reported_timestamp} > ${usersTable.last_billed_timestamp} AND ${eventsTable.userId} = ${userId}`;
       const whereClause = beforeTimestamp
-        ? and(baseCondition, sql`${eventsTable.reported_timestamp} < ${beforeTimestamp.toISO()}`)
+        ? and(
+            baseCondition,
+            sql`${eventsTable.reported_timestamp} < ${beforeTimestamp.toISO()}`
+          )
         : baseCondition;
 
-      result = await connectionObject
+      result = await db
         .select({
           price: sum(priceColumn),
         })
-        .from(eventTable as any)
-        .innerJoin(eventsTable, eq((eventTable as any).id, eventsTable.id))
-        .innerJoin(
-          usersTable,
-          eq(eventsTable.userId, usersTable.id)
-        )
+        .from(priceTable)
+        .innerJoin(eventsTable, eq(priceTable.id, eventsTable.id))
+        .innerJoin(usersTable, eq(eventsTable.userId, usersTable.id))
         .where(whereClause)
         .groupBy(eventsTable.userId);
     } catch (e) {
@@ -54,11 +53,15 @@ export async function handlePriceRequest(
     }
 
     if (!result) {
-      throw StorageError.emptyResult(`Price query returned null for user ${userId}`);
+      throw StorageError.emptyResult(
+        `Price query returned null for user ${userId}`
+      );
     }
 
     if (!Array.isArray(result)) {
-      throw StorageError.queryFailed(`Query result is not an array for user ${userId}`);
+      throw StorageError.queryFailed(
+        `Query result is not an array for user ${userId}`
+      );
     }
 
     if (result.length === 0 || !result[0]) {

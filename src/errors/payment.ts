@@ -1,6 +1,6 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 
-export enum PaymentErrorType {
+enum PaymentErrorType {
   INVALID_USER_ID = "INVALID_USER_ID",
   CHECKOUT_CREATION_FAILED = "CHECKOUT_CREATION_FAILED",
   VALIDATION_FAILED = "VALIDATION_FAILED",

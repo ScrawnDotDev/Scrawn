@@ -1,9 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
-import {
-  onboardingCronSchema,
-  type OnboardingCronSchemaType,
-} from "../../../zod/internals.ts";
+import { onboardingCronSchema } from "../../../zod/internals.ts";
 import { addOnboardingCronJob } from "../../../queues/onboarding.ts";
 import {
   createWideEventBuilder,

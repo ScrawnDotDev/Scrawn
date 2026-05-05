@@ -4,8 +4,12 @@ import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
-import { StorageAdapterFactory } from "../../../../factory";
 import { User } from "../../../../events/RawEvents/User";
+import {
+  validateAndPrepareTimestamp,
+  executeInTransaction,
+} from "./addEventUtils";
+import { handleAddUser } from "./addUser";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -27,9 +31,7 @@ export async function handleAddAiTokenUsage(
     return;
   }
 
-  try {
-    // Validate all events before processing
-    for (const event_data of events) {
+  for (const event_data of events) {
       // Validate input tokens is not negative
       const inputTokens = event_data.data.inputTokens;
       if (typeof inputTokens === "number" && inputTokens < 0) {
@@ -71,21 +73,9 @@ export async function handleAddAiTokenUsage(
     const aggregationMap = new Map<string, AggregatedEvent>();
 
     for (const event_data of events) {
-      let reported_timestamp;
-      try {
-        reported_timestamp = event_data.reported_timestamp.toISO();
-      } catch (e) {
-        throw StorageError.invalidTimestamp(
-          "Failed to convert reported_timestamp to ISO format",
-          e instanceof Error ? e : new Error(String(e))
-        );
-      }
-
-      if (!reported_timestamp || reported_timestamp.trim().length === 0) {
-        throw StorageError.invalidTimestamp(
-          "Timestamp is undefined or empty after conversion"
-        );
-      }
+      const reported_timestamp = await validateAndPrepareTimestamp(
+        event_data.reported_timestamp
+      );
 
       const key = `${event_data.userId}:${event_data.data.model}`;
       const existing = aggregationMap.get(key);
@@ -116,104 +106,86 @@ export async function handleAddAiTokenUsage(
 
     const aggregatedEvents = Array.from(aggregationMap.values());
 
-    await connectionObject.transaction(async (txn) => {
-      // Collect unique user IDs and ensure they exist via USER event
-      const uniqueUserIds = Array.from(
-        new Set(aggregatedEvents.map((event) => event.userId))
-      );
-
-      const adapter = await StorageAdapterFactory.getEventStorageAdapter("USER");
-      for (const userId of uniqueUserIds) {
-        const userEvent = new User({ id: userId });
-        await adapter.add(userEvent.serialize(), "");
-      }
-
-      // Prepare event values for batch insert
-      const eventValues = aggregatedEvents.map((aggEvent) => ({
-        reported_timestamp: aggEvent.reported_timestamp,
-        ingested_timestamp: DateTime.utc().toString(),
-        userId: aggEvent.userId,
-        api_keyId: apiKeyId,
-      }));
-
-      // Batch insert events
-      let eventIDs;
-      try {
-        eventIDs = await txn
-          .insert(eventsTable)
-          .values(eventValues)
-          .returning({ id: eventsTable.id });
-      } catch (e) {
-        throw StorageError.eventInsertFailed(
-          `Failed to batch insert ${aggregatedEvents.length} aggregated event(s)`,
-          e instanceof Error ? e : new Error(String(e))
+    return await executeInTransaction(
+      connectionObject,
+      `storing ${events.length} AI_TOKEN_USAGE event(s)`,
+      async (txn) => {
+        const uniqueUserIds = Array.from(
+          new Set(aggregatedEvents.map((event) => event.userId))
         );
-      }
 
-      if (!eventIDs || eventIDs.length === 0) {
-        throw StorageError.emptyResult("Event insert returned no IDs");
-      }
+        for (const userId of uniqueUserIds) {
+          const userEvent = new User({ id: userId });
+          await handleAddUser(userEvent.serialize().SQL);
+        }
 
-      if (eventIDs.length !== aggregatedEvents.length) {
-        throw StorageError.insertFailed(
-          `Expected ${aggregatedEvents.length} event IDs but got ${eventIDs.length}`,
-          new Error("Event ID count mismatch")
-        );
-      }
+        const eventValues = aggregatedEvents.map((aggEvent) => ({
+          reported_timestamp: aggEvent.reported_timestamp,
+          ingested_timestamp: DateTime.utc().toString(),
+          userId: aggEvent.userId,
+          api_keyId: apiKeyId,
+        }));
 
-      // Prepare AI token usage values for batch insert
-      const aiTokenUsageValues = aggregatedEvents.map((aggEvent, index) => {
-        const eventId = eventIDs[index];
-        if (!eventId) {
-          throw StorageError.insertFailed(
-            `Missing event ID at index ${index}`,
-            new Error("Event ID is undefined")
+        let eventIDs;
+        try {
+          eventIDs = await txn
+            .insert(eventsTable)
+            .values(eventValues)
+            .returning({ id: eventsTable.id });
+        } catch (e) {
+          throw StorageError.eventInsertFailed(
+            `Failed to batch insert ${aggregatedEvents.length} aggregated event(s)`,
+            e instanceof Error ? e : new Error(String(e))
           );
         }
-        return {
-          id: eventId.id,
-          model: aggEvent.model,
-          inputTokens: aggEvent.inputTokens,
-          outputTokens: aggEvent.outputTokens,
-          inputDebitAmount: aggEvent.inputDebitAmount,
-          outputDebitAmount: aggEvent.outputDebitAmount,
-        };
-      });
 
-      // Batch insert AI token usage events
-      try {
-        await txn.insert(aiTokenUsageEventsTable).values(aiTokenUsageValues);
-      } catch (e) {
-        throw StorageError.insertFailed(
-          `Failed to batch insert AI token usage events`,
-          e instanceof Error ? e : new Error(String(e))
-        );
+        if (!eventIDs || eventIDs.length === 0) {
+          throw StorageError.emptyResult("Event insert returned no IDs");
+        }
+
+        if (eventIDs.length !== aggregatedEvents.length) {
+          throw StorageError.insertFailed(
+            `Expected ${aggregatedEvents.length} event IDs but got ${eventIDs.length}`,
+            new Error("Event ID count mismatch")
+          );
+        }
+
+        const aiTokenUsageValues = aggregatedEvents.map((aggEvent, index) => {
+          const eventId = eventIDs[index];
+          if (!eventId) {
+            throw StorageError.insertFailed(
+              `Missing event ID at index ${index}`,
+              new Error("Event ID is undefined")
+            );
+          }
+          return {
+            id: eventId.id,
+            model: aggEvent.model,
+            inputTokens: aggEvent.inputTokens,
+            outputTokens: aggEvent.outputTokens,
+            inputDebitAmount: aggEvent.inputDebitAmount,
+            outputDebitAmount: aggEvent.outputDebitAmount,
+          };
+        });
+
+        try {
+          await txn.insert(aiTokenUsageEventsTable).values(aiTokenUsageValues);
+        } catch (e) {
+          throw StorageError.insertFailed(
+            `Failed to batch insert AI token usage events`,
+            e instanceof Error ? e : new Error(String(e))
+          );
+        }
+
+        const firstEvent = eventIDs[0];
+        if (!firstEvent || !firstEvent.id) {
+          throw StorageError.insertFailed(
+            "Missing or invalid ID for the first inserted event",
+            new Error(`Invalid first event ID: ${JSON.stringify(firstEvent)}`)
+          );
+        }
+
+        return { id: firstEvent.id };
       }
-
-      const firstEvent = eventIDs[0];
-      if (!firstEvent || !firstEvent.id) {
-        throw StorageError.insertFailed(
-          "Missing or invalid ID for the first inserted event",
-          new Error(`Invalid first event ID: ${JSON.stringify(firstEvent)}`)
-        );
-      }
-
-      return { id: firstEvent.id };
-    });
-  } catch (e) {
-    // Use duck typing instead of instanceof to work with mocked modules
-    if (
-      e &&
-      typeof e === "object" &&
-      "type" in e &&
-      (e as any).name === "StorageError"
-    ) {
-      throw e;
-    }
-
-    throw StorageError.transactionFailed(
-      `Transaction failed while storing ${events.length} AI_TOKEN_USAGE event(s)`,
-      e instanceof Error ? e : new Error(String(e))
     );
-  }
 }

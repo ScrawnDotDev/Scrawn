@@ -1,6 +1,6 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 
-export enum APIKeyErrorType {
+enum APIKeyErrorType {
   INVALID_EXPIRATION = "INVALID_EXPIRATION",
   INVALID_NAME = "INVALID_NAME",
   CREATION_FAILED = "CREATION_FAILED",

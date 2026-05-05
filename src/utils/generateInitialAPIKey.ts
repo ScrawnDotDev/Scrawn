@@ -1,5 +1,6 @@
 import { createHmac, randomUUID } from "crypto";
 import { generateAPIKey } from "./generateAPIKey";
+import { DateTime } from "luxon";
 
 const HMAC_SECRET = process.env.HMAC_SECRET;
 
@@ -34,10 +35,8 @@ export function generateInitialApiKeyData(): InitialApiKeyData {
   const apiKey = generateAPIKey();
   const apiKeyHash = hashAPIKey(apiKey);
   const name = "Dashboard Key";
-  const createdAt = new Date().toISOString();
-  const expiresAt = new Date(
-    Date.now() + 365 * 24 * 60 * 60 * 1000
-  ).toISOString(); // 1 year from now
+  const createdAt = DateTime.utc().toISO();
+  const expiresAt = DateTime.utc().plus({ days: 365 }).toISO();
 
   const insertSql =
     "INSERT INTO api_keys (id, name, key, created_at, expires_at, revoked, revoked_at)\n" +

@@ -68,17 +68,7 @@ function createParser(): Parser {
   return parser;
 }
 
-/**
- * Extracts all tag names from an expression string.
- *
- * @param exprString - The expression string to parse
- * @returns Array of unique tag names found in the expression
- *
- * @example
- * extractTagNames("add(tag(PREMIUM),tag(FEE),100)")
- * // Returns: ["PREMIUM", "FEE"]
- */
-export function extractTagNames(exprString: string): string[] {
+function extractTagNames(exprString: string): string[] {
   const tags = new Set<string>();
   let match: RegExpExecArray | null;
 
@@ -94,17 +84,7 @@ export function extractTagNames(exprString: string): string[] {
   return Array.from(tags);
 }
 
-/**
- * Validates expression syntax without evaluating.
- * Checks for:
- * - Valid parentheses matching
- * - Only allowed function names
- * - Valid tag name format
- *
- * @param exprString - The expression string to validate
- * @throws EventError if validation fails
- */
-export function validateExprSyntax(exprString: string): void {
+function validateExprSyntax(exprString: string): void {
   if (!exprString || exprString.trim() === "") {
     throw EventError.validationFailed("Expression cannot be empty");
   }

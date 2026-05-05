@@ -13,6 +13,7 @@ import { hashAPIKey } from "../../../utils/hashAPIKey";
 import { create } from "@bufbuild/protobuf";
 import { toJson } from "@bufbuild/protobuf";
 import { formatZodError } from "../../../utils/formatZodError";
+import { DateTime } from "luxon";
 
 export async function createAPIKey(
   req: CreateAPIKeyRequest,
@@ -37,20 +38,20 @@ export async function createAPIKey(
   const apiKeyHash = hashAPIKey(apiKey);
 
   // Calculate expiration date
-  const now = new Date();
+  const now = DateTime.utc();
   const expiresInSeconds =
     typeof validatedData.expiresIn === "bigint"
       ? Number(validatedData.expiresIn)
       : validatedData.expiresIn;
-  const expiresAt = new Date(now.getTime() + expiresInSeconds * 1000);
+  const expiresAt = now.plus({ seconds: expiresInSeconds });
 
-  wideEventBuilder?.setApiKeyContext({ expiration: expiresAt.toISOString() });
+  wideEventBuilder?.setApiKeyContext({ expiration: expiresAt.toISO() });
 
   // Create and store the key
   const addKeyEvent = new AddKey({
     name: validatedData.name,
     key: apiKeyHash,
-    expiresAt: expiresAt.toISOString(),
+    expiresAt: expiresAt.toISO(),
   });
 
   const adapter = await StorageAdapterFactory.getEventStorageAdapter(
@@ -66,8 +67,8 @@ export async function createAPIKey(
     apiKeyId: keyEventData.id,
     apiKey: apiKey,
     name: validatedData.name,
-    createdAt: now.toISOString(),
-    expiresAt: expiresAt.toISOString(),
+    createdAt: now.toISO(),
+    expiresAt: expiresAt.toISO(),
   });
 }
 
