@@ -2,15 +2,14 @@ import { Queue, type RepeatOptions } from "bullmq";
 import { DateTime } from "luxon";
 import { getRedisConnection } from "../storage/db/redis.ts";
 
-export interface OnboardingJobData {
+interface OnboardingJobData {
   cronExpression: string;
   createdAt: string;
 }
 
 let onboardingQueue: Queue<OnboardingJobData> | null = null;
 
-// fallow-ignore-next-line unused-exports
-export function getOnboardingQueue(): Queue<OnboardingJobData> {
+function getOnboardingQueue(): Queue<OnboardingJobData> {
   if (!onboardingQueue) {
     onboardingQueue = new Queue<OnboardingJobData>("onboarding", {
       connection: getRedisConnection(),

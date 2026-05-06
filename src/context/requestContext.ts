@@ -52,6 +52,7 @@ export class WideEventBuilder {
   /**
    * Set authentication context after successful auth.
    */
+  // fallow-ignore-next-line unused-class-member
   setAuth(apiKeyId: string | number, cacheHit: boolean): this {
     this.event.apiKeyId = apiKeyId;
     this.event.cacheHit = cacheHit;
@@ -69,6 +70,7 @@ export class WideEventBuilder {
   /**
    * Set event processing context.
    */
+  // fallow-ignore-next-line unused-class-member
   setEventContext(data: { eventType?: string; eventCount?: number }): this {
     if (data.eventType !== undefined) this.event.eventType = data.eventType;
     if (data.eventCount !== undefined) this.event.eventCount = data.eventCount;
@@ -97,6 +99,7 @@ export class WideEventBuilder {
   /**
    * Set API key creation context.
    */
+  // fallow-ignore-next-line unused-class-member
   setApiKeyContext(data: { name?: string; expiration?: string }): this {
     if (data.name !== undefined) this.event.apiKeyName = data.name;
     if (data.expiration !== undefined)
@@ -147,6 +150,7 @@ export class WideEventBuilder {
   /**
    * Build the final wide event with duration calculation.
    */
+  // fallow-ignore-next-line unused-class-member
   build(): WideEvent {
     const durationMs = DateTime.utc().toMillis() - this.startTime;
 

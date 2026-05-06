@@ -70,6 +70,7 @@ export class AuthError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static databaseError(originalError?: Error): AuthError {
     return new AuthError({
       type: AuthErrorType.DATABASE_ERROR,
@@ -79,6 +80,7 @@ export class AuthError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static unknown(originalError?: Error): AuthError {
     const details = originalError?.message || "No details available";
     return new AuthError({

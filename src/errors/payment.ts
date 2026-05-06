@@ -36,6 +36,7 @@ export class PaymentError extends Error {
     this.code = context.code;
   }
 
+  // fallow-ignore-next-line unused-class-member
   static invalidUserId(userId?: string, originalError?: Error): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.INVALID_USER_ID,
@@ -45,6 +46,7 @@ export class PaymentError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static checkoutCreationFailed(
     details?: string,
     originalError?: Error
@@ -72,6 +74,8 @@ export class PaymentError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-members
+  // fallow-ignore-next-line unused-class-member
   static paymentProviderApiError(
     details?: string,
     originalError?: Error
@@ -95,6 +99,8 @@ export class PaymentError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-members
+  // fallow-ignore-next-line unused-class-member
   static missingStoreId(originalError?: Error): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.MISSING_STORE_ID,
@@ -104,6 +110,8 @@ export class PaymentError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-members
+  // fallow-ignore-next-line unused-class-member
   static missingVariantId(originalError?: Error): PaymentError {
     return new PaymentError({
       type: PaymentErrorType.MISSING_VARIANT_ID,
@@ -164,6 +172,7 @@ export class PaymentError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static configurationError(
     details?: string,
     originalError?: Error
@@ -178,6 +187,7 @@ export class PaymentError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static unknown(originalError?: Error): PaymentError {
     const details = originalError?.message || "No details available";
     return new PaymentError({

@@ -22,8 +22,10 @@ import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
 
 export class PostgresAdapter implements StorageAdapter {
+  // fallow-ignore-next-line unused-class-member
   connectionObject = getPostgresDB();
 
+  // fallow-ignore-next-line unused-class-member
   async add(serialized: SerializedEvent<EventKind>, apiKeyId?: string) {
     let event_data: SqlRecord<EventKind>;
 
@@ -89,6 +91,7 @@ export class PostgresAdapter implements StorageAdapter {
     }
   }
 
+  // fallow-ignore-next-line unused-class-member
   async price(
     userID: UserId,
     event_type: EventKind,

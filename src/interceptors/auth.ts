@@ -63,45 +63,25 @@ export function authInterceptor<Req, Res>(
   handler: GrpcHandler<Req, Res>
 ): GrpcHandler<Req, Res> {
   return (call: GrpcCall<Req, Res>, callback) => {
-    // Skip auth for whitelisted endpoints
-    const fullPath = methodPath.startsWith("/") ? methodPath : `/${methodPath}`;
-    if (no_auth.some((path) => fullPath === path || fullPath.endsWith(path))) {
+    if (isWhitelistedEndpoint(methodPath)) {
       return handler(call, callback);
     }
 
-    const wideEventBuilder = call[wideEventContextKey];
-
-    // Extract authorization from metadata
-    const authHeader = call.metadata.get("authorization")?.[0] as
-      | string
-      | undefined;
-
-    if (!authHeader) {
-      return callback?.(AuthError.missingHeader());
+    const authResult = extractAndValidateAuth(call);
+    if (authResult.error) {
+      return callback?.(authResult.error);
     }
 
-    if (!authHeader.startsWith("Bearer ")) {
-      return callback?.(AuthError.invalidHeaderFormat());
-    }
-
-    const apiKey = authHeader.slice("Bearer ".length).trim();
-
-    // Validate API key format
-    if (!apiKey.startsWith("scrn_") || apiKey.length !== 37) {
-      return callback?.(AuthError.invalidAPIKey("Invalid API key format"));
-    }
-
+    const apiKey = authResult.apiKey!;
     const apiKeyHash = hashAPIKey(apiKey);
 
-    // Check cache first
     const cached = apiKeyCache.get(apiKeyHash);
     if (cached) {
       call[apiKeyContextKey] = cached.id;
-      wideEventBuilder?.setAuth(cached.id, true);
+      call[wideEventContextKey]?.setAuth(cached.id, true);
       return handler(call, callback);
     }
 
-    // Query database for API key
     lookupApiKey(apiKeyHash)
       .then((apiKeyRecord) => {
         if (!apiKeyRecord) {
@@ -116,14 +96,13 @@ export function authInterceptor<Req, Res>(
           return callback?.(AuthError.expiredAPIKey());
         }
 
-        // Cache and set context
         apiKeyCache.set(apiKeyHash, {
           id: apiKeyRecord.id,
           expiresAt: apiKeyRecord.expiresAt,
         });
 
         call[apiKeyContextKey] = apiKeyRecord.id;
-        wideEventBuilder?.setAuth(apiKeyRecord.id, false);
+        call[wideEventContextKey]?.setAuth(apiKeyRecord.id, false);
 
         return handler(call, callback);
       })
@@ -131,6 +110,31 @@ export function authInterceptor<Req, Res>(
         return callback?.(error);
       });
   };
+}
+
+function isWhitelistedEndpoint(methodPath: string): boolean {
+  const fullPath = methodPath.startsWith("/") ? methodPath : `/${methodPath}`;
+  return no_auth.some((path) => fullPath === path || fullPath.endsWith(path));
+}
+
+function extractAndValidateAuth(call: GrpcCall<unknown, unknown>): { apiKey?: string; error?: Error } {
+  const authHeader = call.metadata.get("authorization")?.[0] as string | undefined;
+
+  if (!authHeader) {
+    return { error: AuthError.missingHeader() };
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return { error: AuthError.invalidHeaderFormat() };
+  }
+
+  const apiKey = authHeader.slice("Bearer ".length).trim();
+
+  if (!apiKey.startsWith("scrn_") || apiKey.length !== 37) {
+    return { error: AuthError.invalidAPIKey("Invalid API key format") };
+  }
+
+  return { apiKey };
 }
 
 async function lookupApiKey(apiKeyHash: string) {

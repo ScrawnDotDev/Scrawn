@@ -2,13 +2,7 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { eventsTable, sdkCallEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
-import { DateTime } from "luxon";
-import {
-  validateAndPrepareTimestamp,
-  insertEvent,
-  ensureUserExists,
-  executeInTransaction,
-} from "./addEventUtils";
+import { insertEventWithBaseData, executeInTransaction } from "./addEventUtils";
 
 export async function handleAddSdkCall(
   event_data: SqlRecord<"SDK_CALL">,
@@ -28,26 +22,13 @@ export async function handleAddSdkCall(
     connectionObject,
     "storing SDK_CALL event",
     async (txn) => {
-      await ensureUserExists(event_data.userId);
-
-      const reported_timestamp = await validateAndPrepareTimestamp(
-        event_data.reported_timestamp
-      );
-
-      const eventID = await insertEvent(txn, {
-        reported_timestamp,
-        ingested_timestamp: DateTime.utc().toString(),
-        userId: event_data.userId,
-        api_keyId: apiKeyId,
-      });
+      const eventID = await insertEventWithBaseData(txn, event_data, apiKeyId);
 
       try {
-        const sdkData = event_data;
-
         await txn.insert(sdkCallEventsTable).values({
           id: eventID.id,
-          type: sdkData.data.sdkCallType,
-          debitAmount: sdkData.data.debitAmount,
+          type: event_data.data.sdkCallType,
+          debitAmount: event_data.data.debitAmount,
         });
       } catch (e) {
         throw StorageError.insertFailed(

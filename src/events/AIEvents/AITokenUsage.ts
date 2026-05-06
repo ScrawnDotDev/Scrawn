@@ -17,6 +17,7 @@ export class AITokenUsage implements AITokenUsageEvent {
     this.ingested_timestamp = DateTime.utc();
   }
 
+  // fallow-ignore-next-line unused-class-member
   serialize() {
     return {
       SQL: {

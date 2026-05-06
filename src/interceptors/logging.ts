@@ -73,43 +73,27 @@ export function loggingInterceptor(
   };
 }
 
+const GRPC_TO_HTTP_STATUS: Record<number, number> = {
+  [grpcStatus.CANCELLED]: 499,
+  [grpcStatus.UNKNOWN]: 500,
+  [grpcStatus.INVALID_ARGUMENT]: 400,
+  [grpcStatus.DEADLINE_EXCEEDED]: 504,
+  [grpcStatus.NOT_FOUND]: 404,
+  [grpcStatus.ALREADY_EXISTS]: 409,
+  [grpcStatus.PERMISSION_DENIED]: 403,
+  [grpcStatus.RESOURCE_EXHAUSTED]: 429,
+  [grpcStatus.FAILED_PRECONDITION]: 400,
+  [grpcStatus.ABORTED]: 409,
+  [grpcStatus.OUT_OF_RANGE]: 400,
+  [grpcStatus.UNIMPLEMENTED]: 501,
+  [grpcStatus.INTERNAL]: 500,
+  [grpcStatus.UNAVAILABLE]: 503,
+  [grpcStatus.DATA_LOSS]: 500,
+  [grpcStatus.UNAUTHENTICATED]: 401,
+};
+
 function grpcStatusToHttpStatus(code: number): number {
-  switch (code) {
-    case grpcStatus.CANCELLED:
-      return 499;
-    case grpcStatus.UNKNOWN:
-      return 500;
-    case grpcStatus.INVALID_ARGUMENT:
-      return 400;
-    case grpcStatus.DEADLINE_EXCEEDED:
-      return 504;
-    case grpcStatus.NOT_FOUND:
-      return 404;
-    case grpcStatus.ALREADY_EXISTS:
-      return 409;
-    case grpcStatus.PERMISSION_DENIED:
-      return 403;
-    case grpcStatus.RESOURCE_EXHAUSTED:
-      return 429;
-    case grpcStatus.FAILED_PRECONDITION:
-      return 400;
-    case grpcStatus.ABORTED:
-      return 409;
-    case grpcStatus.OUT_OF_RANGE:
-      return 400;
-    case grpcStatus.UNIMPLEMENTED:
-      return 501;
-    case grpcStatus.INTERNAL:
-      return 500;
-    case grpcStatus.UNAVAILABLE:
-      return 503;
-    case grpcStatus.DATA_LOSS:
-      return 500;
-    case grpcStatus.UNAUTHENTICATED:
-      return 401;
-    default:
-      return 500;
-  }
+  return GRPC_TO_HTTP_STATUS[code] ?? 500;
 }
 
 interface ErrorDetails {

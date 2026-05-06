@@ -89,7 +89,12 @@ function validateExprSyntax(exprString: string): void {
     throw EventError.validationFailed("Expression cannot be empty");
   }
 
-  // Check parentheses balance
+  validateParenthesesBalance(exprString);
+  validateFunctionNames(exprString);
+  validateTagNames(exprString);
+}
+
+function validateParenthesesBalance(exprString: string): void {
   let depth = 0;
   for (const char of exprString) {
     if (char === "(") depth++;
@@ -105,8 +110,9 @@ function validateExprSyntax(exprString: string): void {
       "Invalid expression syntax: unmatched opening parenthesis"
     );
   }
+}
 
-  // Extract and validate function names
+function validateFunctionNames(exprString: string): void {
   const functionPattern = /([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
   let match: RegExpExecArray | null;
 
@@ -118,9 +124,12 @@ function validateExprSyntax(exprString: string): void {
       );
     }
   }
+}
 
-  // Validate tag name format (must be UPPER_SNAKE_CASE)
+function validateTagNames(exprString: string): void {
   const tagNamePattern = /tag\(([^)]*)\)/gi;
+  let match: RegExpExecArray | null;
+
   while ((match = tagNamePattern.exec(exprString)) !== null) {
     const tagName = match[1];
     if (!tagName || !/^[A-Z_][A-Z0-9_]*$/.test(tagName)) {

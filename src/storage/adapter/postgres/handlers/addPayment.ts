@@ -2,11 +2,9 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { eventsTable, paymentEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
-import { DateTime } from "luxon";
 import {
   validateAndPrepareTimestamp,
-  insertEvent,
-  ensureUserExists,
+  insertEventWithBaseData,
   executeInTransaction,
 } from "./addEventUtils";
 
@@ -36,18 +34,7 @@ export async function handleAddPayment(
     connectionObject,
     "storing PAYMENT event",
     async (txn) => {
-      await ensureUserExists(event_data.userId);
-
-      const reported_timestamp = await validateAndPrepareTimestamp(
-        event_data.reported_timestamp
-      );
-
-      const eventID = await insertEvent(txn, {
-        reported_timestamp,
-        ingested_timestamp: DateTime.utc().toString(),
-        userId: event_data.userId,
-        api_keyId: apiKeyId,
-      });
+      const eventID = await insertEventWithBaseData(txn, event_data, apiKeyId);
 
       try {
         await txn.insert(paymentEventsTable).values({

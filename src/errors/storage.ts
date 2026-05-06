@@ -38,6 +38,7 @@ export class StorageError extends Error {
     this.code = context.code;
   }
 
+  // fallow-ignore-next-line unused-class-member
   static connectionFailed(
     details?: string,
     originalError?: Error
@@ -102,6 +103,7 @@ export class StorageError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static dataNotFound(entity?: string, originalError?: Error): StorageError {
     return new StorageError({
       type: StorageErrorType.CONNECTION_FAILED,
@@ -173,6 +175,7 @@ export class StorageError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static userInsertFailed(
     userId?: string,
     originalError?: Error
@@ -226,6 +229,7 @@ export class StorageError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static unknown(originalError?: Error): StorageError {
     const details = originalError?.message || "No details available";
     return new StorageError({

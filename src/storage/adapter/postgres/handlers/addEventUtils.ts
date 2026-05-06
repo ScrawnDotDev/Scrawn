@@ -11,6 +11,25 @@ export type TransactionFn<T> = (
   txn: PgTransaction<any, any, any>
 ) => Promise<T>;
 
+export async function insertEventWithBaseData(
+  txn: PgTransaction<any, any, any>,
+  event_data: { userId: string; reported_timestamp: DateTime },
+  apiKeyId: string | undefined
+): Promise<{ id: string }> {
+  await ensureUserExists(event_data.userId);
+
+  const reported_timestamp = await validateAndPrepareTimestamp(
+    event_data.reported_timestamp
+  );
+
+  return await insertEvent(txn, {
+    reported_timestamp,
+    ingested_timestamp: DateTime.utc().toString(),
+    userId: event_data.userId,
+    api_keyId: apiKeyId,
+  });
+}
+
 export async function executeInTransaction<T>(
   connectionObject: PgDatabase<any, any>,
   operationName: string,
@@ -64,6 +83,7 @@ export type EventInsertValues = {
   api_keyId: string | undefined;
 };
 
+// fallow-ignore-next-line unused-export
 export async function insertEvent(
   txn: PgTransaction<any, any, any>,
   values: EventInsertValues
@@ -93,6 +113,7 @@ export async function insertEvent(
   return { id: eventID.id };
 }
 
+// fallow-ignore-next-line unused-export
 export async function ensureUserExists(
   userId: string
 ): Promise<void> {

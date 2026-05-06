@@ -30,6 +30,7 @@ export class APIKeyError extends Error {
     this.code = context.code;
   }
 
+  // fallow-ignore-next-line unused-class-member
   static invalidExpiration(
     details?: string,
     originalError?: Error
@@ -44,6 +45,7 @@ export class APIKeyError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static invalidName(details?: string, originalError?: Error): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.INVALID_NAME,
@@ -64,6 +66,7 @@ export class APIKeyError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static notFound(apiKeyId?: string, originalError?: Error): APIKeyError {
     return new APIKeyError({
       type: APIKeyErrorType.NOT_FOUND,
@@ -75,6 +78,7 @@ export class APIKeyError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static revocationFailed(
     details?: string,
     originalError?: Error
@@ -98,6 +102,7 @@ export class APIKeyError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static unknown(originalError?: Error): APIKeyError {
     const details = originalError?.message || "No details available";
     return new APIKeyError({

@@ -23,15 +23,14 @@
     "drizzle-kit": "^0.31.6",
     "fallow": "^2.64.0",
     "grpc-tools": "^1.13.1",
-    "ts-protoc-gen": "^0.15.0",
-    "tsx": "^4.20.6",
-    "vitest": "^4.0.3"
+    "vitest": "^4.0.3",
+    "tsx": "^4.20.6"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-
+    "@grpc/grpc-js": "^1.12.0",
     "bullmq": "^5.75.2",
     "dodopayments": "^2.30.0",
     "drizzle-orm": "^0.44.7",

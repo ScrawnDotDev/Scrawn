@@ -31,6 +31,7 @@ export class EventError extends Error {
     this.code = context.code;
   }
 
+  // fallow-ignore-next-line unused-class-member
   static invalidPayload(details?: string, originalError?: Error): EventError {
     return new EventError({
       type: EventErrorType.INVALID_PAYLOAD,
@@ -63,6 +64,7 @@ export class EventError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static serializationError(
     details?: string,
     originalError?: Error
@@ -77,6 +79,7 @@ export class EventError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static invalidUserId(userId?: string, originalError?: Error): EventError {
     return new EventError({
       type: EventErrorType.INVALID_USER_ID,
@@ -86,6 +89,7 @@ export class EventError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static missingData(field: string, originalError?: Error): EventError {
     return new EventError({
       type: EventErrorType.MISSING_DATA,
@@ -95,6 +99,7 @@ export class EventError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static invalidDataFormat(
     field: string,
     expectedFormat: string,
@@ -108,6 +113,7 @@ export class EventError extends Error {
     });
   }
 
+  // fallow-ignore-next-line unused-class-member
   static unknown(originalError?: Error): EventError {
     const details = originalError?.message || "No details available";
     return new EventError({
