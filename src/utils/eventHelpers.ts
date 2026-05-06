@@ -1,132 +1,32 @@
-import { apiKeyContextKey } from "../context/auth";
-import { AuthError } from "../errors/auth";
 import { EventError } from "../errors/event";
-import {
-  registerEventSchema,
-  streamEventSchema,
-  type RegisterEventSchemaType,
-  type StreamEventSchemaType,
-} from "../zod/event";
-import { ZodError } from "zod";
-import type { Event } from "../interface/event/Event";
+import type { Event, SDKCallEventData, AITokenUsageEventData } from "../interface/event/Event";
 import { SDKCall } from "../events/RawEvents/SDKCall";
 import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
-import { RegisterEventRequest, StreamEventRequest } from "../gen/event/v1/event_pb";
+import type { RegisterEventSchemaType, StreamEventSchemaType } from "../zod/event";
 
-/**
- * Extract API key ID from the request context
- */
-export function extractApiKeyFromContext(call: any): string {
-  const apiKeyId = call[apiKeyContextKey] as string;
-  if (!apiKeyId) {
-    throw AuthError.invalidAPIKey("API key ID not found in context");
-  }
-  return apiKeyId;
-}
-
-/**
- * Validate and parse the incoming register event request.
- * Handles Zod validation errors and extracts clean error messages.
- */
-export async function validateAndParseRegisterEvent(
-  req: RegisterEventRequest
-): Promise<RegisterEventSchemaType> {
-  try {
-    const json = {
-      type: req.getType(),
-      userId: req.getUserid(),
-      reportedTimestamp: req.getReportedtimestamp(),
-      data: req.getSdkcall() ? JSON.stringify(req.getSdkcall()!.toObject()) : "{}",
-    };
-    return await registerEventSchema.parseAsync(json);
-  } catch (error) {
-    throw convertValidationError(error);
-  }
-}
-
-/**
- * Validate and parse the incoming stream event request.
- */
-export async function validateAndParseStreamEvent(
-  req: StreamEventRequest
-): Promise<StreamEventSchemaType> {
-  try {
-    const json = {
-      type: req.getType(),
-      userId: req.getUserid(),
-      reportedTimestamp: req.getReportedtimestamp(),
-      data: req.getSdkcall()
-        ? JSON.stringify(req.getSdkcall()!.toObject())
-        : req.getAitokenusage()
-        ? JSON.stringify(req.getAitokenusage()!.toObject())
-        : "{}",
-    };
-    return await streamEventSchema.parseAsync(json);
-  } catch (error) {
-    throw convertValidationError(error);
-  }
-}
-
-/**
- * Convert Zod validation errors to EventError.
- * Detects wrapped EventErrors from Zod transforms and extracts clean messages.
- */
-function convertValidationError(error: unknown): EventError {
-  if (error instanceof EventError) {
-    return error;
-  }
-
-  if (error instanceof ZodError) {
-    const firstIssue = error.issues[0];
-
-    // Check if Zod wrapped our custom EventError from a transform
-    if (firstIssue?.message.startsWith("Event validation failed:")) {
-      const cleanMessage = firstIssue.message.replace(
-        /^Event validation failed:\s*/,
-        ""
-      );
-      return EventError.validationFailed(cleanMessage);
-    }
-
-    const issues = error.issues
-      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-      .join("; ");
-    return EventError.validationFailed(issues);
-  }
-
-  return EventError.validationFailed(
-    error instanceof Error ? error.message : String(error)
-  );
-}
-
-/**
- * Create the appropriate event instance based on the event skeleton
- */
 export function createEventInstance(
   eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
 ): Event {
-  switch (eventSkeleton.type) {
-    case "SDK_CALL":
-      return new SDKCall(
-        eventSkeleton.userId,
-        eventSkeleton.reportedTimestamp,
-        eventSkeleton.data
-      );
-    case "AI_TOKEN_USAGE":
-      return new AITokenUsage(
-        eventSkeleton.userId,
-        eventSkeleton.reportedTimestamp,
-        eventSkeleton.data
-      );
-    default:
-      throw EventError.unsupportedEventType("Unknown event type");
+  if (eventSkeleton.type === "SDK_CALL") {
+    const data = (eventSkeleton as { sdkcall: SDKCallEventData }).sdkcall;
+    return new SDKCall(
+      eventSkeleton.userid,
+      eventSkeleton.reportedtimestamp,
+      data
+    );
   }
+  if (eventSkeleton.type === "AI_TOKEN_USAGE") {
+    const data = (eventSkeleton as { aitokenusage: AITokenUsageEventData }).aitokenusage;
+    return new AITokenUsage(
+      eventSkeleton.userid,
+      eventSkeleton.reportedtimestamp,
+      data
+    );
+  }
+  throw EventError.unsupportedEventType("Unknown event type");
 }
 
-/**
- * Store the event using the appropriate storage adapter
- */
 export async function storeEvent(
   event: Event,
   apiKeyId: string

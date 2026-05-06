@@ -5,24 +5,20 @@ import {
 import type { WideEventBuilder } from "../../../context/requestContext";
 import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
-import {
-  validateAndParseRegisterEvent,
-  createEventInstance,
-  storeEvent,
-} from "../../../utils/eventHelpers";
+import { registerEventSchema } from "../../../zod/event";
+import { EventError } from "../../../errors/event";
+import { createEventInstance, storeEvent } from "../../../utils/eventHelpers";
+import { ZodError } from "zod";
+
 export async function registerEvent(call: any, callback: any): Promise<void> {
   const req = call.request as RegisterEventRequest;
   const wideEventBuilder = call[wideEventContextKey] as WideEventBuilder | null;
 
   try {
-    // Extract API key ID from context
     const apiKeyId = call[apiKeyContextKey] as string;
+    const eventSkeleton = await registerEventSchema.parseAsync(req.toObject());
 
-    // Validate and parse the incoming event
-    const eventSkeleton = await validateAndParseRegisterEvent(req);
-
-    // Add business context to wide event
-    wideEventBuilder?.setUser(eventSkeleton.userId);
+    wideEventBuilder?.setUser(eventSkeleton.userid);
     wideEventBuilder?.setEventContext({ eventType: eventSkeleton.type });
 
     // Create the appropriate event instance
