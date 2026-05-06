@@ -9,47 +9,36 @@ export async function handlePriceRequestPayment(
   userId: UserId,
   beforeTimestamp: DateTime
 ): Promise<number> {
-  try {
-    if (!userId) {
-      throw StorageError.invalidData("Missing userId in REQUEST_PAYMENT event");
-    }
+  validateUserId(userId);
 
-    const sdkPrice = await handlePriceRequestSdkCall(userId, beforeTimestamp);
+  const [sdkPrice, aiPrice] = await Promise.all([
+    handlePriceRequestSdkCall(userId, beforeTimestamp),
+    handlePriceRequestAiTokenUsage(userId, beforeTimestamp),
+  ]);
 
-    if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
-      throw StorageError.priceCalculationFailed(
-        userId,
-        new Error(`Invalid SDK price value returned: ${sdkPrice}`)
-      );
-    }
+  return combinePrices(userId, sdkPrice, aiPrice);
+}
 
-    const aiPrice = await handlePriceRequestAiTokenUsage(
-      userId,
-      beforeTimestamp
-    );
+function validateUserId(userId: UserId): void {
+  if (!userId) {
+    throw StorageError.invalidData("Missing userId in REQUEST_PAYMENT event");
+  }
+}
 
-    if (typeof aiPrice !== "number" || isNaN(aiPrice)) {
-      throw StorageError.priceCalculationFailed(
-        userId,
-        new Error(`Invalid AI price value returned: ${aiPrice}`)
-      );
-    }
-
-    const totalPrice = sdkPrice + aiPrice;
-    return totalPrice;
-  } catch (e) {
-    if (
-      e &&
-      typeof e === "object" &&
-      "type" in e &&
-      (e as any).name === "StorageError"
-    ) {
-      throw e;
-    }
-
+function combinePrices(userId: UserId, sdkPrice: number, aiPrice: number): number {
+  if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
     throw StorageError.priceCalculationFailed(
-      "Failed to calculate price for REQUEST_PAYMENT event",
-      e instanceof Error ? e : new Error(String(e))
+      userId,
+      new Error(`Invalid SDK price value returned: ${sdkPrice}`)
     );
   }
+
+  if (typeof aiPrice !== "number" || isNaN(aiPrice)) {
+    throw StorageError.priceCalculationFailed(
+      userId,
+      new Error(`Invalid AI price value returned: ${aiPrice}`)
+    );
+  }
+
+  return sdkPrice + aiPrice;
 }

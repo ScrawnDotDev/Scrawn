@@ -21,6 +21,41 @@ import type {
 import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
 
+function dispatchToHandler(type: EventKind, data: SqlRecord<EventKind>, apiKeyId?: string) {
+  switch (type) {
+    case "SDK_CALL":
+      if (!apiKeyId) throw StorageError.missingApiKeyId();
+      return handleAddSdkCall(data as never, apiKeyId);
+    case "AI_TOKEN_USAGE":
+      if (!apiKeyId) throw StorageError.missingApiKeyId();
+      return handleAddAiTokenUsage([data as never], apiKeyId);
+    case "ADD_KEY":
+      return handleAddKey(data as never);
+    case "PAYMENT":
+      return handleAddPayment(data as never, apiKeyId);
+    case "METADATA":
+      return handleAddMetadata(data as never);
+    case "USER":
+      return handleAddUser(data as never);
+    default:
+      const _exhaustive: never = type;
+      throw StorageError.unknownEventType(_exhaustive as EventKind);
+  }
+}
+
+function dispatchPriceHandler(type: EventKind, userId: UserId, ts: DateTime) {
+  switch (type) {
+    case "PAYMENT":
+      return handlePriceRequestPayment(userId, ts);
+    case "SDK_CALL":
+      return handlePriceRequestSdkCall(userId, ts);
+    case "AI_TOKEN_USAGE":
+      return handlePriceRequestAiTokenUsage(userId, ts);
+    default:
+      throw StorageError.unknownEventType(type);
+  }
+}
+
 export class PostgresAdapter implements StorageAdapter {
   // fallow-ignore-next-line unused-class-member
   connectionObject = getPostgresDB();
@@ -39,7 +74,6 @@ export class PostgresAdapter implements StorageAdapter {
         );
       }
     } catch (e) {
-      // Use duck typing instead of instanceof to work with mocked modules
       if (
         e &&
         typeof e === "object" &&
@@ -54,41 +88,7 @@ export class PostgresAdapter implements StorageAdapter {
       );
     }
 
-    switch (event_data.type) {
-      case "SDK_CALL": {
-        if (!apiKeyId) {
-          throw StorageError.missingApiKeyId();
-        }
-        return await handleAddSdkCall(event_data, apiKeyId);
-      }
-
-      case "AI_TOKEN_USAGE": {
-        if (!apiKeyId) {
-          throw StorageError.missingApiKeyId();
-        }
-        return await handleAddAiTokenUsage([event_data], apiKeyId);
-      }
-
-      case "ADD_KEY": {
-        return await handleAddKey(event_data);
-      }
-
-      case "PAYMENT": {
-        return await handleAddPayment(event_data, apiKeyId);
-      }
-
-      case "METADATA": {
-        return await handleAddMetadata(event_data);
-      }
-
-      case "USER": {
-        return await handleAddUser(event_data);
-      }
-
-      default: {
-        throw StorageError.unknownEventType(event_data);
-      }
-    }
+    return dispatchToHandler(event_data.type, event_data, apiKeyId);
   }
 
   // fallow-ignore-next-line unused-class-member
@@ -97,22 +97,6 @@ export class PostgresAdapter implements StorageAdapter {
     event_type: EventKind,
     beforeTimestamp: DateTime
   ): Promise<number> {
-    switch (event_type) {
-      case "PAYMENT": {
-        return await handlePriceRequestPayment(userID, beforeTimestamp);
-      }
-
-      case "SDK_CALL": {
-        return await handlePriceRequestSdkCall(userID, beforeTimestamp);
-      }
-
-      case "AI_TOKEN_USAGE": {
-        return await handlePriceRequestAiTokenUsage(userID, beforeTimestamp);
-      }
-
-      default: {
-        throw StorageError.unknownEventType(event_type);
-      }
-    }
+    return dispatchPriceHandler(event_type, userID, beforeTimestamp);
   }
 }

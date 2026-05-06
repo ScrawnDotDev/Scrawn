@@ -9,24 +9,24 @@ export async function handleAddSession(
   sessionId: string,
   billedUpto: DateTime
 ): Promise<{ id: string }> {
+  if (!sessionId || sessionId.trim().length === 0) {
+    throw StorageError.invalidData("Missing sessionId in handleAddSession");
+  }
+
+  const billedUptoStr = billedUpto.toISO();
+  if (!billedUptoStr) {
+    throw StorageError.invalidTimestamp("billedUpto.toISO() returned falsy");
+  }
+
   const connectionObject = getPostgresDB();
 
   try {
-    if (!sessionId || sessionId.trim().length === 0) {
-      throw StorageError.invalidData("Missing sessionId in handleAddSession");
-    }
-
-    const billedUptoStr = billedUpto.toISO();
-    if (!billedUptoStr) {
-      throw StorageError.invalidTimestamp("billedUpto.toISO() returned falsy");
-    }
-
     const insertResult = await connectionObject
       .insert(sessionsTable)
       .values({
-        userId: userId as string,
         sessionId: sessionId,
         billed_upto: billedUptoStr,
+        userId: userId as string,
       })
       .returning({ id: sessionsTable.id });
 

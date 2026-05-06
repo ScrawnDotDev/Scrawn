@@ -67,7 +67,7 @@ export type EventData<K extends EventKind> = EventDataMap[K];
 /**
  * Base SQL record structure for all events
  */
-type BaseSqlRecord<K extends EventKind> = {
+export type BaseSqlRecord<K extends EventKind> = {
   type: K;
   reported_timestamp: DateTime;
   data: EventData<K>;
@@ -76,7 +76,7 @@ type BaseSqlRecord<K extends EventKind> = {
 /**
  * SQL record structure for events that require userId
  */
-type SqlRecordWithUserId<K extends EventKind> = BaseSqlRecord<K> & {
+export type SqlRecordWithUserId<K extends EventKind> = BaseSqlRecord<K> & {
   userId: UserId;
 };
 

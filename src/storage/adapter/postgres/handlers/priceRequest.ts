@@ -23,80 +23,18 @@ export async function handlePriceRequest(
   const db = getPostgresDB();
 
   try {
-    if (!userId) {
-      throw StorageError.invalidData(`Missing userId in ${eventType} event`);
-    }
+    validateUserId(userId, eventType);
 
-    if (typeof userId !== "string" || userId.trim().length === 0) {
-      throw StorageError.invalidData(`Invalid userId format: ${typeof userId}`);
-    }
+    const queryResult = await buildAndExecutePriceQuery(
+      db,
+      userId,
+      priceTable,
+      priceColumn,
+      eventType,
+      beforeTimestamp
+    );
 
-    let result;
-    try {
-      const baseCondition = sql`${eventsTable.reported_timestamp} > ${usersTable.last_billed_timestamp} AND ${eventsTable.userId} = ${userId}`;
-      const whereClause = beforeTimestamp
-        ? and(
-            baseCondition,
-            sql`${eventsTable.reported_timestamp} < ${beforeTimestamp.toISO()}`
-          )
-        : baseCondition;
-
-      result = await db
-        .select({
-          price: sum(priceColumn),
-        })
-        .from(priceTable)
-        .innerJoin(eventsTable, eq(priceTable.id, eventsTable.id))
-        .innerJoin(usersTable, eq(eventsTable.userId, usersTable.id))
-        .where(whereClause)
-        .groupBy(eventsTable.userId);
-    } catch (e) {
-      throw StorageError.queryFailed(
-        `Failed to query ${eventType} events for user ${userId}`,
-        e instanceof Error ? e : new Error(String(e))
-      );
-    }
-
-    if (!result) {
-      throw StorageError.emptyResult(
-        `Price query returned null for user ${userId}`
-      );
-    }
-
-    if (!Array.isArray(result)) {
-      throw StorageError.queryFailed(
-        `Query result is not an array for user ${userId}`
-      );
-    }
-
-    if (result.length === 0 || !result[0]) {
-      return 0;
-    }
-
-    const priceValue = result[0].price;
-
-    if (priceValue === null || priceValue === undefined) {
-      return 0;
-    }
-
-    let parsedPrice: number;
-    try {
-      parsedPrice = parseInt(priceValue);
-    } catch (e) {
-      throw StorageError.priceCalculationFailed(
-        userId,
-        new Error(`Failed to parse price value: ${priceValue}`)
-      );
-    }
-
-    if (isNaN(parsedPrice)) {
-      throw StorageError.priceCalculationFailed(
-        userId,
-        new Error(`Price parsed to NaN from value: ${priceValue}`)
-      );
-    }
-
-    return parsedPrice;
+    return parsePriceResult(queryResult, userId);
   } catch (e) {
     if (
       e &&
@@ -112,4 +50,93 @@ export async function handlePriceRequest(
       e instanceof Error ? e : new Error(String(e))
     );
   }
+}
+
+function validateUserId(userId: UserId, eventType: string): void {
+  if (!userId) {
+    throw StorageError.invalidData(`Missing userId in ${eventType} event`);
+  }
+
+  if (typeof userId !== "string" || userId.trim().length === 0) {
+    throw StorageError.invalidData(`Invalid userId format: ${typeof userId}`);
+  }
+}
+
+async function buildAndExecutePriceQuery(
+  db: ReturnType<typeof getPostgresDB>,
+  userId: UserId,
+  priceTable: PriceEventTable,
+  priceColumn: SQL,
+  eventType: string,
+  beforeTimestamp: DateTime
+): Promise<unknown> {
+  try {
+    const baseCondition = sql`${eventsTable.reported_timestamp} > ${usersTable.last_billed_timestamp} AND ${eventsTable.userId} = ${userId}`;
+    const whereClause = beforeTimestamp
+      ? and(
+          baseCondition,
+          sql`${eventsTable.reported_timestamp} < ${beforeTimestamp.toISO()}`
+        )
+      : baseCondition;
+
+    const result = await db
+      .select({
+        price: sum(priceColumn),
+      })
+      .from(priceTable)
+      .innerJoin(eventsTable, eq(priceTable.id, eventsTable.id))
+      .innerJoin(usersTable, eq(eventsTable.userId, usersTable.id))
+      .where(whereClause)
+      .groupBy(eventsTable.userId);
+
+    return result;
+  } catch (e) {
+    throw StorageError.queryFailed(
+      `Failed to query ${eventType} events for user ${userId}`,
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
+
+function parsePriceResult(result: unknown, userId: UserId): number {
+  if (!result) {
+    throw StorageError.emptyResult(
+      `Price query returned null for user ${userId}`
+    );
+  }
+
+  if (!Array.isArray(result)) {
+    throw StorageError.queryFailed(
+      `Query result is not an array for user ${userId}`
+    );
+  }
+
+  if (result.length === 0 || !result[0]) {
+    return 0;
+  }
+
+  const priceValue = (result[0] as { price?: unknown }).price;
+
+  if (priceValue === null || priceValue === undefined) {
+    return 0;
+  }
+
+  let parsedPrice: number;
+  try {
+    parsedPrice = parseInt(priceValue as string);
+  } catch (e) {
+    throw StorageError.priceCalculationFailed(
+      userId,
+      new Error(`Failed to parse price value: ${priceValue}`)
+    );
+  }
+
+  if (isNaN(parsedPrice)) {
+    throw StorageError.priceCalculationFailed(
+      userId,
+      new Error(`Price parsed to NaN from value: ${priceValue}`)
+    );
+  }
+
+  return parsedPrice;
 }
