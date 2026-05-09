@@ -29,7 +29,8 @@ export async function handleAddSdkCall(
     connectionObject,
     "storing SDK_CALL event",
     async (txn) => {
-      const userAdapter = await StorageAdapterFactory.getEventStorageAdapter("USER");
+      const userAdapter =
+        await StorageAdapterFactory.getEventStorageAdapter("USER");
       const userEvent = new User({ id: event_data.userId });
       await userAdapter.add(userEvent.serialize());
 

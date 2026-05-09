@@ -1,9 +1,7 @@
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import type { DateTime } from "luxon";
-import { handlePriceRequestSdkCall } from "./priceRequestSdkCall";
-import { handlePriceRequestAiTokenUsage } from "./priceRequestAiTokenUsage";
+import { StorageAdapterFactory } from "../../../../factory/EventStorageAdapterFactory";
 
 export async function handlePriceRequestPayment(
   userId: UserId,
@@ -14,7 +12,13 @@ export async function handlePriceRequestPayment(
       throw StorageError.invalidData("Missing userId in REQUEST_PAYMENT event");
     }
 
-    const sdkPrice = await handlePriceRequestSdkCall(userId, beforeTimestamp);
+    const sdkAdapter =
+      await StorageAdapterFactory.getEventStorageAdapter("SDK_CALL");
+    const sdkPrice = await sdkAdapter.price(
+      userId,
+      "SDK_CALL",
+      beforeTimestamp
+    );
 
     if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
       throw StorageError.priceCalculationFailed(
@@ -23,8 +27,11 @@ export async function handlePriceRequestPayment(
       );
     }
 
-    const aiPrice = await handlePriceRequestAiTokenUsage(
+    const aiAdapter =
+      await StorageAdapterFactory.getEventStorageAdapter("AI_TOKEN_USAGE");
+    const aiPrice = await aiAdapter.price(
       userId,
+      "AI_TOKEN_USAGE",
       beforeTimestamp
     );
 

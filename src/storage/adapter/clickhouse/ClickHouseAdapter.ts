@@ -4,7 +4,6 @@ import { StorageError } from "../../../errors/storage";
 import {
   handleAddSdkCall,
   handleAddAiTokenUsage,
-  handlePriceRequestPayment,
   handlePriceRequestSdkCall,
   handlePriceRequestAiTokenUsage,
 } from "./handlers";
@@ -73,10 +72,6 @@ export class ClickHouseAdapter implements StorageAdapter {
     beforeTimestamp: DateTime
   ): Promise<number> {
     switch (event_type) {
-      case "PAYMENT": {
-        return await handlePriceRequestPayment(userID, beforeTimestamp);
-      }
-
       case "SDK_CALL": {
         return await handlePriceRequestSdkCall(userID, beforeTimestamp);
       }

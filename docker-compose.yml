@@ -63,7 +63,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/scrawn
       REDIS_URL: redis://redis:6379
       CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
-      NODE_ENV: development
+      NODE_ENV: production
     volumes:
       - .:/app
       - /app/node_modules

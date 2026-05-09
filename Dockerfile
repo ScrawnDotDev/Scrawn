@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8070 8069
 
-CMD ["bun", "run", "src/server.ts"]
+CMD ["sh", "-c", "bunx drizzle-kit push --force && bun run migrate:clickhouse && bun run src/server.ts"]
