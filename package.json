@@ -32,6 +32,8 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@clickhouse/client": "^1.18.4",
+    "@grpc/grpc-js": "^1.8.14",
     "@opentelemetry/instrumentation-pg": "^0.69.0",
     "@sentry/bun": "^10.51.0",
     "bullmq": "^5.75.2",
@@ -45,7 +47,6 @@
     "luxon": "^3.7.2",
     "pino": "^10.1.0",
     "postgres": "^3.4.7",
-    "zod": "^4.1.12",
-    "@grpc/grpc-js": "^1.8.14"
+    "zod": "^4.1.12"
   }
 }

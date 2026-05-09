@@ -4,6 +4,7 @@ import { startRawGrpcServer, type GrpcTlsOptions } from "./servers/rawGrpcServer
 import { startFastifyServer } from "./servers/fastifyServer.ts";
 import { OnboardingWorker } from "./workers/onboarding.ts";
 import { getRedisConnection } from "./storage/db/redis.ts";
+import { getClickHouseDB } from "./storage/db/clickhouse.ts";
 import { readFileSync } from "node:fs";
 import * as Sentry from "@sentry/bun";
 
@@ -32,6 +33,7 @@ process.on("unhandledRejection", (reason) => {
 const DATABASE_URL = process.env.DATABASE_URL;
 const HMAC_SECRET = process.env.HMAC_SECRET;
 const REDIS_URL = process.env.REDIS_URL;
+const CLICKHOUSE_URL = process.env.CLICKHOUSE_URL;
 
 if (!DATABASE_URL) {
   logger.fatal("DATABASE_URL is not defined in environment variables");
@@ -48,12 +50,18 @@ if (!REDIS_URL) {
   throw new Error("REDIS_URL environmentvariable is not set");
 }
 
+if (!CLICKHOUSE_URL) {
+  logger.fatal("CLICKHOUSE_URL environment variable is not set");
+  throw new Error("CLICKHOUSE_URL environment variable is not set");
+}
+
 if (!process.env.SENTRY_DSN) {
   logger.fatal("SENTRY_DSN environment variable is not set — errors will NOT be reported to Sentry");
 }
 
 getPostgresDB(DATABASE_URL);
 getRedisConnection(REDIS_URL);
+getClickHouseDB(CLICKHOUSE_URL);
 
 const PORT = Number(process.env.PORT ?? 8070);
 const GRPC_PORT = Number(process.env.GRPC_PORT ?? 8069);

@@ -27,6 +27,24 @@ services:
       timeout: 5s
       retries: 5
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    restart: always
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_DB: scrawn
+    volumes:
+      - chdata:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   server:
     build:
       context: .
@@ -39,9 +57,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/scrawn
       REDIS_URL: redis://redis:6379
+      CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
       NODE_ENV: development
     volumes:
       - .:/app
@@ -49,3 +70,4 @@ services:
 
 volumes:
   pgdata:
+  chdata:
