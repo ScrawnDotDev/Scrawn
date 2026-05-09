@@ -3,11 +3,13 @@ import { eventsTable, paymentEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecord } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
+import * as Sentry from "@sentry/bun";
 import {
   validateAndPrepareTimestamp,
   insertEvent,
   ensureUserExists,
   executeInTransaction,
+  userExists,
 } from "./addEventUtils";
 
 export async function handleAddPayment(
@@ -36,6 +38,23 @@ export async function handleAddPayment(
     connectionObject,
     "storing PAYMENT event",
     async (txn) => {
+      const exists = await userExists(event_data.userId);
+      if (!exists) {
+        Sentry.captureMessage(
+          `Payment received for non-existent user, auto-creating: ${event_data.userId}`,
+          {
+            level: "warning",
+            contexts: {
+              payment: {
+                userId: event_data.userId,
+                creditAmount: creditAmount,
+                reportedTimestamp: event_data.reported_timestamp?.toISO(),
+              },
+            },
+          }
+        );
+      }
+
       await ensureUserExists(event_data.userId);
 
       const reported_timestamp = await validateAndPrepareTimestamp(

@@ -12,6 +12,7 @@
     "init_key": "bun run src/utils/generateInitialAPIKey.ts",
     "format": "bunx prettier --write .",
     "typecheck": "bunx tsgo",
+    "migrate:clickhouse": "bun run src/storage/adapter/clickhouse/migrate.ts",
     "proto:pull": "git submodule update --remote --merge proto",
     "proto:push": "cd proto && git add . && git commit -s -m \"$1\" && git push && cd .."
   },

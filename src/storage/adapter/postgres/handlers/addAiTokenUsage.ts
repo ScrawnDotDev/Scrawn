@@ -5,11 +5,11 @@ import { type SqlRecord } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
 import { User } from "../../../../events/RawEvents/User";
+import { StorageAdapterFactory } from "../../../../factory";
 import {
   validateAndPrepareTimestamp,
   executeInTransaction,
 } from "./addEventUtils";
-import { handleAddUser } from "./addUser";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -114,9 +114,10 @@ export async function handleAddAiTokenUsage(
           new Set(aggregatedEvents.map((event) => event.userId))
         );
 
+        const userAdapter = await StorageAdapterFactory.getEventStorageAdapter("USER");
         for (const userId of uniqueUserIds) {
           const userEvent = new User({ id: userId });
-          await handleAddUser(userEvent.serialize().SQL);
+          await userAdapter.add(userEvent.serialize());
         }
 
         const eventValues = aggregatedEvents.map((aggEvent) => ({

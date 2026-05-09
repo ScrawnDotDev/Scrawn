@@ -1,10 +1,11 @@
 import { getPostgresDB } from "../../../db/postgres/db";
-import { eventsTable } from "../../../db/postgres/schema";
+import { eventsTable, usersTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { DateTime } from "luxon";
 import { User } from "../../../../events/RawEvents/User";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { PgDatabase } from "drizzle-orm/pg-core";
+import { eq } from "drizzle-orm";
 import { handleAddUser } from "./addUser";
 
 export type TransactionFn<T> = (
@@ -93,9 +94,17 @@ export async function insertEvent(
   return { id: eventID.id };
 }
 
-export async function ensureUserExists(
-  userId: string
-): Promise<void> {
+export async function userExists(userId: string): Promise<boolean> {
+  const connectionObject = getPostgresDB();
+  const result = await connectionObject
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  return result.length > 0;
+}
+
+export async function ensureUserExists(userId: string): Promise<void> {
   const userEvent = new User({ id: userId });
   await handleAddUser(userEvent.serialize().SQL);
 }
