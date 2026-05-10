@@ -8,8 +8,7 @@ import {
   generateRequestId,
 } from "../../../context/requestContext.ts";
 import { logger } from "../../../errors/logger.ts";
-import { StorageAdapterFactory } from "../../../factory/index.ts";
-import { Metadata } from "../../../events/RawEvents/Metadata.ts";
+import { upsertMetadata } from "../../../storage/db/postgres/helpers/metadata.ts";
 
 export async function handleOnboarding(
   request: FastifyRequest,
@@ -37,15 +36,10 @@ export async function handleOnboarding(
         ? validated.webhookUrl
         : null;
 
-    const metadataEvent = new Metadata({
+    await upsertMetadata({
       payment_cron: crons.join(","),
       payment_webhook: webhookUrl,
     });
-
-    const adapter = await StorageAdapterFactory.getEventStorageAdapter(
-      metadataEvent.type
-    );
-    await adapter.add(metadataEvent.serialize(), "");
 
     builder.setSuccess(200).addContext({
       cronCount: crons.length,

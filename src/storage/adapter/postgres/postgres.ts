@@ -1,17 +1,13 @@
 import { type StorageAdapter } from "../../../interface/storage/Storage";
-import { type Event } from "../../../interface/event/Event";
 import { getPostgresDB } from "../../db/postgres/db";
 import { StorageError } from "../../../errors/storage";
 import {
   handleAddSdkCall,
-  handleAddKey,
   handleAddPayment,
   handlePriceRequestPayment,
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
-  handleAddMetadata,
-  handleAddUser,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -24,8 +20,8 @@ import type { DateTime } from "luxon";
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
 
-  async add(serialized: SerializedEvent<EventKind>, apiKeyId?: string) {
-    let event_data: SqlRecord<EventKind>;
+  async add(serialized: SerializedEvent, apiKeyId?: string) {
+    let event_data: SqlRecord;
 
     try {
       const { SQL } = serialized;
@@ -67,20 +63,8 @@ export class PostgresAdapter implements StorageAdapter {
         return await handleAddAiTokenUsage([event_data], apiKeyId);
       }
 
-      case "ADD_KEY": {
-        return await handleAddKey(event_data);
-      }
-
       case "PAYMENT": {
         return await handleAddPayment(event_data, apiKeyId);
-      }
-
-      case "METADATA": {
-        return await handleAddMetadata(event_data);
-      }
-
-      case "USER": {
-        return await handleAddUser(event_data);
       }
 
       default: {

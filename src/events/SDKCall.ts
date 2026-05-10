@@ -1,18 +1,18 @@
 import type {
-  AITokenUsageEvent,
-  AITokenUsageEventData,
-} from "../../interface/event/Event";
+  SDKCallEvent,
+  SDKCallEventData,
+} from "../interface/event/Event";
 import { DateTime } from "luxon";
-import type { UserId } from "../../config/identifiers";
+import type { UserId } from "../config/identifiers";
 
-export class AITokenUsage implements AITokenUsageEvent {
+export class SDKCall implements SDKCallEvent {
   public ingested_timestamp: DateTime;
-  public readonly type = "AI_TOKEN_USAGE" as const;
+  public readonly type = "SDK_CALL" as const;
 
   constructor(
     public userId: UserId,
     public reportedTimestamp: DateTime,
-    public data: AITokenUsageEventData
+    public data: SDKCallEventData
   ) {
     this.ingested_timestamp = DateTime.utc();
   }

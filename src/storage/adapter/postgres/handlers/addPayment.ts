@@ -1,7 +1,7 @@
 import { getPostgresDB } from "../../../db/postgres/db";
 import { eventsTable, paymentEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
+import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
 import * as Sentry from "@sentry/bun";
 import {
@@ -13,7 +13,7 @@ import {
 } from "./addEventUtils";
 
 export async function handleAddPayment(
-  event_data: SqlRecord<"PAYMENT">,
+  event_data: SqlRecordOf<"PAYMENT">,
   apiKeyId?: string
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();

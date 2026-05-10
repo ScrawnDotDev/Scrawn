@@ -9,14 +9,13 @@ import { createAPIKeySchema } from "../../../zod/apikey";
 import { APIKeyError } from "../../../errors/apikey";
 import { AuthError } from "../../../errors/auth";
 import { generateAPIKey } from "../../../utils/generateAPIKey";
-import { StorageAdapterFactory } from "../../../factory";
-import { AddKey } from "../../../events/RawEvents/AddKey";
 import { wideEventContextKey } from "../../../context/requestContext";
 import { hashAPIKey } from "../../../utils/hashAPIKey";
 import { formatZodError } from "../../../utils/formatZodError";
 import { DateTime } from "luxon";
 import type { ContextUnaryCall } from "../../../interface/types/context.js";
 import { StreamEventRequest } from "../../../gen/event/v1/event_pb.js";
+import { createApiKey } from "../../../storage/db/postgres/helpers/apiKeys.js";
 
 export async function createAPIKey(
   call: ContextUnaryCall<CreateAPIKeyRequest, CreateAPIKeyResponse>,
@@ -56,16 +55,11 @@ export async function createAPIKey(
     wideEventBuilder?.setApiKeyContext({ expiration: expiresAt.toISO() });
 
     // Create and store the key
-    const addKeyEvent = new AddKey({
+    const keyEventData = await createApiKey({
       name: validatedData.name,
       key: apiKeyHash,
       expiresAt: expiresAt.toISO(),
     });
-
-    const adapter = await StorageAdapterFactory.getEventStorageAdapter(
-      addKeyEvent.type
-    );
-    const keyEventData = await adapter.add(addKeyEvent.serialize(), "");
 
     if (!keyEventData) {
       return callback?.(APIKeyError.creationFailed("Storage returned no ID"));

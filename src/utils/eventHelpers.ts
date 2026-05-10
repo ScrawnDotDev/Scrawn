@@ -1,7 +1,7 @@
 import { EventError } from "../errors/event";
 import type { Event, SDKCallEventData, AITokenUsageEventData } from "../interface/event/Event";
-import { SDKCall } from "../events/RawEvents/SDKCall";
-import { AITokenUsage } from "../events/AIEvents/AITokenUsage";
+import { SDKCall } from "../events/SDKCall";
+import { AITokenUsage } from "../events/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
 import type { RegisterEventSchemaType, StreamEventSchemaType } from "../zod/event";
 

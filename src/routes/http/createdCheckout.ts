@@ -1,6 +1,6 @@
 import DodoPayments from "dodopayments";
 import * as Sentry from "@sentry/bun";
-import { Payment } from "../../events/RawEvents/Payment.ts";
+import { Payment } from "../../events/Payment.ts";
 import { StorageAdapterFactory } from "../../factory/EventStorageAdapterFactory.ts";
 import type { WideEventBuilder } from "../../context/requestContext.ts";
 import { getDodoClient } from "../gRPC/payment/paymentProvider.ts";

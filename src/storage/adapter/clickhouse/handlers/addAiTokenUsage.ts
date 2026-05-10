@@ -1,6 +1,6 @@
 import { getClickHouseDB } from "../../../db/clickhouse";
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
+import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
 
@@ -15,7 +15,7 @@ type AggregatedEvent = {
 };
 
 export async function handleAddAiTokenUsage(
-  events: Array<SqlRecord<"AI_TOKEN_USAGE">>,
+  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
   apiKeyId: string
 ): Promise<{ id: string } | void> {
   const client = getClickHouseDB();

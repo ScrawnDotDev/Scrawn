@@ -1,9 +1,9 @@
 import type {
   PaymentEvent,
   PaymentEventData,
-} from "../../interface/event/Event";
+} from "../interface/event/Event";
 import { DateTime } from "luxon";
-import type { UserId } from "../../config/identifiers";
+import type { UserId } from "../config/identifiers";
 
 export class Payment implements PaymentEvent {
   public ingested_timestamp: DateTime;

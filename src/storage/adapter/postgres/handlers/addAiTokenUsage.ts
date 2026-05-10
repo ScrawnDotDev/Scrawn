@@ -4,11 +4,10 @@ import {
   aiTokenUsageEventsTable,
 } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
+import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
-import { User } from "../../../../events/RawEvents/User";
-import { StorageAdapterFactory } from "../../../../factory";
+import { ensureUserExists } from "../../../db/postgres/helpers/users";
 import {
   validateAndPrepareTimestamp,
   executeInTransaction,
@@ -25,7 +24,7 @@ type AggregatedEvent = {
 };
 
 export async function handleAddAiTokenUsage(
-  events: Array<SqlRecord<"AI_TOKEN_USAGE">>,
+  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
   apiKeyId: string
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
@@ -117,11 +116,8 @@ export async function handleAddAiTokenUsage(
         new Set(aggregatedEvents.map((event) => event.userId))
       );
 
-      const userAdapter =
-        await StorageAdapterFactory.getEventStorageAdapter("USER");
       for (const userId of uniqueUserIds) {
-        const userEvent = new User({ id: userId });
-        await userAdapter.add(userEvent.serialize());
+        await ensureUserExists(userId);
       }
 
       const eventValues = aggregatedEvents.map((aggEvent) => ({

@@ -1,10 +1,9 @@
 import { getPostgresDB } from "../../../db/postgres/db";
 import { eventsTable, sdkCallEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
+import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
-import { StorageAdapterFactory } from "../../../../factory";
-import { User } from "../../../../events/RawEvents/User";
+import { ensureUserExists } from "../../../db/postgres/helpers/users";
 import {
   validateAndPrepareTimestamp,
   insertEvent,
@@ -12,7 +11,7 @@ import {
 } from "./addEventUtils";
 
 export async function handleAddSdkCall(
-  event_data: SqlRecord<"SDK_CALL">,
+  event_data: SqlRecordOf<"SDK_CALL">,
   apiKeyId: string
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
@@ -29,10 +28,7 @@ export async function handleAddSdkCall(
     connectionObject,
     "storing SDK_CALL event",
     async (txn) => {
-      const userAdapter =
-        await StorageAdapterFactory.getEventStorageAdapter("USER");
-      const userEvent = new User({ id: event_data.userId });
-      await userAdapter.add(userEvent.serialize());
+      await ensureUserExists(event_data.userId);
 
       const reported_timestamp = await validateAndPrepareTimestamp(
         event_data.reported_timestamp

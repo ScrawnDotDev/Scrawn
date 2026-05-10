@@ -9,7 +9,7 @@ export interface StorageAdapter {
   connectionObject: unknown;
 
   add(
-    serialized: SerializedEvent<EventKind>,
+    serialized: SerializedEvent,
     apiKeyId?: string
   ): Promise<{ id: string } | void>;
   price(

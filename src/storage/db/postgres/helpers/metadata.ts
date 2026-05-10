@@ -1,16 +1,19 @@
-import { getPostgresDB } from "../../../db/postgres/db";
-import { metadataTable } from "../../../db/postgres/schema";
+import { getPostgresDB } from "../db";
+import { metadataTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
 import { eq } from "drizzle-orm";
 
-export async function handleAddMetadata(
-  event_data: SqlRecord<"METADATA">
-): Promise<void> {
-  const connectionObject = getPostgresDB();
+type UpsertMetadataInput = {
+  payment_cron: string;
+  payment_webhook: string | null;
+};
 
-  const paymentCron = event_data.data.payment_cron;
-  const paymentWebhook = event_data.data.payment_webhook;
+export async function upsertMetadata(
+  input: UpsertMetadataInput
+): Promise<void> {
+  const db = getPostgresDB();
+
+  const { payment_cron: paymentCron, payment_webhook: paymentWebhook } = input;
 
   if (!paymentCron || paymentCron.trim().length === 0) {
     throw StorageError.invalidData("Invalid payment_cron: value is required");
@@ -23,13 +26,13 @@ export async function handleAddMetadata(
   }
 
   try {
-    const [existingMetadata] = await connectionObject
+    const [existingMetadata] = await db
       .select({ id: metadataTable.id })
       .from(metadataTable)
       .limit(1);
 
     if (existingMetadata) {
-      await connectionObject
+      await db
         .update(metadataTable)
         .set({
           payment_cron: paymentCron,
@@ -39,7 +42,7 @@ export async function handleAddMetadata(
       return;
     }
 
-    await connectionObject.insert(metadataTable).values({
+    await db.insert(metadataTable).values({
       payment_cron: paymentCron,
       payment_webhook: paymentWebhook,
     });

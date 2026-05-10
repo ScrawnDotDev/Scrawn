@@ -18,8 +18,8 @@ import type { DateTime } from "luxon";
 export class ClickHouseAdapter implements StorageAdapter {
   connectionObject = getClickHouseDB();
 
-  async add(serialized: SerializedEvent<EventKind>, apiKeyId?: string) {
-    let event_data: SqlRecord<EventKind>;
+  async add(serialized: SerializedEvent, apiKeyId?: string) {
+    let event_data: SqlRecord;
 
     try {
       const { SQL } = serialized;

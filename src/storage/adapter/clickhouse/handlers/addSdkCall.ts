@@ -1,10 +1,10 @@
 import { getClickHouseDB } from "../../../db/clickhouse";
 import { StorageError } from "../../../../errors/storage";
-import { type SqlRecord } from "../../../../interface/event/Event";
+import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
 
 export async function handleAddSdkCall(
-  event_data: SqlRecord<"SDK_CALL">,
+  event_data: SqlRecordOf<"SDK_CALL">,
   apiKeyId: string
 ): Promise<{ id: string }> {
   const client = getClickHouseDB();
