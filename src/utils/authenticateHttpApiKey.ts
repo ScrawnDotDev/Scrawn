@@ -1,8 +1,6 @@
-import { eq } from "drizzle-orm";
 import { AuthError } from "../errors/auth";
 import { apiKeyCache } from "./apiKeyCache";
-import { getPostgresDB } from "../storage/db/postgres/db";
-import { apiKeysTable } from "../storage/db/postgres/schema";
+import { findApiKeyByHash } from "../storage/db/postgres/helpers/apiKeys";
 import { hashAPIKey } from "./hashAPIKey";
 import { DateTime } from "luxon";
 
@@ -30,16 +28,7 @@ export async function authenticateHttpApiKey(
     return cached.id;
   }
 
-  const db = getPostgresDB();
-  const [apiKeyRecord] = await db
-    .select({
-      id: apiKeysTable.id,
-      expiresAt: apiKeysTable.expiresAt,
-      revoked: apiKeysTable.revoked,
-    })
-    .from(apiKeysTable)
-    .where(eq(apiKeysTable.key, apiKeyHash))
-    .limit(1);
+  const apiKeyRecord = await findApiKeyByHash(apiKeyHash);
 
   if (!apiKeyRecord) {
     throw AuthError.invalidAPIKey("API key not found");

@@ -1,6 +1,7 @@
 import { getPostgresDB } from "../db";
 import { apiKeysTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
+import { eq } from "drizzle-orm";
 
 type CreateApiKeyInput = {
   name: string;
@@ -63,6 +64,37 @@ export async function createApiKey(
 
     throw StorageError.insertFailed(
       `Failed to insert API key '${input.name}'`,
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
+
+type ApiKeyRecord = {
+  id: string;
+  expiresAt: string;
+  revoked: boolean;
+};
+
+export async function findApiKeyByHash(
+  apiKeyHash: string
+): Promise<ApiKeyRecord | null> {
+  const db = getPostgresDB();
+
+  try {
+    const [apiKeyRecord] = await db
+      .select({
+        id: apiKeysTable.id,
+        expiresAt: apiKeysTable.expiresAt,
+        revoked: apiKeysTable.revoked,
+      })
+      .from(apiKeysTable)
+      .where(eq(apiKeysTable.key, apiKeyHash))
+      .limit(1);
+
+    return apiKeyRecord ?? null;
+  } catch (e) {
+    throw StorageError.queryFailed(
+      "Failed to look up API key",
       e instanceof Error ? e : new Error(String(e))
     );
   }
