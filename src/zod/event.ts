@@ -53,6 +53,11 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
     outputexpr: z.string(),
   })
   .transform(async (v): Promise<AITokenUsageEventData> => {
+    const tokenContext = {
+      inputTokens: v.inputtokens,
+      outputTokens: v.outputtokens,
+    };
+
     let inputDebitAmount: number;
     if (v.inputtag) {
       inputDebitAmount = await fetchTagAmount(
@@ -60,7 +65,7 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
         `Input tag not found: ${v.inputtag}`
       );
     } else if (v.inputexpr) {
-      inputDebitAmount = await parseAndEvaluateExpr(v.inputexpr);
+      inputDebitAmount = await parseAndEvaluateExpr(v.inputexpr, tokenContext);
     } else {
       inputDebitAmount = v.inputamount;
     }
@@ -72,7 +77,7 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
         `Output tag not found: ${v.outputtag}`
       );
     } else if (v.outputexpr) {
-      outputDebitAmount = await parseAndEvaluateExpr(v.outputexpr);
+      outputDebitAmount = await parseAndEvaluateExpr(v.outputexpr, tokenContext);
     } else {
       outputDebitAmount = v.outputamount;
     }

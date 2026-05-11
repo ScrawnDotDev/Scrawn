@@ -1,6 +1,7 @@
 import { Parser } from "expr-eval";
 import { EventError } from "../errors/event";
 import { fetchTagAmount } from "./fetchTagAmount";
+import { findExpressionByKey } from "../storage/db/postgres/helpers/expressions";
 
 /**
  * Expression Parser for Pricing DSL
@@ -14,6 +15,10 @@ import { fetchTagAmount } from "./fetchTagAmount";
  * - mul(...args): Product of all arguments
  * - div(a, b): a / b (floors result)
  * - tag(NAME): Resolves to the tag's value from database
+ * - expr(NAME): Resolves to a stored expression, recursively evaluated
+ *
+ * Token placeholders (inputTokens(), outputTokens()) may appear in
+ * persisted expressions; they are resolved from the AI token usage context.
  *
  * Numbers are treated as cents (integers).
  */
@@ -21,8 +26,19 @@ import { fetchTagAmount } from "./fetchTagAmount";
 // Regex to match tag(NAME) patterns - tag names must be UPPER_SNAKE_CASE
 const TAG_PATTERN = /tag\(([A-Z_][A-Z0-9_]*)\)/g;
 
+// Regex to match expr(NAME) patterns - same format as tags
+const EXPR_PATTERN = /expr\(([A-Z_][A-Z0-9_]*)\)/g;
+
 // Allowed function names in expressions
-const ALLOWED_FUNCTIONS = new Set(["add", "sub", "mul", "div", "tag"]);
+const ALLOWED_FUNCTIONS = new Set(["add", "sub", "mul", "div", "tag", "expr"]);
+
+/**
+ * Token context passed from AI token usage event handlers.
+ */
+export interface EvalTokenContext {
+  inputTokens?: number;
+  outputTokens?: number;
+}
 
 /**
  * Creates a configured expr-eval parser with custom functions.
@@ -129,6 +145,84 @@ function validateExprSyntax(exprString: string): void {
       );
     }
   }
+
+  // Validate expr name format (same UPPER_SNAKE_CASE as tags)
+  const exprNamePattern = /expr\(([^)]*)\)/gi;
+  while ((match = exprNamePattern.exec(exprString)) !== null) {
+    const exprName = match[1];
+    if (!exprName || !/^[A-Z_][A-Z0-9_]*$/.test(exprName)) {
+      throw EventError.validationFailed(
+        `Invalid expression name format: ${exprName}. Names must be UPPER_SNAKE_CASE`
+      );
+    }
+  }
+}
+
+/**
+ * Resolves all expr(NAME) references in an expression by fetching
+ * their stored expression strings from the database and expanding them.
+ *
+ * Handles recursion: if a stored expression itself contains expr() refs,
+ * those are resolved recursively. Cycle detection prevents infinite loops.
+ *
+ * @param exprString - The expression string with expr(NAME) references
+ * @returns The expression string with all expr() refs expanded
+ * @throws EventError if an expression is not found or a cycle is detected
+ */
+async function resolveExprRefsInExpression(
+  exprString: string,
+  resolving: Set<string> = new Set()
+): Promise<string> {
+  const refs = extractExprRefs(exprString);
+
+  if (refs.length === 0) {
+    return exprString;
+  }
+
+  let resolved = exprString;
+
+  for (const refName of refs) {
+    if (resolving.has(refName)) {
+      throw EventError.validationFailed(
+        `Circular expression reference detected: ${refName}`
+      );
+    }
+
+    const storedExpr = await findExpressionByKey(refName);
+    if (!storedExpr) {
+      throw EventError.validationFailed(
+        `Expression not found: ${refName}`
+      );
+    }
+
+    resolving.add(refName);
+
+    // Recursively resolve any expr() refs within the stored expression
+    const expanded = await resolveExprRefsInExpression(storedExpr, resolving);
+
+    // Replace this expr(NAME) with the expanded stored expression
+    const refPattern = new RegExp(`expr\\(${refName}\\)`, "g");
+    resolved = resolved.replace(refPattern, `(${expanded})`);
+
+    resolving.delete(refName);
+  }
+
+  return resolved;
+}
+
+function extractExprRefs(exprString: string): string[] {
+  const refs = new Set<string>();
+  let match: RegExpExecArray | null;
+
+  EXPR_PATTERN.lastIndex = 0;
+
+  while ((match = EXPR_PATTERN.exec(exprString)) !== null) {
+    if (match[1]) {
+      refs.add(match[1]);
+    }
+  }
+
+  return Array.from(refs);
 }
 
 /**
@@ -166,16 +260,35 @@ async function resolveTagsInExpression(exprString: string): Promise<string> {
 }
 
 /**
+ * Replaces inputTokens() and outputTokens() placeholders with concrete
+ * values from the AI token usage event context.
+ *
+ * This handles persisted expressions that contain token placeholders,
+ * since the SDK cannot resolve them for expressions it doesn't know about.
+ */
+function resolveTokenPlaceholders(
+  exprString: string,
+  context: EvalTokenContext
+): string {
+  return exprString
+    .replace(/inputTokens\(\)/g, String(context.inputTokens ?? 0))
+    .replace(/outputTokens\(\)/g, String(context.outputTokens ?? 0));
+}
+
+/**
  * Parses and evaluates a pricing expression string.
  *
  * This is the main entry point for expression evaluation.
  * It handles the full pipeline:
  * 1. Validates expression syntax
- * 2. Resolves all tag references from the database
- * 3. Evaluates the expression using expr-eval
- * 4. Returns the floored integer result (cents)
+ * 2. Resolves all expr(NAME) references from the database (recursive, with cycle detection)
+ * 3. Resolves all tag references from the database
+ * 4. Resolves token placeholders (if tokenContext provided)
+ * 5. Evaluates the expression using expr-eval
+ * 6. Returns the floored integer result (cents)
  *
  * @param exprString - The expression string to evaluate
+ * @param tokenContext - Optional AI token usage context for resolving placeholders
  * @returns The evaluated result as an integer (cents)
  * @throws EventError for syntax errors, unknown tags, or evaluation errors
  *
@@ -187,24 +300,42 @@ async function resolveTagsInExpression(exprString: string): Promise<string> {
  * // With tag (assumes PREMIUM_CALL = 100 in DB)
  * await parseAndEvaluateExpr("add(mul(tag(PREMIUM_CALL),3),250)")
  * // Returns: 550 (100*3 + 250)
+ *
+ * @example
+ * // With persisted expression + token placeholders
+ * await parseAndEvaluateExpr("expr(PER_TOKEN_INPUT)", {
+ *   inputTokens: 150,
+ *   outputTokens: 0,
+ * })
+ * // Fetches PER_TOKEN_INPUT from DB → "mul(tag(RATE),inputTokens())"
+ * // Resolves tag(RATE) and inputTokens()=150 → evaluates
  */
 export async function parseAndEvaluateExpr(
-  exprString: string
+  exprString: string,
+  tokenContext?: EvalTokenContext
 ): Promise<number> {
   // Step 1: Validate syntax
   validateExprSyntax(exprString);
 
-  // Step 2: Resolve all tags to their values
-  const resolvedExpr = await resolveTagsInExpression(exprString);
+  // Step 2: Resolve all expr(NAME) references (recursive, from DB)
+  const expandedExpr = await resolveExprRefsInExpression(exprString);
 
-  // Step 3: Parse and evaluate
+  // Step 3: Resolve all tags to their values
+  const tagResolvedExpr = await resolveTagsInExpression(expandedExpr);
+
+  // Step 4: Resolve token placeholders if context provided
+  const finalExpr = tokenContext
+    ? resolveTokenPlaceholders(tagResolvedExpr, tokenContext)
+    : tagResolvedExpr;
+
+  // Step 5: Parse and evaluate
   const parser = createParser();
 
   try {
-    const expression = parser.parse(resolvedExpr);
+    const expression = parser.parse(finalExpr);
     const result = expression.evaluate();
 
-    // Step 4: Validate and return result
+    // Step 6: Validate and return result
     if (typeof result !== "number" || !Number.isFinite(result)) {
       throw EventError.validationFailed(
         `Expression evaluation produced invalid result: ${result}`

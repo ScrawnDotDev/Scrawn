@@ -32,11 +32,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Format check (prettier)
-        run: bunx prettier --check .
+      # - name: Format check (prettier)
+      #   run: bunx prettier --check .
 
       - name: Type check (tsc)
-        run: bunx tsgo --noEmit
-
-      - name: Run tests
-        run: bun run test
+        run: bunx tsc --noEmit

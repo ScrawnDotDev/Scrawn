@@ -195,3 +195,9 @@ export const metadataTable = pgTable("metadata", {
   payment_cron: text("payment_cron").notNull(),
   payment_webhook: text("payment_webhook"),
 });
+
+export const expressionsTable = pgTable("expressions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  expr: text("expr").notNull(),
+});
