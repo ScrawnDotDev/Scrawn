@@ -35,4 +35,7 @@ export async function startFastifyServer(port: number, grpcPort: number): Promis
   logger.lifecycle("API endpoint available", {
     url: `http://localhost:${port}/api/v1/internals/onboarding`,
   });
+  logger.lifecycle("Tags endpoint available", {
+    url: `http://localhost:${port}/api/v1/tags`,
+  });
 }

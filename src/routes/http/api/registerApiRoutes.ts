@@ -1,5 +1,6 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyRequest, FastifyReply } from "fastify";
 import { handleOnboarding } from "./onboarding.ts";
+import { handleListTags } from "./tags.ts";
 
 export async function registerApiRoutes(
   server: ReturnType<typeof import("fastify")["fastify"]>
@@ -11,6 +12,16 @@ export async function registerApiRoutes(
       reply: FastifyReply
     ) => {
       return handleOnboarding(request, reply);
+    }
+  );
+
+  server.get(
+    "/api/v1/tags",
+    async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => {
+      return handleListTags(request, reply);
     }
   );
 }
