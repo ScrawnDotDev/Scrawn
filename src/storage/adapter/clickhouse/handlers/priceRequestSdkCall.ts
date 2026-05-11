@@ -5,6 +5,7 @@ import { StorageError } from "../../../../errors/storage";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 import { eq } from "drizzle-orm";
+import { toClickHouseDateTime } from "../utils";
 
 export async function handlePriceRequestSdkCall(
   userId: UserId,
@@ -29,10 +30,10 @@ export async function handlePriceRequestSdkCall(
     lastBilled = null;
   }
 
-  const beforeTs = beforeTimestamp.toISO();
-  if (!beforeTs) {
-    throw StorageError.invalidTimestamp("beforeTimestamp conversion failed");
+  if (!beforeTimestamp.isValid) {
+    throw StorageError.invalidTimestamp("beforeTimestamp is not a valid DateTime");
   }
+  const beforeTs = toClickHouseDateTime(beforeTimestamp);
 
   try {
     let query: string;

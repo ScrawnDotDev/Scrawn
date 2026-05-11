@@ -2,6 +2,7 @@ import { getClickHouseDB } from "../../../db/clickhouse";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
+import { toClickHouseDateTime } from "../utils";
 
 export async function handleAddSdkCall(
   event_data: SqlRecordOf<"SDK_CALL">,
@@ -17,12 +18,12 @@ export async function handleAddSdkCall(
     );
   }
 
-  const reportedTimestamp = event_data.reported_timestamp.toISO();
-  if (!reportedTimestamp) {
+  if (!event_data.reported_timestamp.isValid) {
     throw StorageError.invalidTimestamp(
-      "Failed to convert reported_timestamp to ISO format"
+      "reported_timestamp is not a valid DateTime"
     );
   }
+  const reportedTimestamp = toClickHouseDateTime(event_data.reported_timestamp);
 
   const id = crypto.randomUUID();
 
@@ -35,7 +36,7 @@ export async function handleAddSdkCall(
           user_id: event_data.userId,
           api_key_id: apiKeyId,
           reported_timestamp: reportedTimestamp,
-          ingested_timestamp: DateTime.utc().toString(),
+          ingested_timestamp: toClickHouseDateTime(DateTime.utc()),
           sdk_call_type: event_data.data.sdkCallType,
           debit_amount: debitAmount,
         },

@@ -49,6 +49,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "8070:8070"
       - "8069:8069"
@@ -60,7 +61,7 @@ services:
       clickhouse:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/scrawn
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
       NODE_ENV: production

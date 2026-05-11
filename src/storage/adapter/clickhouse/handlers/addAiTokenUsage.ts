@@ -3,6 +3,7 @@ import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
+import { toClickHouseDateTime } from "../utils";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -61,12 +62,12 @@ export async function handleAddAiTokenUsage(
   const aggregationMap = new Map<string, AggregatedEvent>();
 
   for (const event_data of events) {
-    const reportedTimestamp = event_data.reported_timestamp.toISO();
-    if (!reportedTimestamp) {
+    if (!event_data.reported_timestamp.isValid) {
       throw StorageError.invalidTimestamp(
-        "Failed to convert reported_timestamp to ISO format"
+        "reported_timestamp is not a valid DateTime"
       );
     }
+    const reportedTimestamp = toClickHouseDateTime(event_data.reported_timestamp);
 
     const key = `${event_data.userId}:${event_data.data.model}`;
     const existing = aggregationMap.get(key);
@@ -94,7 +95,7 @@ export async function handleAddAiTokenUsage(
 
   const aggregatedEvents = Array.from(aggregationMap.values());
   const firstId = crypto.randomUUID();
-  const now = DateTime.utc().toString();
+  const now = toClickHouseDateTime(DateTime.utc());
 
   const values = aggregatedEvents.map((aggEvent, index) => ({
     id: index === 0 ? firstId : crypto.randomUUID(),

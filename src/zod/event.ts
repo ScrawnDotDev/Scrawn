@@ -14,7 +14,7 @@ const BaseEvent = z.object({
   reportedtimestamp: z
     .number()
     .int()
-    .transform((ts) => DateTime.fromSeconds(ts)),
+    .transform((ts) => DateTime.fromSeconds(ts, { zone: 'utc' })),
 });
 
 const SDKCallDataSchema: z.ZodType<SDKCallEventData> = z
