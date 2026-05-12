@@ -283,6 +283,25 @@ async function handleListQuery(
   return { rows: paginated, total: totalCount };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveAggCol(eventType: EventTypeName, isSum: boolean, field?: string): any {
+  if (isSum && field) {
+    if (eventType === "SDK_CALL" && field === "debitAmount")
+      return sum(sdkCallEventsTable.debitAmount).mapWith(Number);
+    if (eventType === "AI_TOKEN_USAGE") {
+      if (field === "inputDebitAmount")
+        return sum(aiTokenUsageEventsTable.inputDebitAmount).mapWith(Number);
+      if (field === "outputDebitAmount")
+        return sum(aiTokenUsageEventsTable.outputDebitAmount).mapWith(Number);
+      if (field === "inputTokens")
+        return sum(aiTokenUsageEventsTable.inputTokens).mapWith(Number);
+      if (field === "outputTokens")
+        return sum(aiTokenUsageEventsTable.outputTokens).mapWith(Number);
+    }
+  }
+  return count().mapWith(Number);
+}
+
 async function handleAggregationQuery(
   db: ReturnType<typeof getPostgresDB>,
   request: QueryRequest,
@@ -309,29 +328,7 @@ async function handleAggregationQuery(
       }
       if (!gbCol) continue;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let aggCol: any;
-      if (isSum && agg.field) {
-        if (eventType === "SDK_CALL" && agg.field === "debitAmount")
-          aggCol = sum(sdkCallEventsTable.debitAmount).mapWith(Number);
-        else if (eventType === "AI_TOKEN_USAGE") {
-          if (agg.field === "inputDebitAmount")
-            aggCol = sum(
-              aiTokenUsageEventsTable.inputDebitAmount
-            ).mapWith(Number);
-          else if (agg.field === "outputDebitAmount")
-            aggCol = sum(
-              aiTokenUsageEventsTable.outputDebitAmount
-            ).mapWith(Number);
-          else if (agg.field === "inputTokens")
-            aggCol = sum(aiTokenUsageEventsTable.inputTokens).mapWith(Number);
-          else if (agg.field === "outputTokens")
-            aggCol = sum(aiTokenUsageEventsTable.outputTokens).mapWith(Number);
-          else aggCol = count().mapWith(Number);
-        } else aggCol = count().mapWith(Number);
-      } else {
-        aggCol = count().mapWith(Number);
-      }
+      const aggCol = resolveAggCol(eventType, isSum, agg.field);
 
       const result = await db
         .select({
@@ -351,29 +348,7 @@ async function handleAggregationQuery(
         });
       }
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let aggCol: any;
-      if (isSum && agg.field) {
-        if (eventType === "SDK_CALL" && agg.field === "debitAmount")
-          aggCol = sum(sdkCallEventsTable.debitAmount).mapWith(Number);
-        else if (eventType === "AI_TOKEN_USAGE") {
-          if (agg.field === "inputDebitAmount")
-            aggCol = sum(
-              aiTokenUsageEventsTable.inputDebitAmount
-            ).mapWith(Number);
-          else if (agg.field === "outputDebitAmount")
-            aggCol = sum(
-              aiTokenUsageEventsTable.outputDebitAmount
-            ).mapWith(Number);
-          else if (agg.field === "inputTokens")
-            aggCol = sum(aiTokenUsageEventsTable.inputTokens).mapWith(Number);
-          else if (agg.field === "outputTokens")
-            aggCol = sum(aiTokenUsageEventsTable.outputTokens).mapWith(Number);
-          else aggCol = count().mapWith(Number);
-        } else aggCol = count().mapWith(Number);
-      } else {
-        aggCol = count().mapWith(Number);
-      }
+      const aggCol = resolveAggCol(eventType, isSum, agg.field);
 
       const result = await db
         .select({ agg_value: aggCol })

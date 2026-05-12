@@ -113,4 +113,4 @@ export const queryEventsSchema = z
     offset: v.offset,
   }));
 
-export type QueryEventsSchemaType = z.output<typeof queryEventsSchema>;
+type QueryEventsSchemaType = z.output<typeof queryEventsSchema>;
