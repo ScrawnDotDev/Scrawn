@@ -9,17 +9,11 @@ import { queryEventsSchema } from "../../../zod/query";
 import { EventError } from "../../../errors/event";
 import { formatZodError } from "../../../utils/formatZodError";
 import { StorageAdapterFactory } from "../../../factory";
-import type {
-  StorageAdapter,
-  QueryRequest,
-  QueryResponse,
-  QueryFilterGroup,
-} from "../../../interface/storage/Storage";
+import type { QueryRequest, QueryResponse } from "../../../interface/storage/Storage";
 import type { WideEventBuilder } from "../../../context/requestContext";
 import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
 import type { ContextUnaryCall } from "../../../interface/types/context.js";
-import type { EventKind } from "../../../interface/event/Event";
 
 export async function queryEvents(
   call: ContextUnaryCall<QueryEventsRequest, QueryEventsResponse>,
@@ -36,23 +30,17 @@ export async function queryEvents(
       queryConditions: countConditions(queryRequest.where),
     });
 
-    const eventTypes = resolveEventTypes(queryRequest.where);
-    const adapters = await getUniqueAdapters(eventTypes);
+    const adapter = await StorageAdapterFactory.getEventStorageAdapter("SDK_CALL");
+    const result = await adapter.query(queryRequest);
 
-    const allResponses = await Promise.all(
-      adapters.map((adapter) => adapter.query(queryRequest))
-    );
-
-    const merged = mergeResponses(allResponses, queryRequest);
-
-    const response = buildProtoResponse(merged, queryRequest);
+    const response = buildProtoResponse(result, queryRequest);
     callback?.(null, response);
   } catch (error) {
     callback?.(error as Error);
   }
 }
 
-function countConditions(group: QueryFilterGroup): number {
+function countConditions(group: QueryRequest["where"]): number {
   let count = group.conditions.length;
   for (const g of group.groups) {
     count += countConditions(g);
@@ -68,86 +56,14 @@ function validateRequest(req: QueryEventsRequest): QueryRequest {
   }
 }
 
-function resolveEventTypes(where: QueryFilterGroup): EventKind[] {
-  const collectTypes = (group: QueryFilterGroup): string[] => {
-    const types: string[] = [];
-    const et = group.conditions.find((c) => c.field === "eventType");
-    if (et) types.push(et.value);
-    for (const sub of group.groups) {
-      types.push(...collectTypes(sub));
-    }
-    return types;
-  };
-
-  const types = collectTypes(where);
-  if (types.length > 0) {
-    return types.filter(
-      (t): t is EventKind =>
-        t === "SDK_CALL" || t === "AI_TOKEN_USAGE"
-    );
-  }
-  return ["SDK_CALL", "AI_TOKEN_USAGE"];
-}
-
-async function getUniqueAdapters(
-  eventTypes: EventKind[]
-): Promise<StorageAdapter[]> {
-  const adapterMap = new Map<string, StorageAdapter>();
-
-  for (const eventType of eventTypes) {
-    const adapter =
-      await StorageAdapterFactory.getEventStorageAdapter(eventType);
-    const key = adapter.constructor.name;
-    if (!adapterMap.has(key)) {
-      adapterMap.set(key, adapter);
-    }
-  }
-
-  return Array.from(adapterMap.values());
-}
-
-function mergeResponses(
-  responses: QueryResponse[],
-  request: QueryRequest
-): QueryResponse {
-  if (responses.length === 0) {
-    return { rows: [], total: 0 };
-  }
-
-  if (responses.length === 1 && responses[0]) {
-    return responses[0];
-  }
-
-  const isAgg = !!request.aggregation;
-
-  if (isAgg) {
-    const allRows = responses.flatMap((r) => r.rows);
-    return { rows: allRows, total: allRows.length };
-  }
-
-  const allRows = responses.flatMap((r) => r.rows);
-  allRows.sort((a, b) => {
-    const aTs = String(a.reportedTimestamp ?? "");
-    const bTs = String(b.reportedTimestamp ?? "");
-    return bTs.localeCompare(aTs);
-  });
-
-  const totalCount = responses.reduce((sum, r) => sum + r.total, 0);
-  const offset = request.offset ?? 0;
-  const limit = request.limit ?? 100;
-  const paginated = allRows.slice(offset, offset + limit);
-
-  return { rows: paginated, total: totalCount };
-}
-
 function buildProtoResponse(
-  merged: QueryResponse,
+  result: QueryResponse,
   request: QueryRequest
 ): QueryEventsResponse {
   const response = new QueryEventsResponse();
 
   if (request.aggregation) {
-    for (const row of merged.rows) {
+    for (const row of result.rows) {
       const aggRow = new AggregationRow();
       if (row.group_value != null) {
         aggRow.setGroupValue(String(row.group_value));
@@ -156,7 +72,7 @@ function buildProtoResponse(
       response.addAggRows(aggRow);
     }
   } else {
-    for (const row of merged.rows) {
+    for (const row of result.rows) {
       const eventRow = new EventRow();
       eventRow.setEventId(String(row.eventId ?? ""));
       eventRow.setEventType(String(row.eventType ?? ""));
@@ -193,6 +109,6 @@ function buildProtoResponse(
     }
   }
 
-  response.setTotal(merged.total);
+  response.setTotal(result.total);
   return response;
 }
