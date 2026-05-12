@@ -1,4 +1,8 @@
-import { type StorageAdapter } from "../../../interface/storage/Storage";
+import {
+  type StorageAdapter,
+  type QueryRequest,
+  type QueryResponse,
+} from "../../../interface/storage/Storage";
 import { getClickHouseDB } from "../../db/clickhouse";
 import { StorageError } from "../../../errors/storage";
 import {
@@ -6,6 +10,7 @@ import {
   handleAddAiTokenUsage,
   handlePriceRequestSdkCall,
   handlePriceRequestAiTokenUsage,
+  handleQueryEvents,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -84,5 +89,9 @@ export class ClickHouseAdapter implements StorageAdapter {
         throw StorageError.unknownEventType(event_type);
       }
     }
+  }
+
+  async query(request: QueryRequest): Promise<QueryResponse> {
+    return await handleQueryEvents(request);
   }
 }

@@ -1,4 +1,8 @@
-import { type StorageAdapter } from "../../../interface/storage/Storage";
+import {
+  type StorageAdapter,
+  type QueryRequest,
+  type QueryResponse,
+} from "../../../interface/storage/Storage";
 import { getPostgresDB } from "../../db/postgres/db";
 import { StorageError } from "../../../errors/storage";
 import {
@@ -8,6 +12,7 @@ import {
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
+  handleQueryEvents,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -95,5 +100,9 @@ export class PostgresAdapter implements StorageAdapter {
         throw StorageError.unknownEventType(event_type);
       }
     }
+  }
+
+  async query(request: QueryRequest): Promise<QueryResponse> {
+    return await handleQueryEvents(request);
   }
 }

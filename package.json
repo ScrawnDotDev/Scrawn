@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "gen": "cd proto && bunx buf generate && bunx grpc_tools_node_protoc --js_out=import_style=commonjs,binary:../src/gen auth/v1/auth.proto event/v1/event.proto payment/v1/payment.proto",
+    "gen": "cd proto && bunx buf generate && bunx grpc_tools_node_protoc --js_out=import_style=commonjs,binary:../src/gen auth/v1/auth.proto event/v1/event.proto payment/v1/payment.proto query/v1/query.proto",
     "dev:backend": "bun --watch src/server.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",

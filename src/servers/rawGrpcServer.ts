@@ -2,12 +2,18 @@ import * as grpc from "@grpc/grpc-js";
 import * as authGrpc from "../gen/auth/v1/auth_grpc_pb.js";
 import * as eventGrpc from "../gen/event/v1/event_grpc_pb.js";
 import * as paymentGrpc from "../gen/payment/v1/payment_grpc_pb.js";
+import * as queryGrpc from "../gen/query/v1/query_grpc_pb.js";
 import { createAPIKey } from "../routes/gRPC/auth/createAPIKey";
 import { registerEvent } from "../routes/gRPC/events/registerEvent";
 import { streamEvents } from "../routes/gRPC/events/streamEvents";
 import { createCheckoutLink } from "../routes/gRPC/payment/createCheckoutLink";
+import { queryEvents } from "../routes/gRPC/query/queryEvents";
 import { logger } from "../errors/logger";
-import { authInterceptor, type GrpcHandler, type GrpcUntypedHandler } from "../interceptors/auth";
+import {
+  authInterceptor,
+  type GrpcHandler,
+  type GrpcUntypedHandler,
+} from "../interceptors/auth";
 import { loggingInterceptor } from "../interceptors/logging";
 
 export interface GrpcTlsOptions {
@@ -16,23 +22,35 @@ export interface GrpcTlsOptions {
   ca?: Buffer;
 }
 
-export function startRawGrpcServer(grpcPort: number, tlsOptions?: GrpcTlsOptions): void {
+export function startRawGrpcServer(
+  grpcPort: number,
+  tlsOptions?: GrpcTlsOptions
+): void {
   const server = new grpc.Server();
 
   // Wrap handlers with interceptors - cast to GrpcUntypedHandler to accept flexible call types
   const wrappedCreateAPIKey = loggingInterceptor(
     "/auth.v1.AuthService/CreateAPIKey",
-    authInterceptor("/auth.v1.AuthService/CreateAPIKey", createAPIKey as GrpcHandler<unknown, unknown>)
+    authInterceptor(
+      "/auth.v1.AuthService/CreateAPIKey",
+      createAPIKey as GrpcHandler<unknown, unknown>
+    )
   ) as GrpcUntypedHandler;
 
   const wrappedRegisterEvent = loggingInterceptor(
     "/event.v1.EventService/RegisterEvent",
-    authInterceptor("/event.v1.EventService/RegisterEvent", registerEvent as GrpcHandler<unknown, unknown>)
+    authInterceptor(
+      "/event.v1.EventService/RegisterEvent",
+      registerEvent as GrpcHandler<unknown, unknown>
+    )
   ) as GrpcUntypedHandler;
 
   const wrappedStreamEvents = loggingInterceptor(
     "/event.v1.EventService/StreamEvents",
-    authInterceptor("/event.v1.EventService/StreamEvents", streamEvents as GrpcHandler<unknown, unknown>)
+    authInterceptor(
+      "/event.v1.EventService/StreamEvents",
+      streamEvents as GrpcHandler<unknown, unknown>
+    )
   ) as GrpcUntypedHandler;
 
   const wrappedCreateCheckoutLink = loggingInterceptor(
@@ -40,6 +58,14 @@ export function startRawGrpcServer(grpcPort: number, tlsOptions?: GrpcTlsOptions
     authInterceptor(
       "/payment.v1.PaymentService/CreateCheckoutLink",
       createCheckoutLink as GrpcHandler<unknown, unknown>
+    )
+  ) as GrpcUntypedHandler;
+
+  const wrappedQueryEvents = loggingInterceptor(
+    "/query.v1.QueryService/QueryEvents",
+    authInterceptor(
+      "/query.v1.QueryService/QueryEvents",
+      queryEvents as GrpcHandler<unknown, unknown>
     )
   ) as GrpcUntypedHandler;
 
@@ -54,6 +80,10 @@ export function startRawGrpcServer(grpcPort: number, tlsOptions?: GrpcTlsOptions
 
   server.addService(paymentGrpc.PaymentServiceService, {
     createCheckoutLink: wrappedCreateCheckoutLink,
+  });
+
+  server.addService(queryGrpc.QueryServiceService, {
+    queryEvents: wrappedQueryEvents,
   });
 
   const credentials = tlsOptions
