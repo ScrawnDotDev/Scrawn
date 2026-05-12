@@ -96,7 +96,7 @@ export const queryEventsSchema = z
     where: filterGroupSchema.optional(),
     aggregation: aggregationSchema.optional(),
     groupBy: groupBySchema.optional(),
-    limit: z.number().int().min(1).max(1000).default(100),
+    limit: z.number().int().min(0).max(1000).default(100),
     offset: z.number().int().min(0).default(0),
   })
   .transform((v) => ({

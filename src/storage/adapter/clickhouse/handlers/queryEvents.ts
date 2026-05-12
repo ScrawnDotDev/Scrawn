@@ -1,5 +1,7 @@
 import { getClickHouseDB } from "../../../db/clickhouse";
 import { StorageError } from "../../../../errors/storage";
+import { DateTime } from "luxon";
+import { toClickHouseDateTime } from "../utils";
 import type {
   QueryRequest,
   QueryFilter,
@@ -122,7 +124,16 @@ function buildGroupCondition(
   if (!op) return null;
   const paramName = `p_${paramIndex.value++}`;
   const paramType = CH_PARAM_TYPE[condition.field] ?? "String";
-  params[paramName] = condition.value;
+
+  let value: string | number = condition.value;
+  if (condition.field === "reportedTimestamp" || condition.field === "ingestedTimestamp") {
+    const dt = DateTime.fromISO(condition.value);
+    if (dt.isValid) {
+      value = toClickHouseDateTime(dt);
+    }
+  }
+  params[paramName] = value;
+
   return `${col} ${op} {${paramName}:${paramType}}`;
 }
 

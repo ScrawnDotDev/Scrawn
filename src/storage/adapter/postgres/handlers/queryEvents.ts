@@ -278,7 +278,7 @@ async function handleListQuery(
 
   const offset = request.offset ?? 0;
   const limit = request.limit ?? 100;
-  const paginated = allRows.slice(offset, offset + limit);
+  const paginated = limit > 0 ? allRows.slice(offset, offset + limit) : allRows;
 
   return { rows: paginated, total: totalCount };
 }
