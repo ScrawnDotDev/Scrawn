@@ -7,6 +7,7 @@ import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
 import { registerEventSchema } from "../../../zod/event";
 import { EventError } from "../../../errors/event";
+import { AuthError } from "../../../errors/auth";
 import { createEventInstance, storeEvent } from "../../../utils/eventHelpers";
 import { ZodError } from "zod";
 import type { ContextUnaryCall } from "../../../interface/types/context.js";
@@ -21,17 +22,24 @@ export async function registerEvent(
   const wideEventBuilder = call[wideEventContextKey];
 
   try {
-    const apiKeyId = call[apiKeyContextKey] as string;
+    const auth = call[apiKeyContextKey];
+    if (!auth) {
+      return callback?.(AuthError.invalidAPIKey("API key context not found"));
+    }
+
+    if (auth.role === "dashboard") {
+      return callback?.(
+        AuthError.permissionDenied("Dashboard keys cannot ingest events")
+      );
+    }
+
     const eventSkeleton = await registerEventSchema.parseAsync(req.toObject());
 
     wideEventBuilder?.setUser(eventSkeleton.userid);
     wideEventBuilder?.setEventContext({ eventType: eventSkeleton.type });
 
-    // Create the appropriate event instance
     const event = createEventInstance(eventSkeleton);
-
-    // Store the event
-    await storeEvent(event, apiKeyId);
+    await storeEvent(event, auth);
 
     const response = new RegisterEventResponse();
     response.setRandom("Event stored successfully");

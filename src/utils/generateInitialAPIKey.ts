@@ -12,9 +12,6 @@ if (!HMAC_SECRET) {
 
 const SECRET: string = HMAC_SECRET;
 
-/**
- * Hash an API key using HMAC-SHA256
- */
 function hashAPIKey(apiKey: string): string {
   return createHmac("sha256", SECRET).update(apiKey).digest("hex");
 }
@@ -24,6 +21,7 @@ export type InitialApiKeyData = {
   apiKey: string;
   apiKeyHash: string;
   name: string;
+  role: string;
   createdAt: string;
   expiresAt: string;
   insertSql: string;
@@ -32,18 +30,20 @@ export type InitialApiKeyData = {
 
 export function generateInitialApiKeyData(): InitialApiKeyData {
   const apiKeyId = randomUUID();
-  const apiKey = generateAPIKey();
+  const apiKey = generateAPIKey("dashboard");
   const apiKeyHash = hashAPIKey(apiKey);
   const name = "Dashboard Key";
+  const role = "dashboard";
   const createdAt = DateTime.utc().toISO();
   const expiresAt = DateTime.utc().plus({ days: 365 }).toISO();
 
   const insertSql =
-    "INSERT INTO api_keys (id, name, key, created_at, expires_at, revoked, revoked_at)\n" +
+    "INSERT INTO api_keys (id, name, key, role, created_at, expires_at, revoked, revoked_at)\n" +
     "VALUES (\n" +
     `  '${apiKeyId}',\n` +
     `  '${name}',\n` +
     `  '${apiKeyHash}',\n` +
+    `  '${role}',\n` +
     `  '${createdAt}',\n` +
     `  '${expiresAt}',\n` +
     "  false,\n" +
@@ -55,6 +55,7 @@ export function generateInitialApiKeyData(): InitialApiKeyData {
     apiKey,
     apiKeyHash,
     name,
+    role,
     createdAt,
     expiresAt,
     insertSql,

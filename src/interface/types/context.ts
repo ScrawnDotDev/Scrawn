@@ -4,7 +4,7 @@ import type {
   StreamEventResponse,
 } from "../../gen/event/v1/event_pb";
 import type { WideEventBuilder } from "../../context/requestContext";
-import { apiKeyContextKey } from "../../context/auth";
+import { apiKeyContextKey, type AuthContext } from "../../context/auth";
 import { wideEventContextKey } from "../../context/requestContext";
 import type { ServerUnaryCall, sendUnaryData } from "@grpc/grpc-js";
 import type {
@@ -14,7 +14,7 @@ import type {
 
 type WithContext<T> = T & {
   [wideEventContextKey]: WideEventBuilder | null;
-  [apiKeyContextKey]: string;
+  [apiKeyContextKey]: AuthContext | undefined;
 };
 
 export type ContextStreamCall = WithContext<

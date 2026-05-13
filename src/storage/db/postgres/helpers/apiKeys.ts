@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 type CreateApiKeyInput = {
   name: string;
   key: string;
+  role: string;
   expiresAt: string;
 };
 
@@ -36,6 +37,7 @@ export async function createApiKey(
       .values({
         name: input.name,
         key: input.key,
+        role: input.role as "dashboard" | "production" | "test",
         expiresAt: input.expiresAt,
       })
       .returning({ id: apiKeysTable.id });
@@ -71,6 +73,7 @@ export async function createApiKey(
 
 type ApiKeyRecord = {
   id: string;
+  role: string;
   expiresAt: string;
   revoked: boolean;
 };
@@ -84,6 +87,7 @@ export async function findApiKeyByHash(
     const [apiKeyRecord] = await db
       .select({
         id: apiKeysTable.id,
+        role: apiKeysTable.role,
         expiresAt: apiKeysTable.expiresAt,
         revoked: apiKeysTable.revoked,
       })

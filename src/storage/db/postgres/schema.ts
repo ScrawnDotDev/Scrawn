@@ -20,6 +20,9 @@ export const usersTable = pgTable("users", {
     .default(DateTime.utc(1).toString())
     .notNull(),
   payment_provider_user_id: text("payment_provider_user_id"),
+  mode: text("mode", { enum: ["test", "production"] })
+    .notNull()
+    .default("production"),
 });
 
 export const usersRelation = relations(usersTable, ({ many }) => ({
@@ -43,6 +46,9 @@ export const sessionsTable = pgTable("sessions", {
   })
     .defaultNow()
     .notNull(),
+  mode: text("mode", { enum: ["test", "production"] })
+    .notNull()
+    .default("production"),
 }, (table) => ({
   uniqueSessionId: uniqueIndex("unique_session_id").on(table.sessionId),
 }));
@@ -60,6 +66,9 @@ export const apiKeysTable = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     key: text("key").notNull().unique(),
+    role: text("role", { enum: ["dashboard", "production", "test"] })
+      .notNull()
+      .default("dashboard"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -103,6 +112,9 @@ export const eventsTable = pgTable("events", {
     .references(() => usersTable.id)
     .notNull(),
   api_keyId: uuid("api_key_id").references(() => apiKeysTable.id),
+  mode: text("mode", { enum: ["test", "production"] })
+    .notNull()
+    .default("production"),
 });
 
 export const eventsRelation = relations(eventsTable, ({ one }) => ({

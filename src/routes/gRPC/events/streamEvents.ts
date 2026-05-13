@@ -5,6 +5,7 @@ import {
   StreamEventResponse,
 } from "../../../gen/event/v1/event_pb.js";
 import { EventError } from "../../../errors/event";
+import { AuthError } from "../../../errors/auth";
 import { streamEventSchema } from "../../../zod/event";
 import { createEventInstance, storeEvent } from "../../../utils/eventHelpers";
 import { apiKeyContextKey } from "../../../context/auth";
@@ -18,9 +19,20 @@ export async function streamEvents(
   let eventsProcessed = 0;
 
   const wideEventBuilder = call[wideEventContextKey];
-  const apiKeyId = call[apiKeyContextKey];
+  const auth = call[apiKeyContextKey];
 
   try {
+    if (!auth) {
+      return callback?.(AuthError.invalidAPIKey("API key context not found"), null);
+    }
+
+    if (auth.role === "dashboard") {
+      return callback?.(
+        AuthError.permissionDenied("Dashboard keys cannot ingest events"),
+        null
+      );
+    }
+
     for await (const req of call) {
       try {
         const eventSkeleton = await streamEventSchema.parseAsync(
@@ -36,7 +48,7 @@ export async function streamEvents(
           throw EventError.unsupportedEventType(event.type);
         }
 
-        await storeEvent(event, apiKeyId);
+        await storeEvent(event, auth);
         eventsProcessed++;
       } catch (innerError) {
         Sentry.addBreadcrumb({

@@ -4,6 +4,7 @@ import { SDKCall } from "../events/SDKCall";
 import { AITokenUsage } from "../events/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
 import type { RegisterEventSchemaType, StreamEventSchemaType } from "../zod/event";
+import type { AuthContext } from "../context/auth";
 
 export function createEventInstance(
   eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
@@ -29,10 +30,15 @@ export function createEventInstance(
 
 export async function storeEvent(
   event: Event,
-  apiKeyId: string
+  auth: AuthContext
 ): Promise<void> {
   const adapter = await StorageAdapterFactory.getEventStorageAdapter(
     event.type
   );
-  await adapter.add(event.serialize(), apiKeyId);
+  if (auth.mode) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (adapter as any).add(event.serialize(), auth.apiKeyId, auth.mode);
+  } else {
+    await adapter.add(event.serialize(), auth.apiKeyId);
+  }
 }

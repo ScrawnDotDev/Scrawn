@@ -61,12 +61,14 @@ export interface StorageAdapter {
 
   add(
     serialized: SerializedEvent,
-    apiKeyId?: string
+    apiKeyId?: string,
+    mode?: string
   ): Promise<{ id: string } | void>;
   price(
     userID: UserId,
     event_type: EventKind,
-    beforeTimestamp: DateTime
+    beforeTimestamp: DateTime,
+    mode?: string
   ): Promise<number>;
   query(request: QueryRequest): Promise<QueryResponse>;
 }

@@ -11,7 +11,7 @@ import {
   wideEventContextKey,
   type WideEventBuilder,
 } from "../context/requestContext";
-import { apiKeyContextKey } from "../context/auth";
+import { apiKeyContextKey, type AuthContext } from "../context/auth";
 import { AuthError } from "../errors/auth";
 import { apiKeyCache } from "../utils/apiKeyCache";
 import { getPostgresDB } from "../storage/db/postgres/db";
@@ -19,13 +19,14 @@ import { apiKeysTable } from "../storage/db/postgres/schema";
 import { eq } from "drizzle-orm";
 import { hashAPIKey } from "../utils/hashAPIKey";
 import { DateTime } from "luxon";
+import { parseRoleFromApiKey, getModeForRole, isValidApiKeyFormat } from "../utils/keyFormat";
+import type { ApiKeyRole } from "../utils/keyFormat";
 
-// Whitelisted endpoints that don't require auth
-const no_auth = ["/auth.v1.AuthService/CreateAPIKey", "CreateAPIKey"];
+const no_auth: string[] = [];
 
 interface GrpcCallContext {
   [wideEventContextKey]: WideEventBuilder | null;
-  [apiKeyContextKey]: string | undefined;
+  [apiKeyContextKey]: AuthContext | undefined;
   metadata: Metadata;
 }
 
@@ -42,13 +43,11 @@ export type GrpcHandler<Req, Res> = (
   callback?: sendUnaryData<Res>
 ) => void | Promise<void>;
 
-// Untyped handler for gRPC server registration boundary
 export type GrpcUntypedHandler = (
   call: unknown,
   callback?: sendUnaryData<unknown>
 ) => void | Promise<void>;
 
-// Handler with flexible call type for interceptors
 export type GrpcFlexibleHandler = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   call: any,
@@ -56,14 +55,35 @@ export type GrpcFlexibleHandler = (
 ) => void | Promise<void>;
 
 /**
- * Auth interceptor for gRPC - validates API key from metadata
+ * Guards a gRPC handler to require a specific role.
+ * Rejects the call with PERMISSION_DENIED if the role doesn't match.
+ */
+export function requireRole(
+  allowedRoles: ApiKeyRole | ApiKeyRole[]
+): GrpcUntypedHandler {
+  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+
+  return (call: unknown, callback?: sendUnaryData<unknown>) => {
+    const auth = (call as GrpcCallContext)[apiKeyContextKey];
+    if (!auth || !roles.includes(auth.role)) {
+      return callback?.(
+        AuthError.permissionDenied(
+          `This endpoint requires role: ${roles.join(" or ")}`
+        )
+      );
+    }
+    return undefined; // pass through to next handler
+  };
+}
+
+/**
+ * Auth interceptor for gRPC — validates API key, extracts role, sets context.
  */
 export function authInterceptor<Req, Res>(
   methodPath: string,
   handler: GrpcHandler<Req, Res>
 ): GrpcHandler<Req, Res> {
   return (call: GrpcCall<Req, Res>, callback) => {
-    // Skip auth for whitelisted endpoints
     const fullPath = methodPath.startsWith("/") ? methodPath : `/${methodPath}`;
     if (no_auth.some((path) => fullPath === path || fullPath.endsWith(path))) {
       return handler(call, callback);
@@ -71,7 +91,6 @@ export function authInterceptor<Req, Res>(
 
     const wideEventBuilder = call[wideEventContextKey];
 
-    // Extract authorization from metadata
     const authHeader = call.metadata.get("authorization")?.[0] as
       | string
       | undefined;
@@ -86,22 +105,36 @@ export function authInterceptor<Req, Res>(
 
     const apiKey = authHeader.slice("Bearer ".length).trim();
 
-    // Validate API key format
-    if (!apiKey.startsWith("scrn_") || apiKey.length !== 37) {
+    const role = parseRoleFromApiKey(apiKey);
+    if (!role) {
+      return callback?.(
+        AuthError.invalidAPIKey("Invalid key prefix — expected scrn_dash_, scrn_live_, or scrn_test_")
+      );
+    }
+
+    if (!isValidApiKeyFormat(apiKey, role)) {
       return callback?.(AuthError.invalidAPIKey("Invalid API key format"));
     }
 
+    const mode = getModeForRole(role);
     const apiKeyHash = hashAPIKey(apiKey);
 
-    // Check cache first
     const cached = apiKeyCache.get(apiKeyHash);
     if (cached) {
-      call[apiKeyContextKey] = cached.id;
+      if (cached.role !== role) {
+        return callback?.(
+          AuthError.roleMismatch(`Key prefix ${role} doesn't match stored role ${cached.role}`)
+        );
+      }
+      call[apiKeyContextKey] = {
+        apiKeyId: cached.id,
+        role: cached.role,
+        mode: cached.mode,
+      };
       wideEventBuilder?.setAuth(cached.id, true);
       return handler(call, callback);
     }
 
-    // Query database for API key
     lookupApiKey(apiKeyHash)
       .then((apiKeyRecord) => {
         if (!apiKeyRecord) {
@@ -116,13 +149,28 @@ export function authInterceptor<Req, Res>(
           return callback?.(AuthError.expiredAPIKey());
         }
 
-        // Cache and set context
+        if (apiKeyRecord.role !== role) {
+          return callback?.(
+            AuthError.roleMismatch(
+              `Key prefix ${role} doesn't match stored role ${apiKeyRecord.role}`
+            )
+          );
+        }
+
+        const recordMode = getModeForRole(apiKeyRecord.role as ApiKeyRole);
+
         apiKeyCache.set(apiKeyHash, {
           id: apiKeyRecord.id,
+          role: apiKeyRecord.role as ApiKeyRole,
+          mode: recordMode,
           expiresAt: apiKeyRecord.expiresAt,
         });
 
-        call[apiKeyContextKey] = apiKeyRecord.id;
+        call[apiKeyContextKey] = {
+          apiKeyId: apiKeyRecord.id,
+          role: apiKeyRecord.role as ApiKeyRole,
+          mode: recordMode,
+        };
         wideEventBuilder?.setAuth(apiKeyRecord.id, false);
 
         return handler(call, callback);
@@ -138,6 +186,7 @@ async function lookupApiKey(apiKeyHash: string) {
   const result = await db
     .select({
       id: apiKeysTable.id,
+      role: apiKeysTable.role,
       expiresAt: apiKeysTable.expiresAt,
       revoked: apiKeysTable.revoked,
     })

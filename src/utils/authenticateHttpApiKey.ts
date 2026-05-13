@@ -3,10 +3,13 @@ import { apiKeyCache } from "./apiKeyCache";
 import { findApiKeyByHash } from "../storage/db/postgres/helpers/apiKeys";
 import { hashAPIKey } from "./hashAPIKey";
 import { DateTime } from "luxon";
+import { parseRoleFromApiKey, isValidApiKeyFormat, getModeForRole } from "./keyFormat";
+import type { ApiKeyRole } from "./keyFormat";
+import type { AuthContext } from "../context/auth";
 
 export async function authenticateHttpApiKey(
   authHeader: string | undefined
-): Promise<string> {
+): Promise<AuthContext> {
   if (!authHeader) {
     throw AuthError.missingHeader();
   }
@@ -17,7 +20,14 @@ export async function authenticateHttpApiKey(
 
   const apiKey = authHeader.slice("Bearer ".length).trim();
 
-  if (!apiKey.startsWith("scrn_") || apiKey.length !== 37) {
+  const role = parseRoleFromApiKey(apiKey);
+  if (!role) {
+    throw AuthError.invalidAPIKey(
+      "Invalid key prefix — expected scrn_dash_, scrn_live_, or scrn_test_"
+    );
+  }
+
+  if (!isValidApiKeyFormat(apiKey, role)) {
     throw AuthError.invalidAPIKey("Invalid API key format");
   }
 
@@ -25,7 +35,12 @@ export async function authenticateHttpApiKey(
 
   const cached = apiKeyCache.get(apiKeyHash);
   if (cached) {
-    return cached.id;
+    if (cached.role !== role) {
+      throw AuthError.roleMismatch(
+        `Key prefix ${role} doesn't match stored role ${cached.role}`
+      );
+    }
+    return { apiKeyId: cached.id, role: cached.role, mode: cached.mode };
   }
 
   const apiKeyRecord = await findApiKeyByHash(apiKeyHash);
@@ -42,10 +57,21 @@ export async function authenticateHttpApiKey(
     throw AuthError.expiredAPIKey();
   }
 
+  if (apiKeyRecord.role !== role) {
+    throw AuthError.roleMismatch(
+      `Key prefix ${role} doesn't match stored role ${apiKeyRecord.role}`
+    );
+  }
+
+  const recordRole = apiKeyRecord.role as ApiKeyRole;
+  const mode = getModeForRole(recordRole);
+
   apiKeyCache.set(apiKeyHash, {
     id: apiKeyRecord.id,
+    role: recordRole,
+    mode,
     expiresAt: apiKeyRecord.expiresAt,
   });
 
-  return apiKeyRecord.id;
+  return { apiKeyId: apiKeyRecord.id, role: recordRole, mode };
 }

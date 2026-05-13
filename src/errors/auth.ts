@@ -4,8 +4,11 @@ enum AuthErrorType {
   MISSING_HEADER = "MISSING_HEADER",
   INVALID_HEADER_FORMAT = "INVALID_HEADER_FORMAT",
   INVALID_API_KEY = "INVALID_API_KEY",
+  INVALID_ROLE = "INVALID_ROLE",
   EXPIRED_API_KEY = "EXPIRED_API_KEY",
   REVOKED_API_KEY = "REVOKED_API_KEY",
+  ROLE_MISMATCH = "ROLE_MISMATCH",
+  PERMISSION_DENIED = "PERMISSION_DENIED",
   DATABASE_ERROR = "DATABASE_ERROR",
   UNKNOWN = "UNKNOWN",
 }
@@ -86,6 +89,30 @@ export class AuthError extends Error {
       message: `Unexpected authentication error: ${details}`,
       code: Status.INTERNAL,
       originalError,
+    });
+  }
+
+  static invalidRole(details?: string): AuthError {
+    return new AuthError({
+      type: AuthErrorType.INVALID_ROLE,
+      message: details || "Invalid API key role",
+      code: Status.UNAUTHENTICATED,
+    });
+  }
+
+  static roleMismatch(details?: string): AuthError {
+    return new AuthError({
+      type: AuthErrorType.ROLE_MISMATCH,
+      message: details || "API key role mismatch",
+      code: Status.UNAUTHENTICATED,
+    });
+  }
+
+  static permissionDenied(details?: string): AuthError {
+    return new AuthError({
+      type: AuthErrorType.PERMISSION_DENIED,
+      message: details || "Insufficient permissions",
+      code: Status.PERMISSION_DENIED,
     });
   }
 }

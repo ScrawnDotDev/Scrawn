@@ -1,8 +1,11 @@
 import { Cache } from "./cacheStore";
 import { DateTime } from "luxon";
+import type { ApiKeyRole } from "./keyFormat";
 
 interface CachedAPIKey {
   id: string;
+  role: ApiKeyRole;
+  mode: "production" | "test" | null;
   expiresAt: string;
 }
 
@@ -18,7 +21,6 @@ export const apiKeyCache = {
   delete: (hash: string) => store.delete(hash),
   clear: () => store.clear(),
   getStats: () => {
-    // for testing and debugging purposes
     const stats = store.getStats();
     return {
       size: stats.size,

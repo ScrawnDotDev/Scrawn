@@ -14,7 +14,7 @@ import { hashAPIKey } from "../../../utils/hashAPIKey";
 import { formatZodError } from "../../../utils/formatZodError";
 import { DateTime } from "luxon";
 import type { ContextUnaryCall } from "../../../interface/types/context.js";
-import { StreamEventRequest } from "../../../gen/event/v1/event_pb.js";
+import type { ApiKeyRole } from "../../../utils/keyFormat.js";
 import { createApiKey } from "../../../storage/db/postgres/helpers/apiKeys.js";
 
 export async function createAPIKey(
@@ -26,25 +26,30 @@ export async function createAPIKey(
   const wideEventBuilder = call[wideEventContextKey];
 
   try {
-    // Get API key ID from context (set by auth interceptor)
-    const apiKeyId = call[apiKeyContextKey] as string;
-    if (!apiKeyId) {
+    const auth = call[apiKeyContextKey];
+    if (!auth) {
+      return callback?.(AuthError.invalidAPIKey("API key context not found"));
+    }
+
+    if (auth.role !== "dashboard") {
       return callback?.(
-        AuthError.invalidAPIKey("API key ID not found in context")
+        AuthError.permissionDenied("Only dashboard keys can create API keys")
       );
     }
 
-    // Validate the incoming request
     const validatedData = validateRequest(req);
 
-    // Add business context to wide event
+    if (validatedData.role === "dashboard" && auth.role !== "dashboard") {
+      return callback?.(
+        AuthError.permissionDenied("Only dashboard keys can create dashboard keys")
+      );
+    }
+
     wideEventBuilder?.setApiKeyContext({ name: validatedData.name });
 
-    // Generate and hash the API key
-    const apiKey = generateAPIKey();
+    const apiKey = generateAPIKey(validatedData.role as ApiKeyRole);
     const apiKeyHash = hashAPIKey(apiKey);
 
-    // Calculate expiration date
     const now = DateTime.utc();
     const expiresInSeconds =
       typeof validatedData.expiresIn === "bigint"
@@ -54,10 +59,10 @@ export async function createAPIKey(
 
     wideEventBuilder?.setApiKeyContext({ expiration: expiresAt.toISO() });
 
-    // Create and store the key
     const keyEventData = await createApiKey({
       name: validatedData.name,
       key: apiKeyHash,
+      role: validatedData.role,
       expiresAt: expiresAt.toISO(),
     });
 
@@ -83,6 +88,9 @@ function validateRequest(req: CreateAPIKeyRequest) {
     const json = {
       name: req.getName(),
       expiresIn: req.getExpiresin(),
+      role: (req as unknown as Record<string, unknown>).getRole
+        ? (req as unknown as { getRole(): string }).getRole()
+        : undefined,
     };
     return createAPIKeySchema.parse(json);
   } catch (error) {
