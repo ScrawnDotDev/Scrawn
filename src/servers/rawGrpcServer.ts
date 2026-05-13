@@ -3,11 +3,13 @@ import * as authGrpc from "../gen/auth/v1/auth_grpc_pb.js";
 import * as eventGrpc from "../gen/event/v1/event_grpc_pb.js";
 import * as paymentGrpc from "../gen/payment/v1/payment_grpc_pb.js";
 import * as queryGrpc from "../gen/query/v1/query_grpc_pb.js";
+import * as dataGrpc from "../gen/data/v1/data_grpc_pb.js";
 import { createAPIKey } from "../routes/gRPC/auth/createAPIKey";
 import { registerEvent } from "../routes/gRPC/events/registerEvent";
 import { streamEvents } from "../routes/gRPC/events/streamEvents";
 import { createCheckoutLink } from "../routes/gRPC/payment/createCheckoutLink";
 import { queryEvents } from "../routes/gRPC/query/queryEvents";
+import { queryData } from "../routes/gRPC/data/query";
 import { logger } from "../errors/logger";
 import {
   authInterceptor,
@@ -69,6 +71,14 @@ export function startRawGrpcServer(
     )
   ) as GrpcUntypedHandler;
 
+  const wrappedQueryData = loggingInterceptor(
+    "/data.v1.DataQueryService/Query",
+    authInterceptor(
+      "/data.v1.DataQueryService/Query",
+      queryData as GrpcHandler<unknown, unknown>
+    )
+  ) as GrpcUntypedHandler;
+
   server.addService(authGrpc.AuthServiceService, {
     createAPIKey: wrappedCreateAPIKey,
   });
@@ -84,6 +94,10 @@ export function startRawGrpcServer(
 
   server.addService(queryGrpc.QueryServiceService, {
     queryEvents: wrappedQueryEvents,
+  });
+
+  server.addService(dataGrpc.DataQueryServiceService, {
+    query: wrappedQueryData,
   });
 
   const credentials = tlsOptions

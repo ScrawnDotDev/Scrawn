@@ -1,0 +1,234 @@
+import type { sendUnaryData } from "@grpc/grpc-js";
+import { QueryRequest, QueryResponse, Row } from "../../../gen/data/v1/data_pb.js";
+import { dataQuerySchema, type DataQueryRequest } from "../../../zod/data";
+import { EventError } from "../../../errors/event";
+import { formatZodError } from "../../../utils/formatZodError";
+import { getPostgresDB } from "../../../storage/db/postgres/db";
+import {
+  usersTable,
+  sessionsTable,
+  tagsTable,
+  expressionsTable,
+  metadataTable,
+} from "../../../storage/db/postgres/schema";
+import {
+  eq,
+  gt,
+  gte,
+  lt,
+  lte,
+  ne,
+  like,
+  and,
+  or,
+  asc,
+  desc,
+  count,
+} from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { WideEventBuilder } from "../../../context/requestContext";
+import { wideEventContextKey } from "../../../context/requestContext";
+import type { ContextUnaryCall } from "../../../interface/types/context.js";
+
+interface FieldDef {
+  col: AnyPgColumn;
+  cast: "text" | "integer" | "uuid" | "timestamptz" | "boolean";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface TableDef {
+  table: any;
+  fields: Record<string, FieldDef>;
+}
+
+const TABLE_REGISTRY: Record<string, TableDef> = {
+  users: {
+    table: usersTable,
+    fields: {
+      id: { col: usersTable.id, cast: "uuid" },
+      lastBilledTimestamp: {
+        col: usersTable.last_billed_timestamp,
+        cast: "timestamptz",
+      },
+      paymentProviderUserId: {
+        col: usersTable.payment_provider_user_id,
+        cast: "text",
+      },
+      mode: { col: usersTable.mode, cast: "text" },
+    },
+  },
+  sessions: {
+    table: sessionsTable,
+    fields: {
+      id: { col: sessionsTable.id, cast: "uuid" },
+      sessionId: { col: sessionsTable.sessionId, cast: "text" },
+      processed: { col: sessionsTable.processed, cast: "boolean" },
+      userId: { col: sessionsTable.userId, cast: "uuid" },
+      billedUpto: { col: sessionsTable.billed_upto, cast: "timestamptz" },
+      createdAt: { col: sessionsTable.createdAt, cast: "timestamptz" },
+      mode: { col: sessionsTable.mode, cast: "text" },
+    },
+  },
+  tags: {
+    table: tagsTable,
+    fields: {
+      id: { col: tagsTable.id, cast: "uuid" },
+      key: { col: tagsTable.key, cast: "text" },
+      amount: { col: tagsTable.amount, cast: "integer" },
+    },
+  },
+  expressions: {
+    table: expressionsTable,
+    fields: {
+      id: { col: expressionsTable.id, cast: "uuid" },
+      key: { col: expressionsTable.key, cast: "text" },
+      expr: { col: expressionsTable.expr, cast: "text" },
+    },
+  },
+  metadata: {
+    table: metadataTable,
+    fields: {
+      id: { col: metadataTable.id, cast: "uuid" },
+      paymentCron: { col: metadataTable.payment_cron, cast: "text" },
+      paymentWebhook: { col: metadataTable.payment_webhook, cast: "text" },
+    },
+  },
+};
+
+function castValue(value: string, fieldDef: FieldDef): unknown {
+  if (fieldDef.cast === "boolean") {
+    return value === "true";
+  }
+  if (fieldDef.cast === "integer") {
+    const n = Number(value);
+    return isNaN(n) ? value : n;
+  }
+  return value;
+}
+
+function applyOp(
+  col: AnyPgColumn,
+  op: string,
+  value: string,
+  fieldDef: FieldDef
+): SQL {
+  const casted = castValue(value, fieldDef) as string | boolean | number;
+  switch (op) {
+    case "EQ":
+      return eq(col, casted);
+    case "GT":
+      return gt(col, casted);
+    case "GTE":
+      return gte(col, casted);
+    case "LT":
+      return lt(col, casted);
+    case "LTE":
+      return lte(col, casted);
+    case "NEQ":
+      return ne(col, casted);
+    case "CONTAINS":
+      return like(col, `%${value}%`);
+    default:
+      return eq(col, casted);
+  }
+}
+
+function buildWhere(
+  group: DataQueryRequest["where"],
+  tableDef: TableDef
+): SQL | undefined {
+  const parts: SQL[] = [];
+
+  for (const condition of group.conditions) {
+    const fieldDef = tableDef.fields[condition.field];
+    if (!fieldDef) continue;
+    const clause = applyOp(fieldDef.col, condition.operator, condition.value, fieldDef);
+    parts.push(clause);
+  }
+
+  for (const subGroup of group.groups) {
+    const subWhere = buildWhere(subGroup, tableDef);
+    if (subWhere) parts.push(subWhere);
+  }
+
+  if (parts.length === 0) return undefined;
+  return group.logical === "OR" ? or(...parts) : and(...parts);
+}
+
+function buildSelect(tableDef: TableDef): Record<string, AnyPgColumn> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: Record<string, any> = {};
+  for (const [name, def] of Object.entries(tableDef.fields)) {
+    result[name] = def.col;
+  }
+  return result;
+}
+
+export async function queryData(
+  call: ContextUnaryCall<QueryRequest, QueryResponse>,
+  callback?: sendUnaryData<QueryResponse>
+): Promise<void> {
+  const wideEventBuilder = call[wideEventContextKey] as WideEventBuilder | undefined;
+
+  try {
+    const req = call.request.toObject() as Record<string, unknown>;
+
+    const validated = dataQuerySchema.parse(req);
+
+    wideEventBuilder?.addContext({ table: validated.table, operation: "query" });
+
+    const tableDef = TABLE_REGISTRY[validated.table];
+    if (!tableDef) {
+      return callback?.(EventError.validationFailed(`Unknown table: ${validated.table}`));
+    }
+
+    const db = getPostgresDB();
+    const whereClause = buildWhere(validated.where, tableDef);
+    const selectCols = buildSelect(tableDef);
+    const columns = Object.keys(tableDef.fields);
+
+    const orderClauses = validated.orderBy
+      .filter((o) => tableDef.fields[o.field])
+      .map((o) =>
+        o.descending ? desc(tableDef.fields[o.field]!.col) : asc(tableDef.fields[o.field]!.col)
+      );
+
+    const [countResult, rows] = await Promise.all([
+      db
+        .select({ cnt: count() })
+        .from(tableDef.table)
+        .where(whereClause)
+        .execute() as Promise<Array<{ cnt: number }>>,
+      db
+        .select(selectCols)
+        .from(tableDef.table)
+        .where(whereClause)
+        .orderBy(...orderClauses)
+        .limit(validated.limit)
+        .offset(validated.offset)
+        .execute() as Promise<Array<Record<string, unknown>>>,
+    ]);
+
+    const total = Number(countResult[0]?.cnt ?? 0);
+
+    const response = new QueryResponse();
+    response.setColumnsList(columns);
+    response.setRowsList(
+      rows.map((row) => {
+        const r = new Row();
+        r.setValuesList(columns.map((c) => String(row[c] ?? "")));
+        return r;
+      })
+    );
+    response.setTotal(total);
+
+    callback?.(null, response);
+  } catch (error) {
+    if (error && typeof error === "object" && "name" in error && (error as Error).name === "ZodError") {
+      const formatted = formatZodError(error, (msg) => EventError.validationFailed(msg));
+      return callback?.(formatted as Error);
+    }
+    callback?.(error as Error);
+  }
+}
