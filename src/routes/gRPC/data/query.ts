@@ -1,5 +1,9 @@
 import type { sendUnaryData } from "@grpc/grpc-js";
-import { QueryRequest, QueryResponse, Row } from "../../../gen/data/v1/data_pb.js";
+import {
+  QueryRequest,
+  QueryResponse,
+  Row,
+} from "../../../gen/data/v1/data_pb.js";
 import { dataQuerySchema, type DataQueryRequest } from "../../../zod/data";
 import { EventError } from "../../../errors/event";
 import { formatZodError } from "../../../utils/formatZodError";
@@ -38,7 +42,12 @@ interface FieldDef {
 
 interface TableDef {
   tableName: string;
-  table: typeof usersTable | typeof sessionsTable | typeof tagsTable | typeof expressionsTable | typeof metadataTable;
+  table:
+    | typeof usersTable
+    | typeof sessionsTable
+    | typeof tagsTable
+    | typeof expressionsTable
+    | typeof metadataTable;
   fields: Record<string, FieldDef>;
 }
 
@@ -101,7 +110,11 @@ const TABLE_REGISTRY: Record<string, TableDef> = {
   },
 };
 
-function castValue(value: string, fieldDef: FieldDef, fieldName: string): boolean | number | string {
+function castValue(
+  value: string,
+  fieldDef: FieldDef,
+  fieldName: string
+): boolean | number | string {
   if (fieldDef.cast === "boolean") {
     if (value !== "true" && value !== "false") {
       throw EventError.validationFailed(
@@ -163,7 +176,13 @@ function buildWhere(
         `Unknown field '${condition.field}' in table '${tableDef.tableName}'`
       );
     }
-    const clause = applyOp(fieldDef.col, condition.operator, condition.value, fieldDef, condition.field);
+    const clause = applyOp(
+      fieldDef.col,
+      condition.operator,
+      condition.value,
+      fieldDef,
+      condition.field
+    );
     parts.push(clause);
   }
 
@@ -188,18 +207,25 @@ export async function queryData(
   call: ContextUnaryCall<QueryRequest, QueryResponse>,
   callback?: sendUnaryData<QueryResponse>
 ): Promise<void> {
-  const wideEventBuilder = call[wideEventContextKey] as WideEventBuilder | undefined;
+  const wideEventBuilder = call[wideEventContextKey] as
+    | WideEventBuilder
+    | undefined;
 
   try {
     const req = call.request.toObject() as Record<string, unknown>;
 
     const validated = dataQuerySchema.parse(req);
 
-    wideEventBuilder?.addContext({ table: validated.table, operation: "query" });
+    wideEventBuilder?.addContext({
+      table: validated.table,
+      operation: "query",
+    });
 
     const tableDef = TABLE_REGISTRY[validated.table];
     if (!tableDef) {
-      return callback?.(EventError.validationFailed(`Unknown table: ${validated.table}`));
+      return callback?.(
+        EventError.validationFailed(`Unknown table: ${validated.table}`)
+      );
     }
 
     const db = getPostgresDB();
@@ -222,7 +248,7 @@ export async function queryData(
         .select({ cnt: count() })
         .from(tableDef.table)
         .where(whereClause)
-        .execute() as Promise<Array<{ cnt: number }>>,
+        .execute(),
       db
         .select(selectCols)
         .from(tableDef.table)
@@ -230,7 +256,7 @@ export async function queryData(
         .orderBy(...orderClauses)
         .limit(validated.limit)
         .offset(validated.offset)
-        .execute() as Promise<Array<Record<string, unknown>>>,
+        .execute(),
     ]);
 
     const total = Number(countResult[0]?.cnt ?? 0);
@@ -248,8 +274,15 @@ export async function queryData(
 
     callback?.(null, response);
   } catch (error) {
-    if (error && typeof error === "object" && "name" in error && (error as Error).name === "ZodError") {
-      const formatted = formatZodError(error, (msg) => EventError.validationFailed(msg));
+    if (
+      error &&
+      typeof error === "object" &&
+      "name" in error &&
+      (error as Error).name === "ZodError"
+    ) {
+      const formatted = formatZodError(error, (msg) =>
+        EventError.validationFailed(msg)
+      );
       return callback?.(formatted as Error);
     }
     callback?.(error as Error);

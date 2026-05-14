@@ -11,7 +11,7 @@ export async function handleAddSession(
   billedUpto: DateTime,
   apiKeyId: string,
   mode: "test" | "production",
-  checkoutUrl?: string
+  checkoutUrl: string
 ): Promise<{ id: string }> {
   const connectionObject = getPostgresDB();
 
@@ -28,13 +28,13 @@ export async function handleAddSession(
     const insertResult = await connectionObject
       .insert(sessionsTable)
       .values({
-        userId: userId as string,
+        userId: userId,
         sessionId: sessionId,
         billed_upto: billedUptoStr,
         apiKeyId: apiKeyId,
         mode: mode,
         checkoutUrl: checkoutUrl,
-      } as any)
+      })
       .returning({ id: sessionsTable.id });
 
     if (!insertResult[0]) {

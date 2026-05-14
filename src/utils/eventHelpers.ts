@@ -1,17 +1,24 @@
 import { EventError } from "../errors/event";
 import { AuthError } from "../errors/auth";
-import type { Event, SDKCallEventData, AITokenUsageEventData } from "../interface/event/Event";
+import type {
+  Event,
+  SDKCallEventData,
+  AITokenUsageEventData,
+} from "../interface/event/Event";
 import { SDKCall } from "../events/SDKCall";
 import { AITokenUsage } from "../events/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
-import type { RegisterEventSchemaType, StreamEventSchemaType } from "../zod/event";
+import type {
+  RegisterEventSchemaType,
+  StreamEventSchemaType,
+} from "../zod/event";
 import type { AuthContext } from "../context/auth";
 
 export function createEventInstance(
   eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
 ): Event {
   if (eventSkeleton.type === "SDK_CALL") {
-    const data = (eventSkeleton as { sdkcall: SDKCallEventData }).sdkcall;
+    const data = eventSkeleton.sdkcall;
     return new SDKCall(
       eventSkeleton.userid,
       eventSkeleton.reportedtimestamp,
@@ -19,7 +26,7 @@ export function createEventInstance(
     );
   }
   if (eventSkeleton.type === "AI_TOKEN_USAGE") {
-    const data = (eventSkeleton as { aitokenusage: AITokenUsageEventData }).aitokenusage;
+    const data = eventSkeleton.aitokenusage;
     return new AITokenUsage(
       eventSkeleton.userid,
       eventSkeleton.reportedtimestamp,
