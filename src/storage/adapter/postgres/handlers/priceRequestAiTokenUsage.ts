@@ -6,13 +6,15 @@ import type { UserId } from "../../../../config/identifiers";
 
 export async function handlePriceRequestAiTokenUsage(
   userId: UserId,
-  beforeTimestamp: DateTime
+  beforeTimestamp: DateTime,
+  mode?: "production" | "test"
 ): Promise<number> {
   return handlePriceRequest(
     userId,
     aiTokenUsageEventsTable,
     sql`${aiTokenUsageEventsTable.inputDebitAmount} + ${aiTokenUsageEventsTable.outputDebitAmount}`,
     "REQUEST_AI_TOKEN_USAGE",
-    beforeTimestamp
+    beforeTimestamp,
+    mode
   );
 }

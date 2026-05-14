@@ -36,8 +36,7 @@ export async function storeEvent(
     event.type
   );
   if (auth.mode) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (adapter as any).add(event.serialize(), auth.apiKeyId, auth.mode);
+    await adapter.add(event.serialize(), auth.apiKeyId, auth.mode);
   } else {
     await adapter.add(event.serialize(), auth.apiKeyId);
   }

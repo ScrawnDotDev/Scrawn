@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS sdk_call_events (
   id UUID DEFAULT generateUUIDv4(),
   user_id String,
   api_key_id Nullable(String),
+  mode String,
   reported_timestamp DateTime64(3, 'UTC'),
   ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
   sdk_call_type String,
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS ai_token_usage_events (
   id UUID DEFAULT generateUUIDv4(),
   user_id String,
   api_key_id Nullable(String),
+  mode String,
   reported_timestamp DateTime64(3, 'UTC'),
   ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
   model String,
@@ -34,6 +36,7 @@ const PAYMENT_EVENTS_TABLE = `
 CREATE TABLE IF NOT EXISTS payment_events (
   id UUID DEFAULT generateUUIDv4(),
   user_id String,
+  mode String,
   reported_timestamp DateTime64(3, 'UTC'),
   ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
   credit_amount Int64

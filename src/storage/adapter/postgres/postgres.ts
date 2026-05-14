@@ -25,7 +25,7 @@ import type { DateTime } from "luxon";
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
 
-  async add(serialized: SerializedEvent, apiKeyId?: string) {
+  async add(serialized: SerializedEvent, apiKeyId?: string, mode?: "production" | "test") {
     let event_data: SqlRecord;
 
     try {
@@ -58,18 +58,18 @@ export class PostgresAdapter implements StorageAdapter {
         if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddSdkCall(event_data, apiKeyId);
+        return await handleAddSdkCall(event_data, apiKeyId, mode);
       }
 
       case "AI_TOKEN_USAGE": {
         if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddAiTokenUsage([event_data], apiKeyId);
+        return await handleAddAiTokenUsage([event_data], apiKeyId, mode);
       }
 
       case "PAYMENT": {
-        return await handleAddPayment(event_data, apiKeyId);
+        return await handleAddPayment(event_data, apiKeyId, mode);
       }
 
       default: {
@@ -81,19 +81,20 @@ export class PostgresAdapter implements StorageAdapter {
   async price(
     userID: UserId,
     event_type: EventKind,
-    beforeTimestamp: DateTime
+    beforeTimestamp: DateTime,
+    mode?: "production" | "test"
   ): Promise<number> {
     switch (event_type) {
       case "PAYMENT": {
-        return await handlePriceRequestPayment(userID, beforeTimestamp);
+        return await handlePriceRequestPayment(userID, beforeTimestamp, mode);
       }
 
       case "SDK_CALL": {
-        return await handlePriceRequestSdkCall(userID, beforeTimestamp);
+        return await handlePriceRequestSdkCall(userID, beforeTimestamp, mode);
       }
 
       case "AI_TOKEN_USAGE": {
-        return await handlePriceRequestAiTokenUsage(userID, beforeTimestamp);
+        return await handlePriceRequestAiTokenUsage(userID, beforeTimestamp, mode);
       }
 
       default: {

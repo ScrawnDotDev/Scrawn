@@ -6,13 +6,15 @@ import type { UserId } from "../../../../config/identifiers";
 
 export async function handlePriceRequestSdkCall(
   userId: UserId,
-  beforeTimestamp: DateTime
+  beforeTimestamp: DateTime,
+  mode?: "production" | "test"
 ): Promise<number> {
   return handlePriceRequest(
     userId,
     sdkCallEventsTable,
     sql`${sdkCallEventsTable.debitAmount}`,
     "REQUEST_SDK_CALL",
-    beforeTimestamp
+    beforeTimestamp,
+    mode
   );
 }

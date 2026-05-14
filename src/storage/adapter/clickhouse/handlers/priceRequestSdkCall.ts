@@ -9,7 +9,8 @@ import { toClickHouseDateTime } from "../utils";
 
 export async function handlePriceRequestSdkCall(
   userId: UserId,
-  beforeTimestamp: DateTime
+  beforeTimestamp: DateTime,
+  mode?: "production" | "test"
 ): Promise<number> {
   const chClient = getClickHouseDB();
   const pgDb = getPostgresDB();
@@ -42,11 +43,17 @@ export async function handlePriceRequestSdkCall(
       before: beforeTs,
     };
 
+    const modeFilter = mode ? " AND mode = {mode:String}" : "";
+
     if (lastBilled) {
-      query = `SELECT sum(debit_amount) as total FROM sdk_call_events WHERE user_id = {userId:String} AND reported_timestamp > {lastBilled:DateTime64(3, 'UTC')} AND reported_timestamp < {before:DateTime64(3, 'UTC')}`;
+      query = `SELECT sum(debit_amount) as total FROM sdk_call_events WHERE user_id = {userId:String} AND reported_timestamp > {lastBilled:DateTime64(3, 'UTC')} AND reported_timestamp < {before:DateTime64(3, 'UTC')}${modeFilter}`;
       params.lastBilled = lastBilled;
     } else {
-      query = `SELECT sum(debit_amount) as total FROM sdk_call_events WHERE user_id = {userId:String} AND reported_timestamp < {before:DateTime64(3, 'UTC')}`;
+      query = `SELECT sum(debit_amount) as total FROM sdk_call_events WHERE user_id = {userId:String} AND reported_timestamp < {before:DateTime64(3, 'UTC')}${modeFilter}`;
+    }
+
+    if (mode) {
+      params.mode = mode;
     }
 
     const rs = await chClient.query({

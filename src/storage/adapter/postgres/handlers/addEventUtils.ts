@@ -62,6 +62,7 @@ export type EventInsertValues = {
   ingested_timestamp: string;
   userId: string;
   api_keyId: string | undefined;
+  mode?: "production" | "test";
 };
 
 export async function insertEvent(
@@ -77,6 +78,7 @@ export async function insertEvent(
         ingested_timestamp: values.ingested_timestamp,
         userId: values.userId,
         api_keyId: values.api_keyId,
+        ...(values.mode ? { mode: values.mode } : {}),
       })
       .returning({ id: eventsTable.id });
   } catch (e) {

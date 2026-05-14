@@ -63,13 +63,13 @@ export interface StorageAdapter {
   add(
     serialized: SerializedEvent,
     apiKeyId?: string,
-    mode?: string
+    mode?: "production" | "test"
   ): Promise<{ id: string } | void>;
   price(
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode?: string
+    mode?: "production" | "test"
   ): Promise<number>;
   query(request: QueryRequest): Promise<QueryResponse>;
 }

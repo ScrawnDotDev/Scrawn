@@ -108,7 +108,7 @@ function validateRequest(
 async function calculatePrice(
   userId: UserId,
   beforeTimestamp: DateTime,
-  mode: string
+  mode: "production" | "test"
 ): Promise<number> {
   const storageAdapter =
     await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");

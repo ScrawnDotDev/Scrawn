@@ -7,6 +7,7 @@ import { getDodoClient } from "../gRPC/payment/paymentProvider.ts";
 import { getPostgresDB } from "../../storage/db/postgres/db";
 import { usersTable, sessionsTable } from "../../storage/db/postgres/schema";
 import { eq } from "drizzle-orm";
+import { getSessionByCheckoutId } from "../../storage/db/postgres/helpers/sessions";
 
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -85,20 +86,9 @@ export async function handleDodoWebhook(
       };
     }
 
-    const db = getPostgresDB();
+    const session = await getSessionByCheckoutId(checkout_session_id);
 
-    const sessions = await db
-      .select({
-        id: sessionsTable.id,
-        userId: sessionsTable.userId,
-        billed_upto: sessionsTable.billed_upto,
-        processed: sessionsTable.processed,
-      })
-      .from(sessionsTable)
-      .where(eq(sessionsTable.sessionId, checkout_session_id))
-      .limit(1);
-
-    if (sessions.length === 0 || !sessions[0]) {
+    if (!session) {
       builder.setError(404, {
         type: "NotFoundError",
         message: `Session not found for checkout_session_id: ${checkout_session_id}`,
@@ -109,7 +99,7 @@ export async function handleDodoWebhook(
       };
     }
 
-    const session = sessions[0];
+    const db = getPostgresDB();
 
     if (session.processed) {
       builder.setSuccess(200);
@@ -163,7 +153,7 @@ export async function handleDodoWebhook(
       const adapter =
         await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
 
-      await adapter.add(paymentEvent.serialize());
+      await adapter.add(paymentEvent.serialize(), undefined, session.mode ?? undefined);
 
       builder.setSuccess(200);
       return {

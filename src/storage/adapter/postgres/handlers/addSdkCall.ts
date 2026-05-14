@@ -12,7 +12,8 @@ import {
 
 export async function handleAddSdkCall(
   event_data: SqlRecordOf<"SDK_CALL">,
-  apiKeyId: string
+  apiKeyId: string,
+  mode?: "production" | "test"
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -39,6 +40,7 @@ export async function handleAddSdkCall(
         ingested_timestamp: DateTime.utc().toString(),
         userId: event_data.userId,
         api_keyId: apiKeyId,
+        mode,
       });
 
       try {

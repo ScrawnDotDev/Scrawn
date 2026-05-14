@@ -116,9 +116,7 @@ export const eventsTable = pgTable("events", {
     .references(() => usersTable.id)
     .notNull(),
   api_keyId: uuid("api_key_id").references(() => apiKeysTable.id),
-  mode: text("mode", { enum: ["test", "production"] })
-    .notNull()
-    .default("production"),
+  mode: text("mode", { enum: ["test", "production"] }).notNull(),
 });
 
 export const eventsRelation = relations(eventsTable, ({ one }) => ({

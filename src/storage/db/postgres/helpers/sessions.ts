@@ -69,6 +69,41 @@ export async function handleAddSession(
   }
 }
 
+export type SessionRow = {
+  id: string;
+  userId: string | null;
+  billed_upto: string | null;
+  processed: boolean | null;
+  mode: "production" | "test" | null;
+};
+
+export async function getSessionByCheckoutId(
+  checkoutSessionId: string
+): Promise<SessionRow | undefined> {
+  const db = getPostgresDB();
+
+  try {
+    const [session] = await db
+      .select({
+        id: sessionsTable.id,
+        userId: sessionsTable.userId,
+        billed_upto: sessionsTable.billed_upto,
+        processed: sessionsTable.processed,
+        mode: sessionsTable.mode,
+      })
+      .from(sessionsTable)
+      .where(eq(sessionsTable.sessionId, checkoutSessionId))
+      .limit(1);
+
+    return session ?? undefined;
+  } catch (e) {
+    throw StorageError.queryFailed(
+      "Failed to get session by checkout ID",
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
+
 export async function getCheckoutUrl(
   sessionId: string
 ): Promise<string | undefined> {

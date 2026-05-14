@@ -5,7 +5,8 @@ import { StorageAdapterFactory } from "../../../factory/EventStorageAdapterFacto
 
 export async function handlePriceRequestPayment(
   userId: UserId,
-  beforeTimestamp: DateTime
+  beforeTimestamp: DateTime,
+  mode?: "production" | "test"
 ): Promise<number> {
   try {
     if (!userId) {
@@ -17,7 +18,8 @@ export async function handlePriceRequestPayment(
     const sdkPrice = await sdkAdapter.price(
       userId,
       "SDK_CALL",
-      beforeTimestamp
+      beforeTimestamp,
+      mode
     );
 
     if (typeof sdkPrice !== "number" || isNaN(sdkPrice)) {
@@ -32,7 +34,8 @@ export async function handlePriceRequestPayment(
     const aiPrice = await aiAdapter.price(
       userId,
       "AI_TOKEN_USAGE",
-      beforeTimestamp
+      beforeTimestamp,
+      mode
     );
 
     if (typeof aiPrice !== "number" || isNaN(aiPrice)) {

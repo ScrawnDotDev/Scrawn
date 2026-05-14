@@ -25,7 +25,8 @@ type AggregatedEvent = {
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string
+  apiKeyId: string,
+  mode?: "production" | "test"
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -125,6 +126,7 @@ export async function handleAddAiTokenUsage(
         ingested_timestamp: DateTime.utc().toString(),
         userId: aggEvent.userId,
         api_keyId: apiKeyId,
+        ...(mode ? { mode } : {}),
       }));
 
       let eventIDs;

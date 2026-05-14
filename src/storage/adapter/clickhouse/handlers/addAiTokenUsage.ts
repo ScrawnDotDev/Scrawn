@@ -17,7 +17,8 @@ type AggregatedEvent = {
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string
+  apiKeyId: string,
+  mode?: "production" | "test"
 ): Promise<{ id: string } | void> {
   const client = getClickHouseDB();
 
@@ -101,6 +102,7 @@ export async function handleAddAiTokenUsage(
     id: index === 0 ? firstId : crypto.randomUUID(),
     user_id: aggEvent.userId,
     api_key_id: apiKeyId,
+    mode: mode ?? "production",
     reported_timestamp: aggEvent.reported_timestamp,
     ingested_timestamp: now,
     model: aggEvent.model,
