@@ -37,7 +37,9 @@ export async function createAPIKey(
       );
     }
 
-    const validatedData = validateRequest(req);
+    // Read role from gRPC metadata (not in proto message yet)
+    const roleFromMeta = call.metadata.get("x-scrawn-role")?.[0] as string | undefined;
+    const validatedData = validateRequest(req, roleFromMeta);
 
     if (validatedData.role === "dashboard" && auth.role !== "dashboard") {
       return callback?.(
@@ -83,14 +85,12 @@ export async function createAPIKey(
   }
 }
 
-function validateRequest(req: CreateAPIKeyRequest) {
+function validateRequest(req: CreateAPIKeyRequest, role?: string) {
   try {
     const json = {
       name: req.getName(),
       expiresIn: req.getExpiresin(),
-      role: (req as unknown as Record<string, unknown>).getRole
-        ? (req as unknown as { getRole(): string }).getRole()
-        : undefined,
+      role: role || undefined,
     };
     return createAPIKeySchema.parse(json);
   } catch (error) {
