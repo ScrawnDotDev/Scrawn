@@ -1,15 +1,16 @@
 import { getClickHouseDB } from "../../db/clickhouse";
 import { logger } from "../../../errors/logger";
+import { innerProduct } from "drizzle-orm";
 
-const SDK_CALL_EVENTS_TABLE = `
-CREATE TABLE IF NOT EXISTS sdk_call_events (
+const BASIC_USAGE_EVENTS_TABLE = `
+CREATE TABLE IF NOT EXISTS basic_usage_events (
   id UUID DEFAULT generateUUIDv4(),
   user_id String,
   api_key_id Nullable(String),
   mode String,
   reported_timestamp DateTime64(3, 'UTC'),
   ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
-  sdk_call_type String,
+  type String,
   debit_amount Int64
 ) ENGINE = MergeTree()
 ORDER BY (user_id, reported_timestamp)
@@ -24,10 +25,8 @@ CREATE TABLE IF NOT EXISTS ai_token_usage_events (
   reported_timestamp DateTime64(3, 'UTC'),
   ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
   model String,
-  input_tokens Int64,
-  output_tokens Int64,
-  input_debit_amount Int64,
-  output_debit_amount Int64
+  provider String,
+  metrics String
 ) ENGINE = MergeTree()
 ORDER BY (user_id, reported_timestamp)
 `;
@@ -36,6 +35,7 @@ const PAYMENT_EVENTS_TABLE = `
 CREATE TABLE IF NOT EXISTS payment_events (
   id UUID DEFAULT generateUUIDv4(),
   user_id String,
+  api_key_id Nullable(String),
   mode String,
   reported_timestamp DateTime64(3, 'UTC'),
   ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
@@ -47,8 +47,8 @@ ORDER BY (user_id, reported_timestamp)
 export async function runClickHouseMigrations(): Promise<void> {
   const client = getClickHouseDB();
 
-  await client.command({ query: SDK_CALL_EVENTS_TABLE });
-  logger.lifecycle("ClickHouse: sdk_call_events table ensured");
+  await client.command({ query: BASIC_USAGE_EVENTS_TABLE });
+  logger.lifecycle("ClickHouse: basic_usage_events table ensured");
 
   await client.command({ query: AI_TOKEN_USAGE_EVENTS_TABLE });
   logger.lifecycle("ClickHouse: ai_token_usage_events table ensured");
