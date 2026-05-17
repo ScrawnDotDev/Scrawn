@@ -6,7 +6,6 @@ enum PaymentErrorType {
   MISSING_PRODUCT_ID = "MISSING_PRODUCT_ID",
   INVALID_CHECKOUT_RESPONSE = "INVALID_CHECKOUT_RESPONSE",
   PRICE_CALCULATION_FAILED = "PRICE_CALCULATION_FAILED",
-  STORAGE_ADAPTER_FAILED = "STORAGE_ADAPTER_FAILED",
 }
 
 export interface PaymentErrorContext {
@@ -82,20 +81,6 @@ export class PaymentError extends Error {
       message: userId
         ? `Failed to calculate price for user: ${userId}`
         : "Failed to calculate checkout price",
-      code: Status.INTERNAL,
-      originalError,
-    });
-  }
-
-  static storageAdapterFailed(
-    details?: string,
-    originalError?: Error
-  ): PaymentError {
-    return new PaymentError({
-      type: PaymentErrorType.STORAGE_ADAPTER_FAILED,
-      message: details
-        ? `Storage adapter error: ${details}`
-        : "Failed to retrieve data from storage",
       code: Status.INTERNAL,
       originalError,
     });

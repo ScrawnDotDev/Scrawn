@@ -11,7 +11,6 @@ import {
   handleAddPayment,
   handlePriceRequestSdkCall,
   handlePriceRequestAiTokenUsage,
-  handlePriceRequestPayment,
   handleQueryEvents,
 } from "./handlers";
 import type {
@@ -90,10 +89,6 @@ export class ClickHouseAdapter implements StorageAdapter {
 
       case "AI_TOKEN_USAGE": {
         return await handlePriceRequestAiTokenUsage(userID, beforeTimestamp, mode);
-      }
-
-      case "PAYMENT": {
-        return await handlePriceRequestPayment(userID, beforeTimestamp, mode);
       }
 
       default: {
