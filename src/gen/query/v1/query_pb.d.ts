@@ -165,13 +165,9 @@ export class EventRow extends jspb.Message {
   getIngestedTimestamp(): string;
   setIngestedTimestamp(value: string): void;
 
-  hasSdkCallType(): boolean;
-  clearSdkCallType(): void;
-  getSdkCallType(): string;
-  setSdkCallType(value: string): void;
+  getBasicUsageType(): string;
+  setBasicUsageType(value: string): void;
 
-  hasDebitAmount(): boolean;
-  clearDebitAmount(): void;
   getDebitAmount(): number;
   setDebitAmount(value: number): void;
 
@@ -205,9 +201,13 @@ export class EventRow extends jspb.Message {
   getProvider(): string;
   setProvider(value: string): void;
 
+  hasInputCacheTokens(): boolean;
+  clearInputCacheTokens(): void;
   getInputCacheTokens(): number;
   setInputCacheTokens(value: number): void;
 
+  hasInputCacheDebitAmount(): boolean;
+  clearInputCacheDebitAmount(): void;
   getInputCacheDebitAmount(): number;
   setInputCacheDebitAmount(value: number): void;
 
@@ -233,7 +233,7 @@ export namespace EventRow {
     userId: string,
     reportedTimestamp: string,
     ingestedTimestamp: string,
-    sdkCallType: string,
+    basicUsageType: string,
     debitAmount: number,
     model: string,
     inputTokens: number,
@@ -333,20 +333,20 @@ export interface LogicalOperatorMap {
 
 export const LogicalOperator: LogicalOperatorMap;
 
-export interface SdkCallFieldMap {
-  SDK_CALL_FIELD_UNSPECIFIED: 0;
-  SDK_CALL_EVENT_ID: 1;
-  SDK_CALL_EVENT_TYPE: 2;
-  SDK_CALL_USER_ID: 3;
-  SDK_CALL_API_KEY_ID: 4;
-  SDK_CALL_REPORTED_TIMESTAMP: 5;
-  SDK_CALL_INGESTED_TIMESTAMP: 6;
-  SDK_CALL_SDK_CALL_TYPE: 7;
-  SDK_CALL_DEBIT_AMOUNT: 8;
-  SDK_CALL_METADATA: 9;
+export interface BasicUsageFieldMap {
+  BASIC_USAGE_FIELD_UNSPECIFIED: 0;
+  BASIC_USAGE_EVENT_ID: 1;
+  BASIC_USAGE_EVENT_TYPE: 2;
+  BASIC_USAGE_USER_ID: 3;
+  BASIC_USAGE_API_KEY_ID: 4;
+  BASIC_USAGE_REPORTED_TIMESTAMP: 5;
+  BASIC_USAGE_INGESTED_TIMESTAMP: 6;
+  BASIC_USAGE_BASIC_USAGE_TYPE: 7;
+  BASIC_USAGE_DEBIT_AMOUNT: 8;
+  BASIC_USAGE_METADATA: 9;
 }
 
-export const SdkCallField: SdkCallFieldMap;
+export const BasicUsageField: BasicUsageFieldMap;
 
 export interface AiTokenFieldMap {
   AI_TOKEN_FIELD_UNSPECIFIED: 0;

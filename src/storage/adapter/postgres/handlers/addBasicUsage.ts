@@ -9,7 +9,7 @@ import {
   executeInTransaction,
 } from "./addEventUtils";
 
-export async function handleAddSdkCall(
+export async function handleAddBasicUsage(
   event_data: SqlRecordOf<"BASIC_USAGE">,
   apiKeyId: string,
   mode: "production" | "test"

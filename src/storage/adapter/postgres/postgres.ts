@@ -6,9 +6,9 @@ import {
 import { getPostgresDB } from "../../db/postgres/db";
 import { StorageError } from "../../../errors/storage";
 import {
-  handleAddSdkCall,
+  handleAddBasicUsage,
   handleAddPayment,
-  handlePriceRequestSdkCall,
+  handlePriceRequestBasicUsage,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
   handleQueryEvents,
@@ -61,7 +61,7 @@ export class PostgresAdapter implements StorageAdapter {
         if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddSdkCall(event_data, apiKeyId, mode);
+        return await handleAddBasicUsage(event_data, apiKeyId, mode);
       }
 
       case "AI_TOKEN_USAGE": {
@@ -89,7 +89,7 @@ export class PostgresAdapter implements StorageAdapter {
   ): Promise<number> {
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestSdkCall(userID, beforeTimestamp, mode);
+        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode);
       }
 
       case "AI_TOKEN_USAGE": {

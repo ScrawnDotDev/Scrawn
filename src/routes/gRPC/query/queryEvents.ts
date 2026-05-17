@@ -69,7 +69,7 @@ function buildEventRow(row: QueryResponse["rows"][number]): EventRow {
   eventRow.setIngestedTimestamp(String(row.ingestedTimestamp ?? ""));
 
   if (row.basicUsageType != null) {
-    eventRow.setSdkCallType(String(row.basicUsageType));
+    eventRow.setBasicUsageType(String(row.basicUsageType));
   }
   if (row.debitAmount != null) {
     eventRow.setDebitAmount(Number(row.debitAmount));
@@ -88,6 +88,12 @@ function buildEventRow(row: QueryResponse["rows"][number]): EventRow {
   }
   if (row.outputDebitAmount != null) {
     eventRow.setOutputDebitAmount(Number(row.outputDebitAmount));
+  }
+  if (row.inputCacheTokens != null) {
+    eventRow.setInputCacheTokens(Number(row.inputCacheTokens));
+  }
+  if (row.inputCacheDebitAmount != null) {
+    eventRow.setInputCacheDebitAmount(Number(row.inputCacheDebitAmount));
   }
   if (row.metadata != null) {
     eventRow.setMetadata(JSON.stringify(row.metadata));

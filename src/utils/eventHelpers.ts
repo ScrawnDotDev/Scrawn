@@ -18,7 +18,7 @@ export function createEventInstance(
   eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
 ): Event {
   if (eventSkeleton.type === "BASIC_USAGE") {
-    const data = eventSkeleton.sdkcall;
+    const data = eventSkeleton.basicusage;
     return new BasicUsage(
       eventSkeleton.userid,
       eventSkeleton.reportedtimestamp,

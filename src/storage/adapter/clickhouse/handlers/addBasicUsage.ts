@@ -4,7 +4,7 @@ import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
 import { toClickHouseDateTime } from "../utils";
 
-export async function handleAddSdkCall(
+export async function handleAddBasicUsage(
   event_data: SqlRecordOf<"BASIC_USAGE">,
   apiKeyId: string,
   mode: "production" | "test"

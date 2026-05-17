@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 
-export async function handlePriceRequestSdkCall(
+export async function handlePriceRequestBasicUsage(
   userId: UserId,
   beforeTimestamp: DateTime,
   mode: "production" | "test"

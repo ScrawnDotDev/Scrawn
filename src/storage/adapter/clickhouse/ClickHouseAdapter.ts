@@ -6,10 +6,10 @@ import {
 import { getClickHouseDB } from "../../db/clickhouse";
 import { StorageError } from "../../../errors/storage";
 import {
-  handleAddSdkCall,
+  handleAddBasicUsage,
   handleAddAiTokenUsage,
   handleAddPayment,
-  handlePriceRequestSdkCall,
+  handlePriceRequestBasicUsage,
   handlePriceRequestAiTokenUsage,
   handleQueryEvents,
 } from "./handlers";
@@ -56,7 +56,7 @@ export class ClickHouseAdapter implements StorageAdapter {
         if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddSdkCall(event_data, apiKeyId, mode);
+        return await handleAddBasicUsage(event_data, apiKeyId, mode);
       }
 
       case "AI_TOKEN_USAGE": {
@@ -84,7 +84,7 @@ export class ClickHouseAdapter implements StorageAdapter {
   ): Promise<number> {
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestSdkCall(userID, beforeTimestamp, mode);
+        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode);
       }
 
       case "AI_TOKEN_USAGE": {

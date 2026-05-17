@@ -13,10 +13,10 @@ export class RegisterEventRequest extends jspb.Message {
   getReportedtimestamp(): number;
   setReportedtimestamp(value: number): void;
 
-  hasSdkcall(): boolean;
-  clearSdkcall(): void;
-  getSdkcall(): SDKCall | undefined;
-  setSdkcall(value?: SDKCall): void;
+  hasBasicusage(): boolean;
+  clearBasicusage(): void;
+  getBasicusage(): BasicUsage | undefined;
+  setBasicusage(value?: BasicUsage): void;
 
   getDataCase(): RegisterEventRequest.DataCase;
   serializeBinary(): Uint8Array;
@@ -34,18 +34,18 @@ export namespace RegisterEventRequest {
     type: EventTypeMap[keyof EventTypeMap],
     userid: string,
     reportedtimestamp: number,
-    sdkcall?: SDKCall.AsObject,
+    basicusage?: BasicUsage.AsObject,
   }
 
   export enum DataCase {
     DATA_NOT_SET = 0,
-    SDKCALL = 4,
+    BASICUSAGE = 4,
   }
 }
 
-export class SDKCall extends jspb.Message {
-  getSdkcalltype(): SDKCallTypeMap[keyof SDKCallTypeMap];
-  setSdkcalltype(value: SDKCallTypeMap[keyof SDKCallTypeMap]): void;
+export class BasicUsage extends jspb.Message {
+  getBasicusagetype(): BasicUsageTypeMap[keyof BasicUsageTypeMap];
+  setBasicusagetype(value: BasicUsageTypeMap[keyof BasicUsageTypeMap]): void;
 
   hasAmount(): boolean;
   clearAmount(): void;
@@ -67,20 +67,20 @@ export class SDKCall extends jspb.Message {
   getMetadata(): string;
   setMetadata(value: string): void;
 
-  getDebitCase(): SDKCall.DebitCase;
+  getDebitCase(): BasicUsage.DebitCase;
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): SDKCall.AsObject;
-  static toObject(includeInstance: boolean, msg: SDKCall): SDKCall.AsObject;
+  toObject(includeInstance?: boolean): BasicUsage.AsObject;
+  static toObject(includeInstance: boolean, msg: BasicUsage): BasicUsage.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: SDKCall, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): SDKCall;
-  static deserializeBinaryFromReader(message: SDKCall, reader: jspb.BinaryReader): SDKCall;
+  static serializeBinaryToWriter(message: BasicUsage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): BasicUsage;
+  static deserializeBinaryFromReader(message: BasicUsage, reader: jspb.BinaryReader): BasicUsage;
 }
 
-export namespace SDKCall {
+export namespace BasicUsage {
   export type AsObject = {
-    sdkcalltype: SDKCallTypeMap[keyof SDKCallTypeMap],
+    basicusagetype: BasicUsageTypeMap[keyof BasicUsageTypeMap],
     amount: number,
     tag: string,
     expr: string,
@@ -125,10 +125,10 @@ export class StreamEventRequest extends jspb.Message {
   getReportedtimestamp(): number;
   setReportedtimestamp(value: number): void;
 
-  hasSdkcall(): boolean;
-  clearSdkcall(): void;
-  getSdkcall(): SDKCall | undefined;
-  setSdkcall(value?: SDKCall): void;
+  hasBasicusage(): boolean;
+  clearBasicusage(): void;
+  getBasicusage(): BasicUsage | undefined;
+  setBasicusage(value?: BasicUsage): void;
 
   hasAitokenusage(): boolean;
   clearAitokenusage(): void;
@@ -151,13 +151,13 @@ export namespace StreamEventRequest {
     type: EventTypeMap[keyof EventTypeMap],
     userid: string,
     reportedtimestamp: number,
-    sdkcall?: SDKCall.AsObject,
+    basicusage?: BasicUsage.AsObject,
     aitokenusage?: AITokenUsage.AsObject,
   }
 
   export enum DataCase {
     DATA_NOT_SET = 0,
-    SDKCALL = 4,
+    BASICUSAGE = 4,
     AITOKENUSAGE = 5,
   }
 }
@@ -310,17 +310,17 @@ export namespace StreamEventResponse {
 
 export interface EventTypeMap {
   EVENT_TYPE_UNSPECIFIED: 0;
-  SDK_CALL: 1;
+  BASIC_USAGE: 1;
   AI_TOKEN_USAGE: 2;
 }
 
 export const EventType: EventTypeMap;
 
-export interface SDKCallTypeMap {
-  SDKCALLTYPE_UNSPECIFIED: 0;
+export interface BasicUsageTypeMap {
+  BASIC_USAGE_TYPE_UNSPECIFIED: 0;
   RAW: 1;
   MIDDLEWARE_CALL: 2;
 }
 
-export const SDKCallType: SDKCallTypeMap;
+export const BasicUsageType: BasicUsageTypeMap;
 

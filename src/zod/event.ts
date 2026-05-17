@@ -19,7 +19,7 @@ const BaseEvent = z.object({
 
 const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
   .object({
-    sdkcalltype: z.union([
+    basicusagetype: z.union([
       z.literal(0).transform(() => "RAW" as const),
       z.literal(1).transform(() => "RAW" as const),
       z.literal(2).transform(() => "MIDDLEWARE_CALL" as const),
@@ -38,7 +38,7 @@ const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
     } else {
       debitAmount = v.amount;
     }
-    return { basicUsageType: v.sdkcalltype, debitAmount, metadata: v.metadata ? JSON.parse(v.metadata) as Record<string, unknown> : undefined };
+    return { basicUsageType: v.basicusagetype, debitAmount, metadata: v.metadata ? JSON.parse(v.metadata) as Record<string, unknown> : undefined };
   });
 
 const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
@@ -117,12 +117,12 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
 
 const RegisterEventBasicUsage = BaseEvent.extend({
   type: z.literal(1).transform(() => "BASIC_USAGE" as const),
-  sdkcall: BasicUsageDataSchema,
+  basicusage: BasicUsageDataSchema,
 });
 
 const StreamEventBasicUsage = BaseEvent.extend({
   type: z.literal(1).transform(() => "BASIC_USAGE" as const),
-  sdkcall: BasicUsageDataSchema,
+  basicusage: BasicUsageDataSchema,
 });
 
 const StreamEventAITokenUsage = BaseEvent.extend({
