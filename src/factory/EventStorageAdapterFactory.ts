@@ -5,7 +5,7 @@ import { PostgresAdapter } from "../storage/adapter/postgres/postgres.js";
 export class StorageAdapterFactory {
   public static async getEventStorageAdapter(RequestType: EventKind) {
     switch (RequestType) {
-      case "SDK_CALL":
+      case "BASIC_USAGE":
       case "AI_TOKEN_USAGE":
       case "PAYMENT": {
         return new PostgresAdapter();

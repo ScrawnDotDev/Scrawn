@@ -53,7 +53,7 @@ export class ClickHouseAdapter implements StorageAdapter {
     }
 
     switch (event_data.type) {
-      case "SDK_CALL": {
+      case "BASIC_USAGE": {
         if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
@@ -84,7 +84,7 @@ export class ClickHouseAdapter implements StorageAdapter {
     mode: "production" | "test"
   ): Promise<number> {
     switch (event_type) {
-      case "SDK_CALL": {
+      case "BASIC_USAGE": {
         return await handlePriceRequestSdkCall(userID, beforeTimestamp, mode);
       }
 

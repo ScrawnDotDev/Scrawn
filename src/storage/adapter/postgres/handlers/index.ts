@@ -4,4 +4,4 @@ export { handlePriceRequestPayment } from "./priceRequestPayment";
 export { handlePriceRequestSdkCall } from "./priceRequestSdkCall";
 export { handleAddAiTokenUsage } from "./addAiTokenUsage";
 export { handlePriceRequestAiTokenUsage } from "./priceRequestAiTokenUsage";
-// export { handleQueryEvents } from "./queryEvents";
+export { handleQueryEvents } from "./queryEvents";

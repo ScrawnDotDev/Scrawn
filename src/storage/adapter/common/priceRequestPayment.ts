@@ -14,10 +14,10 @@ export async function handlePriceRequestPayment(
     }
 
     const sdkAdapter =
-      await StorageAdapterFactory.getEventStorageAdapter("SDK_CALL");
+      await StorageAdapterFactory.getEventStorageAdapter("BASIC_USAGE");
     const sdkPrice = await sdkAdapter.price(
       userId,
-      "SDK_CALL",
+      "BASIC_USAGE",
       beforeTimestamp,
       mode
     );

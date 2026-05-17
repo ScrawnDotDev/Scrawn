@@ -13,7 +13,7 @@ export async function handlePriceRequestSdkCall(
     userId,
     basicUsageEventsTable,
     sql`${basicUsageEventsTable.debitAmount}`,
-    "REQUEST_SDK_CALL",
+    "REQUEST_BASIC_USAGE",
     beforeTimestamp,
     mode
   );

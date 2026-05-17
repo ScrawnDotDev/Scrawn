@@ -10,7 +10,7 @@ import {
 } from "./addEventUtils";
 
 export async function handleAddSdkCall(
-  event_data: SqlRecordOf<"SDK_CALL">,
+  event_data: SqlRecordOf<"BASIC_USAGE">,
   apiKeyId: string,
   mode: "production" | "test"
 ): Promise<{ id: string } | void> {
@@ -19,14 +19,14 @@ export async function handleAddSdkCall(
   const debitAmount = event_data.data.debitAmount;
   if (typeof debitAmount === "number" && debitAmount < 0) {
     throw StorageError.insertFailed(
-      `Negative debit amount not allowed for SDK call for user ${event_data.userId}`,
+      `Negative debit amount not allowed for basic usage event for user ${event_data.userId}`,
       new Error(`debitAmount ${debitAmount} is negative`)
     );
   }
 
   return await executeInTransaction(
     connectionObject,
-    "storing SDK_CALL event",
+    "storing BASIC_USAGE event",
     async (txn) => {
       await ensureUserExists(event_data.userId);
 
@@ -43,20 +43,20 @@ export async function handleAddSdkCall(
             userId: event_data.userId,
             apiKeyId: apiKeyId,
             mode,
-            type: event_data.data.sdkCallType,
+            type: event_data.data.basicUsageType,
             debitAmount: event_data.data.debitAmount,
             metadata: event_data.data.metadata ?? null,
           })
           .returning({ id: basicUsageEventsTable.id });
 
         if (!result) {
-          throw StorageError.emptyResult("SDK call insert returned no ID");
+          throw StorageError.emptyResult("Basic usage event insert returned no ID");
         }
 
         return { id: result.id };
       } catch (e) {
         throw StorageError.insertFailed(
-          "Failed to insert SDK call event",
+          "Failed to insert basic usage event",
           e instanceof Error ? e : new Error(String(e))
         );
       }

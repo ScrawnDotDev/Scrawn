@@ -1,8 +1,8 @@
 import type { DateTime } from "luxon";
 import type { UserId } from "../../config/identifiers";
 
-export type SDKCallEventData = {
-  sdkCallType: "RAW" | "MIDDLEWARE_CALL";
+export type BasicUsageEventData = {
+  basicUsageType: "RAW" | "MIDDLEWARE_CALL";
   debitAmount: number;
   metadata?: Record<string, unknown>;
 };
@@ -24,12 +24,12 @@ export type PaymentEventData = {
 };
 
 export type EventKind =
-  | "SDK_CALL"
+  | "BASIC_USAGE"
   | "AI_TOKEN_USAGE"
   | "PAYMENT"
 
 export type EventDataMap = {
-  SDK_CALL: SDKCallEventData;
+  BASIC_USAGE: BasicUsageEventData;
   AI_TOKEN_USAGE: AITokenUsageEventData;
   PAYMENT: PaymentEventData;
 };
@@ -37,7 +37,7 @@ export type EventDataMap = {
 export type EventData<K extends EventKind> = EventDataMap[K];
 
 export type SqlRecord =
-  | { type: "SDK_CALL"; reported_timestamp: DateTime; data: SDKCallEventData; userId: UserId }
+  | { type: "BASIC_USAGE"; reported_timestamp: DateTime; data: BasicUsageEventData; userId: UserId }
   | { type: "AI_TOKEN_USAGE"; reported_timestamp: DateTime; data: AITokenUsageEventData; userId: UserId }
   | { type: "PAYMENT"; reported_timestamp: DateTime; data: PaymentEventData; userId: UserId }
 
@@ -55,7 +55,7 @@ export interface Event<K extends EventKind = EventKind> {
   serialize(): SerializedEvent;
 }
 
-export interface SDKCallEvent extends Event<"SDK_CALL"> {
+export interface BasicUsageEvent extends Event<"BASIC_USAGE"> {
   readonly userId: UserId;
   readonly reportedTimestamp: DateTime;
 }

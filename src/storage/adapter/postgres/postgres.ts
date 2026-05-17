@@ -12,6 +12,7 @@ import {
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
+  handleQueryEvents,
 } from "./handlers";
 import type {
   SerializedEvent,
@@ -57,7 +58,7 @@ export class PostgresAdapter implements StorageAdapter {
     }
 
     switch (event_data.type) {
-      case "SDK_CALL": {
+      case "BASIC_USAGE": {
         if (!apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
@@ -92,7 +93,7 @@ export class PostgresAdapter implements StorageAdapter {
         return await handlePriceRequestPayment(userID, beforeTimestamp, mode);
       }
 
-      case "SDK_CALL": {
+      case "BASIC_USAGE": {
         return await handlePriceRequestSdkCall(userID, beforeTimestamp, mode);
       }
 
@@ -111,7 +112,6 @@ export class PostgresAdapter implements StorageAdapter {
   }
 
   async query(request: QueryRequest): Promise<QueryResponse> {
-    return "smth" as any;
-    // return await handleQueryEvents(request);
+    return await handleQueryEvents(request);
   }
 }

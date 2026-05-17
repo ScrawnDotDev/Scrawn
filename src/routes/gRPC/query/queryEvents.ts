@@ -34,7 +34,7 @@ export async function queryEvents(
     });
 
     const adapter =
-      await StorageAdapterFactory.getEventStorageAdapter("SDK_CALL");
+      await StorageAdapterFactory.getEventStorageAdapter("BASIC_USAGE");
     const result = await adapter.query(queryRequest);
 
     const response = buildProtoResponse(result, queryRequest);
@@ -84,8 +84,8 @@ function buildProtoResponse(
       eventRow.setReportedTimestamp(String(row.reportedTimestamp ?? ""));
       eventRow.setIngestedTimestamp(String(row.ingestedTimestamp ?? ""));
 
-      if (row.sdkCallType != null) {
-        eventRow.setSdkCallType(String(row.sdkCallType));
+      if (row.basicUsageType != null) {
+        eventRow.setSdkCallType(String(row.basicUsageType));
       }
       if (row.debitAmount != null) {
         eventRow.setDebitAmount(Number(row.debitAmount));

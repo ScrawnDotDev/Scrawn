@@ -10,7 +10,7 @@ export const QUERY_FIELD_NAMES = [
   "ingestedTimestamp",
   "userId",
   "apiKeyId",
-  "sdkCallType",
+  "basicUsageType",
   "debitAmount",
   "model",
   "inputTokens",

@@ -16,7 +16,7 @@ export async function handlePriceRequestSdkCall(
   const pgDb = getPostgresDB();
 
   if (!userId) {
-    throw StorageError.invalidData("Missing userId in SDK_CALL price request");
+    throw StorageError.invalidData("Missing userId in BASIC_USAGE price request");
   }
 
   let lastBilled: string | null = null;

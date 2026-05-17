@@ -2,10 +2,10 @@ import { EventError } from "../errors/event";
 import { AuthError } from "../errors/auth";
 import type {
   Event,
-  SDKCallEventData,
+  BasicUsageEventData,
   AITokenUsageEventData,
 } from "../interface/event/Event";
-import { SDKCall } from "../events/SDKCall";
+import { BasicUsage } from "../events/BasicUsage";
 import { AITokenUsage } from "../events/AITokenUsage";
 import { StorageAdapterFactory } from "../factory";
 import type {
@@ -17,9 +17,9 @@ import type { AuthContext } from "../context/auth";
 export function createEventInstance(
   eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
 ): Event {
-  if (eventSkeleton.type === "SDK_CALL") {
+  if (eventSkeleton.type === "BASIC_USAGE") {
     const data = eventSkeleton.sdkcall;
-    return new SDKCall(
+    return new BasicUsage(
       eventSkeleton.userid,
       eventSkeleton.reportedtimestamp,
       data
