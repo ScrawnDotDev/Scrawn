@@ -1,5 +1,36 @@
 import { z } from "zod";
 
+export interface FilterGroupOutput<C> {
+  logical: "AND" | "OR";
+  conditions: C[];
+  groups: FilterGroupOutput<C>[];
+}
+
+export function createFilterGroupSchema<C extends z.ZodTypeAny>(
+  conditionSchema: C,
+  logicalMap: Record<number, "AND" | "OR">
+): z.ZodType<FilterGroupOutput<z.output<C>>> {
+  const filterGroupSchema: z.ZodType<FilterGroupOutput<z.output<C>>> = z.lazy(() =>
+    z
+      .object({
+        logical: z
+          .number()
+          .int()
+          .min(0)
+          .max(2)
+          .transform((v) => (logicalMap[v] ?? "AND") as "AND" | "OR"),
+        conditionsList: z.array(conditionSchema).default([]),
+        groupsList: z.array(filterGroupSchema).default([]),
+      })
+      .transform((v) => ({
+        logical: v.logical,
+        conditions: v.conditionsList,
+        groups: v.groupsList,
+      }))
+  );
+  return filterGroupSchema;
+}
+
 const cronField = z
   .string()
   .min(9, "Cron expression must be at least 9 characters")
