@@ -10,7 +10,7 @@ export type EventTableName =
   | "ai_token_usage_events"
   | "payment_events";
 
-export const EVENT_TYPE_TO_TABLE: Record<EventTypeLabel, EventTableName> = {
+const EVENT_TYPE_TO_TABLE: Record<EventTypeLabel, EventTableName> = {
   BASIC_USAGE: "basic_usage_events",
   AI_TOKEN_USAGE: "ai_token_usage_events",
   PAYMENT: "payment_events",
@@ -22,13 +22,13 @@ export const TABLE_TO_EVENT_TYPE: Record<EventTableName, EventTypeLabel> = {
   payment_events: "PAYMENT",
 };
 
-export const ALL_EVENT_TYPES: EventTypeLabel[] = [
+const ALL_EVENT_TYPES: EventTypeLabel[] = [
   "BASIC_USAGE",
   "AI_TOKEN_USAGE",
   "PAYMENT",
 ];
 
-export const ALL_TABLES: EventTableName[] = [
+const ALL_TABLES: EventTableName[] = [
   "basic_usage_events",
   "ai_token_usage_events",
   "payment_events",

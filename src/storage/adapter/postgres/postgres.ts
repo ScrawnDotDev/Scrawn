@@ -8,7 +8,6 @@ import { StorageError } from "../../../errors/storage";
 import {
   handleAddSdkCall,
   handleAddPayment,
-  handlePriceRequestPayment,
   handlePriceRequestSdkCall,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
@@ -89,10 +88,6 @@ export class PostgresAdapter implements StorageAdapter {
     mode: "production" | "test"
   ): Promise<number> {
     switch (event_type) {
-      case "PAYMENT": {
-        return await handlePriceRequestPayment(userID, beforeTimestamp, mode);
-      }
-
       case "BASIC_USAGE": {
         return await handlePriceRequestSdkCall(userID, beforeTimestamp, mode);
       }

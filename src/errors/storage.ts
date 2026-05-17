@@ -1,7 +1,6 @@
 import { status } from "@grpc/grpc-js";
 
 enum StorageErrorType {
-  CONNECTION_FAILED = "CONNECTION_FAILED",
   TRANSACTION_FAILED = "TRANSACTION_FAILED",
   INSERT_FAILED = "INSERT_FAILED",
   QUERY_FAILED = "QUERY_FAILED",
@@ -11,11 +10,8 @@ enum StorageErrorType {
   UNKNOWN_EVENT_TYPE = "UNKNOWN_EVENT_TYPE",
   MISSING_API_KEY_ID = "MISSING_API_KEY_ID",
   INVALID_TIMESTAMP = "INVALID_TIMESTAMP",
-  USER_INSERT_FAILED = "USER_INSERT_FAILED",
-  EVENT_INSERT_FAILED = "EVENT_INSERT_FAILED",
   PRICE_CALCULATION_FAILED = "PRICE_CALCULATION_FAILED",
   EMPTY_RESULT = "EMPTY_RESULT",
-  UNKNOWN = "UNKNOWN",
 }
 
 export interface StorageErrorContext {
@@ -36,20 +32,6 @@ export class StorageError extends Error {
     this.type = context.type;
     this.originalError = context.originalError;
     this.code = context.code;
-  }
-
-  static connectionFailed(
-    details?: string,
-    originalError?: Error
-  ): StorageError {
-    return new StorageError({
-      type: StorageErrorType.CONNECTION_FAILED,
-      message: details
-        ? `Storage connection failed: ${details}`
-        : "Storage connection failed",
-      code: status.INTERNAL,
-      originalError,
-    });
   }
 
   static transactionFailed(
@@ -98,17 +80,6 @@ export class StorageError extends Error {
         ? `Database constraint violation: ${constraint}`
         : "Database constraint violation",
       code: status.INVALID_ARGUMENT,
-      originalError,
-    });
-  }
-
-  static dataNotFound(entity?: string, originalError?: Error): StorageError {
-    return new StorageError({
-      type: StorageErrorType.CONNECTION_FAILED,
-      message: entity
-        ? `${entity} not found in storage`
-        : "Data not found in storage",
-      code: status.NOT_FOUND,
       originalError,
     });
   }
@@ -173,34 +144,6 @@ export class StorageError extends Error {
     });
   }
 
-  static userInsertFailed(
-    userId?: string,
-    originalError?: Error
-  ): StorageError {
-    return new StorageError({
-      type: StorageErrorType.USER_INSERT_FAILED,
-      message: userId
-        ? `Failed to insert user with ID: ${userId}`
-        : "Failed to insert user",
-      code: status.INTERNAL,
-      originalError,
-    });
-  }
-
-  static eventInsertFailed(
-    details?: string,
-    originalError?: Error
-  ): StorageError {
-    return new StorageError({
-      type: StorageErrorType.EVENT_INSERT_FAILED,
-      message: details
-        ? `Failed to insert event: ${details}`
-        : "Failed to insert event",
-      code: status.INTERNAL,
-      originalError,
-    });
-  }
-
   static priceCalculationFailed(
     userId?: string,
     originalError?: Error
@@ -226,13 +169,4 @@ export class StorageError extends Error {
     });
   }
 
-  static unknown(originalError?: Error): StorageError {
-    const details = originalError?.message || "No details available";
-    return new StorageError({
-      type: StorageErrorType.UNKNOWN,
-      message: `Unexpected storage error: ${details}`,
-      code: status.INTERNAL,
-      originalError,
-    });
-  }
 }

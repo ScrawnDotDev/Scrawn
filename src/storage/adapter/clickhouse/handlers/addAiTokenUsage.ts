@@ -19,77 +19,35 @@ type AggregatedEvent = {
   metadata?: Record<string, unknown>;
 };
 
-export async function handleAddAiTokenUsage(
-  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
-  mode: "production" | "test"
-): Promise<{ id: string } | void> {
-  const client = getClickHouseDB();
-
-  if (events.length === 0) {
-    return;
+function validateNonNegative(value: unknown, label: string, userId: UserId): void {
+  if (typeof value === "number" && value < 0) {
+    throw StorageError.insertFailed(
+      `Negative ${label} not allowed for AI token usage for user ${userId}`,
+      new Error(`${label} ${value} is negative`)
+    );
   }
+}
 
-  for (const event_data of events) {
-    const inputTokens = event_data.data.inputTokens;
-    if (typeof inputTokens === "number" && inputTokens < 0) {
-      throw StorageError.insertFailed(
-        `Negative input tokens not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputTokens ${inputTokens} is negative`)
-      );
-    }
+function validateAiTokenEvent(event_data: SqlRecordOf<"AI_TOKEN_USAGE">): void {
+  const { userId, data } = event_data;
+  validateNonNegative(data.inputTokens, "inputTokens", userId);
+  validateNonNegative(data.outputTokens, "outputTokens", userId);
+  validateNonNegative(data.inputDebitAmount, "inputDebitAmount", userId);
+  validateNonNegative(data.outputDebitAmount, "outputDebitAmount", userId);
+  validateNonNegative(data.inputCacheTokens, "inputCacheTokens", userId);
+  validateNonNegative(data.inputCacheDebitAmount, "inputCacheDebitAmount", userId);
+}
 
-    const outputTokens = event_data.data.outputTokens;
-    if (typeof outputTokens === "number" && outputTokens < 0) {
-      throw StorageError.insertFailed(
-        `Negative output tokens not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`outputTokens ${outputTokens} is negative`)
-      );
-    }
-
-    const inputDebitAmount = event_data.data.inputDebitAmount;
-    if (typeof inputDebitAmount === "number" && inputDebitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative input debit amount not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputDebitAmount ${inputDebitAmount} is negative`)
-      );
-    }
-
-    const outputDebitAmount = event_data.data.outputDebitAmount;
-    if (typeof outputDebitAmount === "number" && outputDebitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative output debit amount not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`outputDebitAmount ${outputDebitAmount} is negative`)
-      );
-    }
-
-    const inputCacheTokens = event_data.data.inputCacheTokens;
-    if (typeof inputCacheTokens === "number" && inputCacheTokens < 0) {
-      throw StorageError.insertFailed(
-        `Negative input cache tokens not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputCacheTokens ${inputCacheTokens} is negative`)
-      );
-    }
-
-    const inputCacheDebitAmount = event_data.data.inputCacheDebitAmount;
-    if (typeof inputCacheDebitAmount === "number" && inputCacheDebitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative input cache debit amount not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputCacheDebitAmount ${inputCacheDebitAmount} is negative`)
-      );
-    }
-  }
-
+function aggregateAiTokenEvents(
+  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>
+): AggregatedEvent[] {
   const aggregationMap = new Map<string, AggregatedEvent>();
 
   for (const event_data of events) {
     if (!event_data.reported_timestamp.isValid) {
-      throw StorageError.invalidTimestamp(
-        "reported_timestamp is not a valid DateTime"
-      );
+      throw StorageError.invalidTimestamp("reported_timestamp is not a valid DateTime");
     }
     const reportedTimestamp = toClickHouseDateTime(event_data.reported_timestamp);
-
     const key = `${event_data.userId}:${event_data.data.model}`;
     const existing = aggregationMap.get(key);
 
@@ -120,11 +78,17 @@ export async function handleAddAiTokenUsage(
     }
   }
 
-  const aggregatedEvents = Array.from(aggregationMap.values());
-  const firstId = crypto.randomUUID();
-  const now = toClickHouseDateTime(DateTime.utc());
+  return Array.from(aggregationMap.values());
+}
 
-  const values = aggregatedEvents.map((aggEvent, index) => {
+function buildAiTokenInsertRows(
+  aggregatedEvents: AggregatedEvent[],
+  apiKeyId: string,
+  mode: "production" | "test",
+  firstId: string,
+  now: string
+): Array<Record<string, unknown>> {
+  return aggregatedEvents.map((aggEvent, index) => {
     const metrics = JSON.stringify({
       tokens: {
         input: aggEvent.inputTokens,
@@ -142,7 +106,7 @@ export async function handleAddAiTokenUsage(
       id: index === 0 ? firstId : crypto.randomUUID(),
       user_id: aggEvent.userId,
       api_key_id: apiKeyId,
-      mode: mode,
+      mode,
       reported_timestamp: aggEvent.reported_timestamp,
       ingested_timestamp: now,
       model: aggEvent.model,
@@ -151,6 +115,27 @@ export async function handleAddAiTokenUsage(
       metadata: aggEvent.metadata ?? null,
     };
   });
+}
+
+export async function handleAddAiTokenUsage(
+  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
+  apiKeyId: string,
+  mode: "production" | "test"
+): Promise<{ id: string } | void> {
+  const client = getClickHouseDB();
+
+  if (events.length === 0) {
+    return;
+  }
+
+  for (const event_data of events) {
+    validateAiTokenEvent(event_data);
+  }
+
+  const aggregatedEvents = aggregateAiTokenEvents(events);
+  const firstId = crypto.randomUUID();
+  const now = toClickHouseDateTime(DateTime.utc());
+  const values = buildAiTokenInsertRows(aggregatedEvents, apiKeyId, mode, firstId, now);
 
   try {
     await client.insert({

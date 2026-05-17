@@ -31,4 +31,3 @@ export async function ensureUserExists(userId: string): Promise<void> {
   }
 }
 
-export { userExists as checkUserExists };

@@ -4,13 +4,10 @@ enum AuthErrorType {
   MISSING_HEADER = "MISSING_HEADER",
   INVALID_HEADER_FORMAT = "INVALID_HEADER_FORMAT",
   INVALID_API_KEY = "INVALID_API_KEY",
-  INVALID_ROLE = "INVALID_ROLE",
   EXPIRED_API_KEY = "EXPIRED_API_KEY",
   REVOKED_API_KEY = "REVOKED_API_KEY",
   ROLE_MISMATCH = "ROLE_MISMATCH",
   PERMISSION_DENIED = "PERMISSION_DENIED",
-  DATABASE_ERROR = "DATABASE_ERROR",
-  UNKNOWN = "UNKNOWN",
 }
 
 export interface AuthErrorContext {
@@ -69,33 +66,6 @@ export class AuthError extends Error {
     return new AuthError({
       type: AuthErrorType.REVOKED_API_KEY,
       message: "API key has been revoked",
-      code: Status.UNAUTHENTICATED,
-    });
-  }
-
-  static databaseError(originalError?: Error): AuthError {
-    return new AuthError({
-      type: AuthErrorType.DATABASE_ERROR,
-      message: "Failed to verify API key",
-      code: Status.INTERNAL,
-      originalError,
-    });
-  }
-
-  static unknown(originalError?: Error): AuthError {
-    const details = originalError?.message || "No details available";
-    return new AuthError({
-      type: AuthErrorType.UNKNOWN,
-      message: `Unexpected authentication error: ${details}`,
-      code: Status.INTERNAL,
-      originalError,
-    });
-  }
-
-  static invalidRole(details?: string): AuthError {
-    return new AuthError({
-      type: AuthErrorType.INVALID_ROLE,
-      message: details || "Invalid API key role",
       code: Status.UNAUTHENTICATED,
     });
   }

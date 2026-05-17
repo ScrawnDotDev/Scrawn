@@ -1,7 +1,5 @@
 import { getPostgresDB } from "../../../db/postgres/db";
-import {
-  aiTokenUsageEventsTable,
-} from "../../../db/postgres/schema";
+import { aiTokenUsageEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
@@ -28,74 +26,32 @@ type AggregatedEvent = {
   metadata?: Record<string, unknown>;
 };
 
-export async function handleAddAiTokenUsage(
-  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
-  mode: "production" | "test"
-): Promise<{ id: string } | void> {
-  const connectionObject = getPostgresDB();
-
-  if (events.length === 0) {
-    return;
+function validateNonNegative(value: unknown, label: string, userId: UserId): void {
+  if (typeof value === "number" && value < 0) {
+    throw StorageError.insertFailed(
+      `Negative ${label} not allowed for AI token usage for user ${userId}`,
+      new Error(`${label} ${value} is negative`)
+    );
   }
+}
 
-  for (const event_data of events) {
-    const inputTokens = event_data.data.inputTokens;
-    if (typeof inputTokens === "number" && inputTokens < 0) {
-      throw StorageError.insertFailed(
-        `Negative input tokens not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputTokens ${inputTokens} is negative`)
-      );
-    }
+function validateAiTokenEvent(event_data: SqlRecordOf<"AI_TOKEN_USAGE">): void {
+  const { userId, data } = event_data;
+  validateNonNegative(data.inputTokens, "inputTokens", userId);
+  validateNonNegative(data.outputTokens, "outputTokens", userId);
+  validateNonNegative(data.inputDebitAmount, "inputDebitAmount", userId);
+  validateNonNegative(data.outputDebitAmount, "outputDebitAmount", userId);
+  validateNonNegative(data.inputCacheTokens, "inputCacheTokens", userId);
+  validateNonNegative(data.inputCacheDebitAmount, "inputCacheDebitAmount", userId);
+}
 
-    const outputTokens = event_data.data.outputTokens;
-    if (typeof outputTokens === "number" && outputTokens < 0) {
-      throw StorageError.insertFailed(
-        `Negative output tokens not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`outputTokens ${outputTokens} is negative`)
-      );
-    }
-
-    const inputDebitAmount = event_data.data.inputDebitAmount;
-    if (typeof inputDebitAmount === "number" && inputDebitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative input debit amount not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputDebitAmount ${inputDebitAmount} is negative`)
-      );
-    }
-
-    const outputDebitAmount = event_data.data.outputDebitAmount;
-    if (typeof outputDebitAmount === "number" && outputDebitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative output debit amount not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`outputDebitAmount ${outputDebitAmount} is negative`)
-      );
-    }
-
-    const inputCacheTokens = event_data.data.inputCacheTokens;
-    if (typeof inputCacheTokens === "number" && inputCacheTokens < 0) {
-      throw StorageError.insertFailed(
-        `Negative input cache tokens not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputCacheTokens ${inputCacheTokens} is negative`)
-      );
-    }
-
-    const inputCacheDebitAmount = event_data.data.inputCacheDebitAmount;
-    if (typeof inputCacheDebitAmount === "number" && inputCacheDebitAmount < 0) {
-      throw StorageError.insertFailed(
-        `Negative input cache debit amount not allowed for AI token usage for user ${event_data.userId}`,
-        new Error(`inputCacheDebitAmount ${inputCacheDebitAmount} is negative`)
-      );
-    }
-  }
-
+async function aggregateAiTokenEvents(
+  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>
+): Promise<AggregatedEvent[]> {
   const aggregationMap = new Map<string, AggregatedEvent>();
 
   for (const event_data of events) {
-    const reported_timestamp = await validateAndPrepareTimestamp(
-      event_data.reported_timestamp
-    );
-
+    const reported_timestamp = await validateAndPrepareTimestamp(event_data.reported_timestamp);
     const key = `${event_data.userId}:${event_data.data.model}`;
     const existing = aggregationMap.get(key);
 
@@ -126,7 +82,54 @@ export async function handleAddAiTokenUsage(
     }
   }
 
-  const aggregatedEvents = Array.from(aggregationMap.values());
+  return Array.from(aggregationMap.values());
+}
+
+function buildAiTokenInsertValues(
+  aggregatedEvents: AggregatedEvent[],
+  apiKeyId: string,
+  mode: "production" | "test"
+) {
+  return aggregatedEvents.map((aggEvent) => ({
+    reportedTimestamp: aggEvent.reported_timestamp,
+    ingestedTimestamp: DateTime.utc().toString(),
+    userId: aggEvent.userId,
+    apiKeyId,
+    mode,
+    model: aggEvent.model,
+    provider: aggEvent.provider,
+    metrics: metricsSchema.parse({
+      tokens: {
+        input: aggEvent.inputTokens,
+        input_cache: aggEvent.inputCacheTokens,
+        output: aggEvent.outputTokens,
+      },
+      debit_amount: {
+        input: aggEvent.inputDebitAmount,
+        input_cache: aggEvent.inputCacheDebitAmount,
+        output: aggEvent.outputDebitAmount,
+      },
+    } satisfies Metrics),
+    metadata: aggEvent.metadata ?? null,
+  }));
+}
+
+export async function handleAddAiTokenUsage(
+  events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
+  apiKeyId: string,
+  mode: "production" | "test"
+): Promise<{ id: string } | void> {
+  const connectionObject = getPostgresDB();
+
+  if (events.length === 0) {
+    return;
+  }
+
+  for (const event_data of events) {
+    validateAiTokenEvent(event_data);
+  }
+
+  const aggregatedEvents = await aggregateAiTokenEvents(events);
 
   return await executeInTransaction(
     connectionObject,
@@ -141,28 +144,7 @@ export async function handleAddAiTokenUsage(
       }
 
       try {
-        const aiTokenUsageValues = aggregatedEvents.map((aggEvent) => ({
-          reportedTimestamp: aggEvent.reported_timestamp,
-          ingestedTimestamp: DateTime.utc().toString(),
-          userId: aggEvent.userId,
-          apiKeyId: apiKeyId,
-          mode: mode,
-          model: aggEvent.model,
-          provider: aggEvent.provider,
-          metrics: metricsSchema.parse({
-            tokens: {
-              input: aggEvent.inputTokens,
-              input_cache: aggEvent.inputCacheTokens,
-              output: aggEvent.outputTokens,
-            },
-            debit_amount: {
-              input: aggEvent.inputDebitAmount,
-              input_cache: aggEvent.inputCacheDebitAmount,
-              output: aggEvent.outputDebitAmount,
-            },
-          } satisfies Metrics),
-          metadata: aggEvent.metadata ?? null,
-        }));
+        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, apiKeyId, mode);
 
         const inserted = await txn
           .insert(aiTokenUsageEventsTable)

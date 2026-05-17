@@ -19,7 +19,7 @@ import {
   createProviderCheckout,
   type CheckoutResult,
 } from "./paymentProvider.ts";
-import { StorageAdapterFactory } from "../../../factory";
+import { calculatePaymentPrice } from "../../../services/pricingService";
 import type { WideEventBuilder } from "../../../context/requestContext";
 import { apiKeyContextKey, type AuthContext } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
@@ -117,19 +117,7 @@ async function calculatePrice(
   beforeTimestamp: DateTime,
   mode: "production" | "test"
 ): Promise<number> {
-  const storageAdapter =
-    await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
-
-  if (!storageAdapter) {
-    throw PaymentError.storageAdapterFailed("Storage adapter not available");
-  }
-
-  const price = await storageAdapter.price(
-    userId,
-    "PAYMENT",
-    beforeTimestamp,
-    mode
-  );
+  const price = await calculatePaymentPrice(userId, beforeTimestamp, mode);
 
   if (typeof price !== "number" || isNaN(price) || price < 0) {
     throw PaymentError.priceCalculationFailed(

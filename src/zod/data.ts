@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Operator, LogicalOperator } from "../gen/data/v1/data_pb";
+import { createFilterGroupSchema } from "./internals";
 
 const DATA_TABLE_NAMES = [
   "users",
@@ -35,30 +36,7 @@ const filterConditionSchema = z.object({
   value: z.string(),
 });
 
-interface FilterGroupOutput {
-  logical: "AND" | "OR";
-  conditions: Array<z.output<typeof filterConditionSchema>>;
-  groups: FilterGroupOutput[];
-}
-
-const filterGroupSchema: z.ZodType<FilterGroupOutput> = z.lazy(() =>
-  z
-    .object({
-      logical: z
-        .number()
-        .int()
-        .min(0)
-        .max(2)
-        .transform((v) => LOGICAL_MAP[v as keyof typeof LOGICAL_MAP]),
-      conditionsList: z.array(filterConditionSchema).default([]),
-      groupsList: z.array(filterGroupSchema).default([]),
-    })
-    .transform((v) => ({
-      logical: v.logical,
-      conditions: v.conditionsList,
-      groups: v.groupsList,
-    }))
-);
+const filterGroupSchema = createFilterGroupSchema(filterConditionSchema, LOGICAL_MAP);
 
 const orderBySchema = z.object({
   field: z.string(),

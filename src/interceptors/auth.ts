@@ -55,28 +55,6 @@ export type GrpcFlexibleHandler = (
 ) => void | Promise<void>;
 
 /**
- * Guards a gRPC handler to require a specific role.
- * Rejects the call with PERMISSION_DENIED if the role doesn't match.
- */
-export function requireRole(
-  allowedRoles: ApiKeyRole | ApiKeyRole[]
-): GrpcUntypedHandler {
-  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
-
-  return (call: unknown, callback?: sendUnaryData<unknown>) => {
-    const auth = (call as GrpcCallContext)[apiKeyContextKey];
-    if (!auth || !roles.includes(auth.role)) {
-      return callback?.(
-        AuthError.permissionDenied(
-          `This endpoint requires role: ${roles.join(" or ")}`
-        )
-      );
-    }
-    return undefined; // pass through to next handler
-  };
-}
-
-/**
  * Auth interceptor for gRPC — validates API key, extracts role, sets context.
  */
 export function authInterceptor<Req, Res>(

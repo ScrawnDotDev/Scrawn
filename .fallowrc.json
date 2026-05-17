@@ -2,6 +2,7 @@
   "$schema": "node_modules/fallow/schema.json",
   "ignorePatterns": [
     "src/gen/**/*_connect.ts",
-    "src/gen/**/file_*.ts"
+    "src/gen/**/file_*.ts",
+    "src/gen/**/*_grpc_pb.js"
   ]
 }
