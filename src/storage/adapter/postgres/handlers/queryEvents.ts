@@ -18,6 +18,7 @@ interface PGFieldDef {
   select: string | null;
   whereCol: string | null;
   whereCast: string;
+  aggExpr?: string;
 }
 
 type PGFieldRegistry = Record<EventTableName, Record<string, PGFieldDef>>;
@@ -84,37 +85,45 @@ const PG_FIELDS: PGFieldRegistry = {
         "(COALESCE((metrics->'debit_amount'->>'input')::integer,0) + COALESCE((metrics->'debit_amount'->>'input_cache')::integer,0) + COALESCE((metrics->'debit_amount'->>'output')::integer,0))::text",
       whereCol: null,
       whereCast: "",
+      aggExpr:
+        "(COALESCE((metrics->'debit_amount'->>'input')::bigint,0) + COALESCE((metrics->'debit_amount'->>'input_cache')::bigint,0) + COALESCE((metrics->'debit_amount'->>'output')::bigint,0))",
     },
     model: { select: "model", whereCol: "model", whereCast: "" },
     inputTokens: {
       select: "(metrics->'tokens'->>'input')::text",
       whereCol: null,
       whereCast: "",
+      aggExpr: "(metrics->'tokens'->>'input')::bigint",
     },
     outputTokens: {
       select: "(metrics->'tokens'->>'output')::text",
       whereCol: null,
       whereCast: "",
+      aggExpr: "(metrics->'tokens'->>'output')::bigint",
     },
     inputDebitAmount: {
       select: "(metrics->'debit_amount'->>'input')::text",
       whereCol: null,
       whereCast: "",
+      aggExpr: "(metrics->'debit_amount'->>'input')::bigint",
     },
     outputDebitAmount: {
       select: "(metrics->'debit_amount'->>'output')::text",
       whereCol: null,
       whereCast: "",
+      aggExpr: "(metrics->'debit_amount'->>'output')::bigint",
     },
     inputCacheTokens: {
       select: "(metrics->'tokens'->>'input_cache')::text",
       whereCol: null,
       whereCast: "",
+      aggExpr: "(metrics->'tokens'->>'input_cache')::bigint",
     },
     inputCacheDebitAmount: {
       select: "(metrics->'debit_amount'->>'input_cache')::text",
       whereCol: null,
       whereCast: "",
+      aggExpr: "(metrics->'debit_amount'->>'input_cache')::bigint",
     },
     creditAmount: { select: null, whereCol: null, whereCast: "" },
     provider: { select: "provider", whereCol: "provider", whereCast: "" },
@@ -298,9 +307,11 @@ async function handleAggregationQuery(
     }
 
     if (isSum && agg.field) {
-      const aggCol = PG_FIELDS[t]?.[agg.field]?.whereCol;
-      if (aggCol) {
-        cols.push(sql`${sql.raw(aggCol)}::bigint as ${sql.raw(`"agg_value"`)}`);
+      const def = PG_FIELDS[t]?.[agg.field];
+      if (def?.aggExpr) {
+        cols.push(sql`${sql.raw(def.aggExpr)} as ${sql.raw(`"agg_value"`)}`);
+      } else if (def?.whereCol) {
+        cols.push(sql`${sql.raw(def.whereCol)}::bigint as ${sql.raw(`"agg_value"`)}`);
       } else {
         cols.push(sql`0::bigint as ${sql.raw(`"agg_value"`)}`);
       }

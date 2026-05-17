@@ -19,6 +19,7 @@ import type {
 interface ChFieldDef {
   select: string | null;
   where: string | null;
+  aggExpr?: string;
 }
 
 type ChFieldKey = QueryFieldName | "eventId";
@@ -68,32 +69,40 @@ const CH_FIELDS: Record<EventTableName, Record<ChFieldKey, ChFieldDef>> = {
       select:
         "toString(JSONExtractInt(metrics, 'debit_amount', 'input') + JSONExtractInt(metrics, 'debit_amount', 'input_cache') + JSONExtractInt(metrics, 'debit_amount', 'output'))",
       where: null,
+      aggExpr:
+        "JSONExtractInt(metrics, 'debit_amount', 'input') + JSONExtractInt(metrics, 'debit_amount', 'input_cache') + JSONExtractInt(metrics, 'debit_amount', 'output')",
     },
     model: { select: "model", where: "model" },
     inputTokens: {
       select: "toString(JSONExtractInt(metrics, 'tokens', 'input'))",
       where: null,
+      aggExpr: "JSONExtractInt(metrics, 'tokens', 'input')",
     },
     outputTokens: {
       select: "toString(JSONExtractInt(metrics, 'tokens', 'output'))",
       where: null,
+      aggExpr: "JSONExtractInt(metrics, 'tokens', 'output')",
     },
     inputDebitAmount: {
       select: "toString(JSONExtractInt(metrics, 'debit_amount', 'input'))",
       where: null,
+      aggExpr: "JSONExtractInt(metrics, 'debit_amount', 'input')",
     },
     outputDebitAmount: {
       select: "toString(JSONExtractInt(metrics, 'debit_amount', 'output'))",
       where: null,
+      aggExpr: "JSONExtractInt(metrics, 'debit_amount', 'output')",
     },
     inputCacheTokens: {
       select: "toString(JSONExtractInt(metrics, 'tokens', 'input_cache'))",
       where: null,
+      aggExpr: "JSONExtractInt(metrics, 'tokens', 'input_cache')",
     },
     inputCacheDebitAmount: {
       select:
         "toString(JSONExtractInt(metrics, 'debit_amount', 'input_cache'))",
       where: null,
+      aggExpr: "JSONExtractInt(metrics, 'debit_amount', 'input_cache')",
     },
     creditAmount: { select: null, where: null },
     provider: { select: "provider", where: "provider" },
@@ -315,9 +324,11 @@ async function handleAggregationQuery(
     }
 
     if (isSum && agg.field) {
-      const aggCol = CH_FIELDS[t]?.[agg.field as ChFieldKey]?.where;
-      if (aggCol) {
-        cols.push(`toInt64(${aggCol}) as agg_value`);
+      const def = CH_FIELDS[t]?.[agg.field as ChFieldKey];
+      if (def?.aggExpr) {
+        cols.push(`toInt64(${def.aggExpr}) as agg_value`);
+      } else if (def?.where) {
+        cols.push(`toInt64(${def.where}) as agg_value`);
       } else {
         cols.push("toInt64(0) as agg_value");
       }

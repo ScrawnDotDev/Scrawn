@@ -1,4 +1,7 @@
-import type { QueryFilterGroup } from "../../../interface/storage/Storage";
+import type {
+  QueryFilterGroup,
+  QueryFilter,
+} from "../../../interface/storage/Storage";
 
 export type EventTypeLabel = "BASIC_USAGE" | "AI_TOKEN_USAGE" | "PAYMENT";
 
@@ -40,25 +43,52 @@ export const OPERATOR_SQL: Record<string, string> = {
   NEQ: "!=",
 };
 
-function collectRawEventTypeValues(group: QueryFilterGroup): string[] {
-  const values: string[] = [];
-  const et = group.conditions.find((c) => c.field === "eventType");
-  if (et) values.push(et.value);
-  for (const sub of group.groups) {
-    values.push(...collectRawEventTypeValues(sub));
+interface EventTypeFilter {
+  operator: string;
+  value: string;
+}
+
+function collectEventTypeFilters(group: QueryFilterGroup): EventTypeFilter[] {
+  const filters: EventTypeFilter[] = [];
+  for (const c of group.conditions) {
+    if (c.field === "eventType") {
+      filters.push({ operator: c.operator, value: c.value });
+    }
   }
-  return values;
+  for (const sub of group.groups) {
+    filters.push(...collectEventTypeFilters(sub));
+  }
+  return filters;
 }
 
 export function getTablesForRequest(
   where: QueryFilterGroup
 ): EventTableName[] {
-  const rawValues = collectRawEventTypeValues(where);
-  if (rawValues.length === 0) {
+  const filters = collectEventTypeFilters(where);
+  if (filters.length === 0) {
     return [...ALL_TABLES];
   }
-  const valid = rawValues.filter(
-    (t): t is EventTypeLabel => t in EVENT_TYPE_TO_TABLE
-  );
-  return valid.map((et) => EVENT_TYPE_TO_TABLE[et]);
+
+  const included = new Set<EventTableName>();
+  const excluded = new Set<EventTableName>();
+
+  for (const { operator, value } of filters) {
+    if (!(value in EVENT_TYPE_TO_TABLE)) continue;
+    const table = EVENT_TYPE_TO_TABLE[value as EventTypeLabel];
+    if (operator === "EQ") {
+      included.add(table);
+    } else if (operator === "NEQ") {
+      excluded.add(table);
+    }
+  }
+
+  if (included.size > 0) {
+    return [...included];
+  }
+
+  if (excluded.size > 0) {
+    return ALL_TABLES.filter((t) => !excluded.has(t));
+  }
+
+  return [];
 }
