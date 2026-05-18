@@ -146,7 +146,7 @@ export async function handleAddAiTokenUsage(
 
   const firstEvent = events[0];
   if (firstEvent) {
-    await ensureUserExists(firstEvent.userId).catch(() => {});
+    await ensureUserExists(firstEvent.userId);
   }
 
   const aggregatedEvents = aggregateAiTokenEvents(events);

@@ -76,7 +76,8 @@ export class ClickHouseAdapter implements StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test"
+    mode: "production" | "test",
+    _txn?: unknown
   ): Promise<number> {
     switch (event_type) {
       case "BASIC_USAGE": {

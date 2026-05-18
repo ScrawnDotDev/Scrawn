@@ -31,9 +31,10 @@ export async function handleAddSession(
   billedUpto: DateTime,
   apiKeyId: string,
   mode: "test" | "production",
-  checkoutUrl: string
+  checkoutUrl: string,
+  txn?: PgTransaction<any, any, any>
 ): Promise<{ id: string }> {
-  const connectionObject = getPostgresDB();
+  const connectionObject = txn ?? getPostgresDB();
 
   try {
     if (!sessionId || sessionId.trim().length === 0) {

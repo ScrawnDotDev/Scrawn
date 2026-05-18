@@ -20,6 +20,7 @@ import type {
 import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
 import type { AuthContext } from "../../../context/auth";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
@@ -80,18 +81,21 @@ export class PostgresAdapter implements StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test"
+    mode: "production" | "test",
+    txn?: unknown
   ): Promise<number> {
+    const tx = txn as PgTransaction<any, any, any> | undefined;
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode);
+        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode, tx);
       }
 
       case "AI_TOKEN_USAGE": {
         return await handlePriceRequestAiTokenUsage(
           userID,
           beforeTimestamp,
-          mode
+          mode,
+          tx
         );
       }
 
