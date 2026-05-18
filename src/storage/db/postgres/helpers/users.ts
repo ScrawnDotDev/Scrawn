@@ -1,6 +1,28 @@
 import { getPostgresDB } from "../db";
 import { usersTable } from "../schema";
 import { eq } from "drizzle-orm";
+import { StorageError } from "../../../../errors/storage";
+import type { PgTransaction } from "drizzle-orm/pg-core";
+
+export async function updateUserBilledTimestamp(
+  userId: string,
+  billedUpto: string,
+  txn?: PgTransaction<any, any, any>
+): Promise<void> {
+  const db = txn ?? getPostgresDB();
+
+  try {
+    await db
+      .update(usersTable)
+      .set({ last_billed_timestamp: billedUpto })
+      .where(eq(usersTable.id, userId));
+  } catch (e) {
+    throw StorageError.queryFailed(
+      "Failed to update user billed timestamp",
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
 
 export async function userExists(userId: string): Promise<boolean> {
   const db = getPostgresDB();

@@ -4,6 +4,26 @@ import { eq } from "drizzle-orm";
 import { StorageError } from "../../../../errors/storage";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
+import type { PgTransaction } from "drizzle-orm/pg-core";
+
+export async function markSessionProcessed(
+  checkoutSessionId: string,
+  txn?: PgTransaction<any, any, any>
+): Promise<void> {
+  const db = txn ?? getPostgresDB();
+
+  try {
+    await db
+      .update(sessionsTable)
+      .set({ processed: true })
+      .where(eq(sessionsTable.sessionId, checkoutSessionId));
+  } catch (e) {
+    throw StorageError.queryFailed(
+      "Failed to mark session as processed",
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
 
 export async function handleAddSession(
   userId: UserId,
@@ -71,35 +91,19 @@ export async function handleAddSession(
   }
 }
 
-export type SessionRow = {
-  id: string;
-  userId: string | null;
-  billed_upto: string | null;
-  processed: boolean | null;
-  apiKeyId: string;
-  mode: "production" | "test";
-};
-
 export async function getSessionByCheckoutId(
   checkoutSessionId: string
-): Promise<SessionRow | undefined> {
+): Promise<typeof sessionsTable.$inferSelect | undefined> {
   const db = getPostgresDB();
 
   try {
     const [session] = await db
-      .select({
-        id: sessionsTable.id,
-        userId: sessionsTable.userId,
-        billed_upto: sessionsTable.billed_upto,
-        processed: sessionsTable.processed,
-        apiKeyId: sessionsTable.apiKeyId,
-        mode: sessionsTable.mode,
-      })
+      .select()
       .from(sessionsTable)
       .where(eq(sessionsTable.sessionId, checkoutSessionId))
       .limit(1);
 
-    return session ? { ...session, apiKeyId: session.apiKeyId! } : undefined;
+    return session ?? undefined;
   } catch (e) {
     throw StorageError.queryFailed(
       "Failed to get session by checkout ID",

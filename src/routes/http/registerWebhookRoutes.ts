@@ -7,13 +7,28 @@ import {
 import { logger } from "../../errors/logger.ts";
 import { handleDodoWebhook } from "./createdCheckout.ts";
 
+function extractHeaderValue(
+  header: string | string[] | undefined
+): string | undefined {
+  return typeof header === "string"
+    ? header
+    : Array.isArray(header)
+      ? header[0]
+      : undefined;
+}
+
 export async function registerWebhookRoutes(
   server: ReturnType<(typeof import("fastify"))["fastify"]>
 ): Promise<void> {
   server.post(
     "/webhooks/payment/createdCheckout",
     { config: { rawBody: true } },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest & {
+        rawBody?: string;
+      },
+      reply: FastifyReply
+    ) => {
       const builder = createWideEventBuilder(
         generateRequestId(),
         request.method,
@@ -24,28 +39,11 @@ export async function registerWebhookRoutes(
         const signatureHeader = request.headers["webhook-signature"];
         const timestampHeader = request.headers["webhook-timestamp"];
         const webhookIdHeader = request.headers["webhook-id"];
-        const signature =
-          typeof signatureHeader === "string"
-            ? signatureHeader
-            : Array.isArray(signatureHeader)
-              ? signatureHeader[0]
-              : undefined;
-        const timestamp =
-          typeof timestampHeader === "string"
-            ? timestampHeader
-            : Array.isArray(timestampHeader)
-              ? timestampHeader[0]
-              : undefined;
-        const webhookId =
-          typeof webhookIdHeader === "string"
-            ? webhookIdHeader
-            : Array.isArray(webhookIdHeader)
-              ? webhookIdHeader[0]
-              : undefined;
+        const signature = extractHeaderValue(signatureHeader);
+        const timestamp = extractHeaderValue(timestampHeader);
+        const webhookId = extractHeaderValue(webhookIdHeader);
 
-        const requestWithRawBody = request as typeof request & {
-          rawBody?: string;
-        };
+        const requestWithRawBody = request;
         const rawBody = requestWithRawBody.rawBody;
 
         if (!rawBody) {
