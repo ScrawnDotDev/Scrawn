@@ -33,19 +33,6 @@ CREATE TABLE IF NOT EXISTS ai_token_usage_events (
 ORDER BY (user_id, reported_timestamp)
 `;
 
-const PAYMENT_EVENTS_TABLE = `
-CREATE TABLE IF NOT EXISTS payment_events (
-  id UUID DEFAULT generateUUIDv4(),
-  user_id String,
-  api_key_id Nullable(String),
-  mode String,
-  reported_timestamp DateTime64(3, 'UTC'),
-  ingested_timestamp DateTime64(3, 'UTC') DEFAULT now64(3, 'UTC'),
-  credit_amount Int64
-) ENGINE = MergeTree()
-ORDER BY (user_id, reported_timestamp)
-`;
-
 export async function runClickHouseMigrations(): Promise<void> {
   const client = getClickHouseDB();
 
@@ -54,7 +41,4 @@ export async function runClickHouseMigrations(): Promise<void> {
 
   await client.command({ query: AI_TOKEN_USAGE_EVENTS_TABLE });
   logger.lifecycle("ClickHouse: ai_token_usage_events table ensured");
-
-  await client.command({ query: PAYMENT_EVENTS_TABLE });
-  logger.lifecycle("ClickHouse: payment_events table ensured");
 }

@@ -8,7 +8,6 @@ import { StorageError } from "../../../errors/storage";
 import {
   handleAddBasicUsage,
   handleAddAiTokenUsage,
-  handleAddPayment,
   handlePriceRequestBasicUsage,
   handlePriceRequestAiTokenUsage,
   handleQueryEvents,
@@ -64,10 +63,6 @@ export class ClickHouseAdapter implements StorageAdapter {
           throw StorageError.missingApiKeyId();
         }
         return await handleAddAiTokenUsage([event_data], apiKeyId, mode);
-      }
-
-      case "PAYMENT": {
-        return await handleAddPayment(event_data, apiKeyId, mode);
       }
 
       default: {

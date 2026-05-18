@@ -6,8 +6,7 @@ export class StorageAdapterFactory {
   public static async getEventStorageAdapter(RequestType: EventKind) {
     switch (RequestType) {
       case "BASIC_USAGE":
-      case "AI_TOKEN_USAGE":
-      case "PAYMENT": {
+      case "AI_TOKEN_USAGE": {
         return new PostgresAdapter();
       }
       default: {

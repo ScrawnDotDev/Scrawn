@@ -1,8 +1,7 @@
 import DodoPayments from "dodopayments";
 import * as Sentry from "@sentry/bun";
-import { Payment } from "../../events/Payment.ts";
-import { StorageAdapterFactory } from "../../factory/EventStorageAdapterFactory.ts";
 import type { WideEventBuilder } from "../../context/requestContext.ts";
+import { handleAddPayment } from "../../storage/db/postgres/helpers/payments.ts";
 import { getDodoClient } from "../gRPC/payment/paymentProvider.ts";
 import { getPostgresDB } from "../../storage/db/postgres/db";
 import { usersTable, sessionsTable } from "../../storage/db/postgres/schema";
@@ -68,9 +67,7 @@ async function storePaymentEvent(
   builder: WideEventBuilder
 ): Promise<WebhookResponse> {
   try {
-    const paymentEvent = new Payment(userId, { creditAmount });
-    const adapter = await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
-    await adapter.add(paymentEvent.serialize(), apiKeyId, mode);
+    await handleAddPayment(userId, creditAmount, apiKeyId, mode);
     builder.setSuccess(200);
     return okResponse("Webhook processed successfully");
   } catch (dbError) {

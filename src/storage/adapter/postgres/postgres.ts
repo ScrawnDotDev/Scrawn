@@ -7,7 +7,6 @@ import { getPostgresDB } from "../../db/postgres/db";
 import { StorageError } from "../../../errors/storage";
 import {
   handleAddBasicUsage,
-  handleAddPayment,
   handlePriceRequestBasicUsage,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
@@ -69,10 +68,6 @@ export class PostgresAdapter implements StorageAdapter {
           throw StorageError.missingApiKeyId();
         }
         return await handleAddAiTokenUsage([event_data], apiKeyId, mode);
-      }
-
-      case "PAYMENT": {
-        return await handleAddPayment(event_data, apiKeyId, mode);
       }
 
       default: {
