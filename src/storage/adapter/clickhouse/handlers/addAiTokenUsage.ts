@@ -18,6 +18,8 @@ type AggregatedEvent = {
   inputCacheDebitAmount: number;
   outputDebitAmount: number;
   reported_timestamp: string;
+  eventId: string;
+  idempotencyKey: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -62,7 +64,7 @@ function aggregateAiTokenEvents(
     const reportedTimestamp = toClickHouseDateTime(
       event_data.reported_timestamp
     );
-    const key = `${event_data.userId}:${event_data.data.model}`;
+    const key = `${event_data.userId}:${event_data.data.model}:${event_data.idempotencyKey}`;
     const existing = aggregationMap.get(key);
 
     if (existing) {
@@ -87,6 +89,8 @@ function aggregateAiTokenEvents(
         inputCacheDebitAmount: event_data.data.inputCacheDebitAmount,
         outputDebitAmount: event_data.data.outputDebitAmount,
         reported_timestamp: reportedTimestamp,
+        eventId: event_data.eventId,
+        idempotencyKey: event_data.idempotencyKey,
         metadata: event_data.data.metadata,
       });
     }
@@ -117,6 +121,8 @@ function buildAiTokenInsertRows(
 
     return {
       id: index === 0 ? firstId : crypto.randomUUID(),
+      event_id: aggEvent.eventId,
+      idempotency_key: aggEvent.idempotencyKey,
       user_id: aggEvent.userId,
       api_key_id: auth.apiKeyId,
       mode: auth.mode,

@@ -37,6 +37,8 @@ export async function handleAddBasicUsage(
       values: [
         {
           id,
+          event_id: event_data.eventId,
+          idempotency_key: event_data.idempotencyKey,
           user_id: event_data.userId,
           api_key_id: auth.apiKeyId,
           mode: auth.mode,

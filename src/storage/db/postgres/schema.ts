@@ -115,6 +115,8 @@ export const apiKeysRelation = relations(apiKeysTable, ({ many }) => ({
 
 export const basicUsageEventsTable = pgTable("basic_usage_events", {
   id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull(),
+  idempotencyKey: text("idempotency_key").notNull().unique(),
   reportedTimestamp: timestamp("reported_timestamp", {
     withTimezone: true,
     mode: "string",
@@ -189,6 +191,8 @@ export const paymentEventsRelation = relations(
 
 export const aiTokenUsageEventsTable = pgTable("ai_token_usage_events", {
   id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull(),
+  idempotencyKey: text("idempotency_key").notNull().unique(),
   reportedTimestamp: timestamp("reported_timestamp", {
     withTimezone: true,
     mode: "string",

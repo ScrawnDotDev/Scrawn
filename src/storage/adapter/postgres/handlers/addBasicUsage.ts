@@ -38,6 +38,8 @@ export async function handleAddBasicUsage(
         const [result] = await txn
           .insert(basicUsageEventsTable)
           .values({
+            eventId: event_data.eventId,
+            idempotencyKey: event_data.idempotencyKey,
             reportedTimestamp,
             ingestedTimestamp: DateTime.utc().toString(),
             userId: event_data.userId,
@@ -50,7 +52,9 @@ export async function handleAddBasicUsage(
           .returning({ id: basicUsageEventsTable.id });
 
         if (!result) {
-          throw StorageError.emptyResult("Basic usage event insert returned no ID");
+          throw StorageError.emptyResult(
+            "Basic usage event insert returned no ID"
+          );
         }
 
         try {

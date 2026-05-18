@@ -22,11 +22,12 @@ interface ChFieldDef {
   aggExpr?: string;
 }
 
-type ChFieldKey = QueryFieldName | "eventId";
+type ChFieldKey = QueryFieldName | "eventId" | "idempotencyKey";
 
 const CH_FIELDS: Record<EventTableName, Record<ChFieldKey, ChFieldDef>> = {
   basic_usage_events: {
-    eventId: { select: "toString(id)", where: "id" },
+    eventId: { select: "event_id", where: "event_id" },
+    idempotencyKey: { select: "idempotency_key", where: "idempotency_key" },
     eventType: { select: "'BASIC_USAGE'", where: null },
     userId: { select: "user_id", where: "user_id" },
     apiKeyId: { select: "api_key_id", where: "api_key_id" },
@@ -52,7 +53,8 @@ const CH_FIELDS: Record<EventTableName, Record<ChFieldKey, ChFieldDef>> = {
     metadata: { select: null, where: null },
   },
   ai_token_usage_events: {
-    eventId: { select: "toString(id)", where: "id" },
+    eventId: { select: "event_id", where: "event_id" },
+    idempotencyKey: { select: "idempotency_key", where: "idempotency_key" },
     eventType: { select: "'AI_TOKEN_USAGE'", where: null },
     userId: { select: "user_id", where: "user_id" },
     apiKeyId: { select: "api_key_id", where: "api_key_id" },

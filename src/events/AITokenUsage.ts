@@ -12,7 +12,9 @@ export class AITokenUsage implements AITokenUsageEvent {
   constructor(
     public userId: UserId,
     public reportedTimestamp: DateTime,
-    public data: AITokenUsageEventData
+    public data: AITokenUsageEventData,
+    public eventId: string,
+    public idempotencyKey: string
   ) {
     this.ingested_timestamp = DateTime.utc();
   }
@@ -24,6 +26,8 @@ export class AITokenUsage implements AITokenUsageEvent {
         userId: this.userId,
         reported_timestamp: this.reportedTimestamp,
         data: this.data,
+        eventId: this.eventId,
+        idempotencyKey: this.idempotencyKey,
       },
     };
   }

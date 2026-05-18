@@ -12,7 +12,9 @@ export class BasicUsage implements BasicUsageEvent {
   constructor(
     public userId: UserId,
     public reportedTimestamp: DateTime,
-    public data: BasicUsageEventData
+    public data: BasicUsageEventData,
+    public eventId: string,
+    public idempotencyKey: string
   ) {
     this.ingested_timestamp = DateTime.utc();
   }
@@ -24,6 +26,8 @@ export class BasicUsage implements BasicUsageEvent {
         userId: this.userId,
         reported_timestamp: this.reportedTimestamp,
         data: this.data,
+        eventId: this.eventId,
+        idempotencyKey: this.idempotencyKey,
       },
     };
   }

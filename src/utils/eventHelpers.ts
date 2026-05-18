@@ -21,7 +21,9 @@ export function createEventInstance(
     return new BasicUsage(
       eventSkeleton.userid,
       eventSkeleton.reportedtimestamp,
-      data
+      data,
+      eventSkeleton.eventid,
+      eventSkeleton.idempotencykey
     );
   }
   if (eventSkeleton.type === "AI_TOKEN_USAGE") {
@@ -29,7 +31,9 @@ export function createEventInstance(
     return new AITokenUsage(
       eventSkeleton.userid,
       eventSkeleton.reportedtimestamp,
-      data
+      data,
+      eventSkeleton.eventid,
+      eventSkeleton.idempotencykey
     );
   }
   throw EventError.unsupportedEventType("Unknown event type");

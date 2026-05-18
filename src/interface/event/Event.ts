@@ -34,12 +34,16 @@ export type SqlRecord =
       reported_timestamp: DateTime;
       data: BasicUsageEventData;
       userId: UserId;
+      eventId: string;
+      idempotencyKey: string;
     }
   | {
       type: "AI_TOKEN_USAGE";
       reported_timestamp: DateTime;
       data: AITokenUsageEventData;
       userId: UserId;
+      eventId: string;
+      idempotencyKey: string;
     };
 
 export type SqlRecordOf<K extends EventKind> = Extract<SqlRecord, { type: K }>;
@@ -52,6 +56,8 @@ export interface Event<K extends EventKind = EventKind> {
   readonly type: K;
   readonly ingested_timestamp: DateTime;
   readonly data: EventData<K>;
+  readonly eventId: string;
+  readonly idempotencyKey: string;
 
   serialize(): SerializedEvent;
 }

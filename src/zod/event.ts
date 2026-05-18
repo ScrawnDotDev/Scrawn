@@ -24,14 +24,20 @@ const BaseEvent = z.object({
     .number()
     .int()
     .transform((ts) => DateTime.fromSeconds(ts, { zone: "utc" })),
+  eventid: z.uuid(),
+  idempotencykey: z.string().min(1),
 });
 
 const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
   .object({
     basicusagetype: z.union([
-      z.literal(BasicUsageType.BASIC_USAGE_TYPE_UNSPECIFIED).transform(() => "RAW" as const),
+      z
+        .literal(BasicUsageType.BASIC_USAGE_TYPE_UNSPECIFIED)
+        .transform(() => "RAW" as const),
       z.literal(BasicUsageType.RAW).transform(() => "RAW" as const),
-      z.literal(BasicUsageType.MIDDLEWARE_CALL).transform(() => "MIDDLEWARE_CALL" as const),
+      z
+        .literal(BasicUsageType.MIDDLEWARE_CALL)
+        .transform(() => "MIDDLEWARE_CALL" as const),
     ]),
     amount: z.number(),
     tag: z.string(),
@@ -135,17 +141,23 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
   });
 
 const RegisterEventBasicUsage = BaseEvent.extend({
-  type: z.literal(EventType.BASIC_USAGE).transform(() => "BASIC_USAGE" as const),
+  type: z
+    .literal(EventType.BASIC_USAGE)
+    .transform(() => "BASIC_USAGE" as const),
   basicusage: BasicUsageDataSchema,
 });
 
 const StreamEventBasicUsage = BaseEvent.extend({
-  type: z.literal(EventType.BASIC_USAGE).transform(() => "BASIC_USAGE" as const),
+  type: z
+    .literal(EventType.BASIC_USAGE)
+    .transform(() => "BASIC_USAGE" as const),
   basicusage: BasicUsageDataSchema,
 });
 
 const StreamEventAITokenUsage = BaseEvent.extend({
-  type: z.literal(EventType.AI_TOKEN_USAGE).transform(() => "AI_TOKEN_USAGE" as const),
+  type: z
+    .literal(EventType.AI_TOKEN_USAGE)
+    .transform(() => "AI_TOKEN_USAGE" as const),
   aitokenusage: AITokenUsageDataSchema,
 });
 

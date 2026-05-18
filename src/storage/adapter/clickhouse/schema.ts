@@ -5,6 +5,8 @@ import { innerProduct } from "drizzle-orm";
 const BASIC_USAGE_EVENTS_TABLE = `
 CREATE TABLE IF NOT EXISTS basic_usage_events (
   id UUID DEFAULT generateUUIDv4(),
+  event_id String,
+  idempotency_key String,
   user_id String,
   api_key_id Nullable(String),
   mode String,
@@ -13,13 +15,15 @@ CREATE TABLE IF NOT EXISTS basic_usage_events (
   type String,
   debit_amount Int64,
   metadata JSON
-) ENGINE = MergeTree()
-ORDER BY (user_id, reported_timestamp)
+) ENGINE = ReplacingMergeTree()
+ORDER BY (idempotency_key, user_id)
 `;
 
 const AI_TOKEN_USAGE_EVENTS_TABLE = `
 CREATE TABLE IF NOT EXISTS ai_token_usage_events (
   id UUID DEFAULT generateUUIDv4(),
+  event_id String,
+  idempotency_key String,
   user_id String,
   api_key_id Nullable(String),
   mode String,
@@ -29,8 +33,8 @@ CREATE TABLE IF NOT EXISTS ai_token_usage_events (
   provider String,
   metrics String,
   metadata JSON
-) ENGINE = MergeTree()
-ORDER BY (user_id, reported_timestamp)
+) ENGINE = ReplacingMergeTree()
+ORDER BY (idempotency_key, user_id)
 `;
 
 export async function runClickHouseMigrations(): Promise<void> {

@@ -13,6 +13,12 @@ export class RegisterEventRequest extends jspb.Message {
   getReportedtimestamp(): number;
   setReportedtimestamp(value: number): void;
 
+  getEventid(): string;
+  setEventid(value: string): void;
+
+  getIdempotencykey(): string;
+  setIdempotencykey(value: string): void;
+
   hasBasicusage(): boolean;
   clearBasicusage(): void;
   getBasicusage(): BasicUsage | undefined;
@@ -34,6 +40,8 @@ export namespace RegisterEventRequest {
     type: EventTypeMap[keyof EventTypeMap],
     userid: string,
     reportedtimestamp: number,
+    eventid: string,
+    idempotencykey: string,
     basicusage?: BasicUsage.AsObject,
   }
 
@@ -125,6 +133,12 @@ export class StreamEventRequest extends jspb.Message {
   getReportedtimestamp(): number;
   setReportedtimestamp(value: number): void;
 
+  getEventid(): string;
+  setEventid(value: string): void;
+
+  getIdempotencykey(): string;
+  setIdempotencykey(value: string): void;
+
   hasBasicusage(): boolean;
   clearBasicusage(): void;
   getBasicusage(): BasicUsage | undefined;
@@ -151,6 +165,8 @@ export namespace StreamEventRequest {
     type: EventTypeMap[keyof EventTypeMap],
     userid: string,
     reportedtimestamp: number,
+    eventid: string,
+    idempotencykey: string,
     basicusage?: BasicUsage.AsObject,
     aitokenusage?: AITokenUsage.AsObject,
   }

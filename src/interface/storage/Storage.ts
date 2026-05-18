@@ -23,6 +23,7 @@ export const QUERY_FIELD_NAMES = [
   "creditAmount",
   "provider",
   "metadata",
+  "idempotencyKey",
 ] as const;
 
 export type QueryFieldName = (typeof QUERY_FIELD_NAMES)[number];

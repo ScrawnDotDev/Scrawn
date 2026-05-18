@@ -24,6 +24,8 @@ type AggregatedEvent = {
   inputCacheDebitAmount: number;
   outputDebitAmount: number;
   reported_timestamp: string;
+  eventId: string;
+  idempotencyKey: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -53,7 +55,7 @@ async function aggregateAiTokenEvents(
 
   for (const event_data of events) {
     const reported_timestamp = await validateAndPrepareTimestamp(event_data.reported_timestamp);
-    const key = `${event_data.userId}:${event_data.data.model}`;
+    const key = `${event_data.userId}:${event_data.data.model}:${event_data.idempotencyKey}`;
     const existing = aggregationMap.get(key);
 
     if (existing) {
@@ -78,6 +80,8 @@ async function aggregateAiTokenEvents(
         inputCacheDebitAmount: event_data.data.inputCacheDebitAmount,
         outputDebitAmount: event_data.data.outputDebitAmount,
         reported_timestamp,
+        eventId: event_data.eventId,
+        idempotencyKey: event_data.idempotencyKey,
         metadata: event_data.data.metadata,
       });
     }
@@ -91,6 +95,8 @@ function buildAiTokenInsertValues(
   auth: AuthContext
 ) {
   return aggregatedEvents.map((aggEvent) => ({
+    eventId: aggEvent.eventId,
+    idempotencyKey: aggEvent.idempotencyKey,
     reportedTimestamp: aggEvent.reported_timestamp,
     ingestedTimestamp: DateTime.utc().toString(),
     userId: aggEvent.userId,
