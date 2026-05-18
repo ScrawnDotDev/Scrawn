@@ -19,11 +19,12 @@ import type {
 } from "../../../interface/event/Event";
 import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
+import type { AuthContext } from "../../../context/auth";
 
 export class ClickHouseAdapter implements StorageAdapter {
   connectionObject = getClickHouseDB();
 
-  async add(serialized: SerializedEvent, apiKeyId: string, mode: "production" | "test") {
+  async add(serialized: SerializedEvent, auth: AuthContext) {
     let event_data: SqlRecord;
 
     try {
@@ -52,17 +53,17 @@ export class ClickHouseAdapter implements StorageAdapter {
 
     switch (event_data.type) {
       case "BASIC_USAGE": {
-        if (!apiKeyId) {
+        if (!auth.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddBasicUsage(event_data, apiKeyId, mode);
+        return await handleAddBasicUsage(event_data, auth);
       }
 
       case "AI_TOKEN_USAGE": {
-        if (!apiKeyId) {
+        if (!auth.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddAiTokenUsage([event_data], apiKeyId, mode);
+        return await handleAddAiTokenUsage([event_data], auth);
       }
 
       default: {
@@ -75,7 +76,8 @@ export class ClickHouseAdapter implements StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test"
+    mode: "production" | "test",
+    _txn?: unknown
   ): Promise<number> {
     switch (event_type) {
       case "BASIC_USAGE": {

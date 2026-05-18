@@ -19,9 +19,7 @@ export type AITokenUsageEventData = {
   metadata?: Record<string, unknown>;
 };
 
-export type EventKind =
-  | "BASIC_USAGE"
-  | "AI_TOKEN_USAGE"
+export type EventKind = "BASIC_USAGE" | "AI_TOKEN_USAGE";
 
 export type EventDataMap = {
   BASIC_USAGE: BasicUsageEventData;
@@ -31,8 +29,18 @@ export type EventDataMap = {
 export type EventData<K extends EventKind> = EventDataMap[K];
 
 export type SqlRecord =
-  | { type: "BASIC_USAGE"; reported_timestamp: DateTime; data: BasicUsageEventData; userId: UserId }
-  | { type: "AI_TOKEN_USAGE"; reported_timestamp: DateTime; data: AITokenUsageEventData; userId: UserId }
+  | {
+      type: "BASIC_USAGE";
+      reported_timestamp: DateTime;
+      data: BasicUsageEventData;
+      userId: UserId;
+    }
+  | {
+      type: "AI_TOKEN_USAGE";
+      reported_timestamp: DateTime;
+      data: AITokenUsageEventData;
+      userId: UserId;
+    };
 
 export type SqlRecordOf<K extends EventKind> = Extract<SqlRecord, { type: K }>;
 
@@ -57,5 +65,3 @@ export interface AITokenUsageEvent extends Event<"AI_TOKEN_USAGE"> {
   readonly userId: UserId;
   readonly reportedTimestamp: DateTime;
 }
-
-

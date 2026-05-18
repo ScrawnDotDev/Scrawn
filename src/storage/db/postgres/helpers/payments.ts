@@ -2,12 +2,14 @@ import { getPostgresDB } from "../db";
 import { paymentEventsTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
 import { DateTime } from "luxon";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 export async function handleAddPayment(
   userId: string,
   creditAmount: number,
   apiKeyId: string,
-  mode: "test" | "production"
+  mode: "test" | "production",
+  txn?: PgTransaction<any, any, any>
 ): Promise<{ id: string }> {
   if (
     creditAmount === undefined ||
@@ -21,7 +23,7 @@ export async function handleAddPayment(
     );
   }
 
-  const db = getPostgresDB();
+  const db = txn ?? getPostgresDB();
 
   try {
     const [result] = await db

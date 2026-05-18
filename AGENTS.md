@@ -21,3 +21,6 @@
   - `DateTime.utc()` — never `DateTime.now()` or `DateTime.local()`
   - `DateTime.fromISO(str, { zone: "utc" })` — never omit `{ zone: "utc" }` option
   - Use `dt.toUTC()` on any DateTime that might enter with a local zone
+
+## Quirks
+- The Storage Factory can only return 1 adapter for ALL events, so either all events use Postgres or all events use Clickhouse.

@@ -19,14 +19,15 @@ import type {
 } from "../../../interface/event/Event";
 import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
+import type { AuthContext } from "../../../context/auth";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
 
   async add(
     serialized: SerializedEvent,
-    apiKeyId: string,
-    mode: "production" | "test"
+    auth: AuthContext
   ) {
     let event_data: SqlRecord;
 
@@ -57,17 +58,17 @@ export class PostgresAdapter implements StorageAdapter {
 
     switch (event_data.type) {
       case "BASIC_USAGE": {
-        if (!apiKeyId) {
+        if (!auth.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddBasicUsage(event_data, apiKeyId, mode);
+        return await handleAddBasicUsage(event_data, auth);
       }
 
       case "AI_TOKEN_USAGE": {
-        if (!apiKeyId) {
+        if (!auth.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddAiTokenUsage([event_data], apiKeyId, mode);
+        return await handleAddAiTokenUsage([event_data], auth);
       }
 
       default: {
@@ -80,18 +81,21 @@ export class PostgresAdapter implements StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test"
+    mode: "production" | "test",
+    txn?: unknown
   ): Promise<number> {
+    const tx = txn as PgTransaction<any, any, any> | undefined;
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode);
+        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode, tx);
       }
 
       case "AI_TOKEN_USAGE": {
         return await handlePriceRequestAiTokenUsage(
           userID,
           beforeTimestamp,
-          mode
+          mode,
+          tx
         );
       }
 

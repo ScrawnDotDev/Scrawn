@@ -4,6 +4,8 @@ import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
 import { toClickHouseDateTime } from "../utils";
+import type { AuthContext } from "../../../../context/auth";
+import { ensureUserExists } from "../../../db/postgres/helpers/users";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -19,7 +21,11 @@ type AggregatedEvent = {
   metadata?: Record<string, unknown>;
 };
 
-function validateNonNegative(value: unknown, label: string, userId: UserId): void {
+function validateNonNegative(
+  value: unknown,
+  label: string,
+  userId: UserId
+): void {
   if (typeof value === "number" && value < 0) {
     throw StorageError.insertFailed(
       `Negative ${label} not allowed for AI token usage for user ${userId}`,
@@ -35,7 +41,11 @@ function validateAiTokenEvent(event_data: SqlRecordOf<"AI_TOKEN_USAGE">): void {
   validateNonNegative(data.inputDebitAmount, "inputDebitAmount", userId);
   validateNonNegative(data.outputDebitAmount, "outputDebitAmount", userId);
   validateNonNegative(data.inputCacheTokens, "inputCacheTokens", userId);
-  validateNonNegative(data.inputCacheDebitAmount, "inputCacheDebitAmount", userId);
+  validateNonNegative(
+    data.inputCacheDebitAmount,
+    "inputCacheDebitAmount",
+    userId
+  );
 }
 
 function aggregateAiTokenEvents(
@@ -45,9 +55,13 @@ function aggregateAiTokenEvents(
 
   for (const event_data of events) {
     if (!event_data.reported_timestamp.isValid) {
-      throw StorageError.invalidTimestamp("reported_timestamp is not a valid DateTime");
+      throw StorageError.invalidTimestamp(
+        "reported_timestamp is not a valid DateTime"
+      );
     }
-    const reportedTimestamp = toClickHouseDateTime(event_data.reported_timestamp);
+    const reportedTimestamp = toClickHouseDateTime(
+      event_data.reported_timestamp
+    );
     const key = `${event_data.userId}:${event_data.data.model}`;
     const existing = aggregationMap.get(key);
 
@@ -83,8 +97,7 @@ function aggregateAiTokenEvents(
 
 function buildAiTokenInsertRows(
   aggregatedEvents: AggregatedEvent[],
-  apiKeyId: string,
-  mode: "production" | "test",
+  auth: AuthContext,
   firstId: string,
   now: string
 ): Array<Record<string, unknown>> {
@@ -105,8 +118,8 @@ function buildAiTokenInsertRows(
     return {
       id: index === 0 ? firstId : crypto.randomUUID(),
       user_id: aggEvent.userId,
-      api_key_id: apiKeyId,
-      mode,
+      api_key_id: auth.apiKeyId,
+      mode: auth.mode,
       reported_timestamp: aggEvent.reported_timestamp,
       ingested_timestamp: now,
       model: aggEvent.model,
@@ -119,8 +132,7 @@ function buildAiTokenInsertRows(
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<{ id: string } | void> {
   const client = getClickHouseDB();
 
@@ -132,10 +144,16 @@ export async function handleAddAiTokenUsage(
     validateAiTokenEvent(event_data);
   }
 
+  const firstEvent = events[0];
+  if (firstEvent) {
+    await ensureUserExists(firstEvent.userId);
+  }
+
   const aggregatedEvents = aggregateAiTokenEvents(events);
+
   const firstId = crypto.randomUUID();
   const now = toClickHouseDateTime(DateTime.utc());
-  const values = buildAiTokenInsertRows(aggregatedEvents, apiKeyId, mode, firstId, now);
+  const values = buildAiTokenInsertRows(aggregatedEvents, auth, firstId, now);
 
   try {
     await client.insert({

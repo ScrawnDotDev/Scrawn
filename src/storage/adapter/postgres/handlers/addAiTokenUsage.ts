@@ -5,6 +5,7 @@ import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
 import { ensureUserExists } from "../../../db/postgres/helpers/users";
+import type { AuthContext } from "../../../../context/auth";
 import {
   validateAndPrepareTimestamp,
   executeInTransaction,
@@ -87,15 +88,14 @@ async function aggregateAiTokenEvents(
 
 function buildAiTokenInsertValues(
   aggregatedEvents: AggregatedEvent[],
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ) {
   return aggregatedEvents.map((aggEvent) => ({
     reportedTimestamp: aggEvent.reported_timestamp,
     ingestedTimestamp: DateTime.utc().toString(),
     userId: aggEvent.userId,
-    apiKeyId,
-    mode,
+    apiKeyId: auth.apiKeyId,
+    mode: auth.mode,
     model: aggEvent.model,
     provider: aggEvent.provider,
     metrics: metricsSchema.parse({
@@ -116,8 +116,7 @@ function buildAiTokenInsertValues(
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -130,21 +129,18 @@ export async function handleAddAiTokenUsage(
   }
 
   const aggregatedEvents = await aggregateAiTokenEvents(events);
+  const firstEvent = events[0];
 
   return await executeInTransaction(
     connectionObject,
     `storing ${events.length} AI_TOKEN_USAGE event(s)`,
     async (txn) => {
-      const uniqueUserIds = Array.from(
-        new Set(aggregatedEvents.map((event) => event.userId))
-      );
-
-      for (const userId of uniqueUserIds) {
-        await ensureUserExists(userId);
+      if (firstEvent) {
+        await ensureUserExists(firstEvent.userId, txn);
       }
 
       try {
-        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, apiKeyId, mode);
+        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, auth);
 
         const inserted = await txn
           .insert(aiTokenUsageEventsTable)

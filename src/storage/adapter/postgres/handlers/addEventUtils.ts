@@ -20,15 +20,6 @@ export async function executeInTransaction<T>(
   try {
     return await connectionObject.transaction(fn);
   } catch (e) {
-    if (
-      e &&
-      typeof e === "object" &&
-      "type" in e &&
-      (e as any).name === "StorageError"
-    ) {
-      throw e;
-    }
-
     throw StorageError.transactionFailed(
       `Transaction failed while ${operationName}`,
       e instanceof Error ? e : new Error(String(e))

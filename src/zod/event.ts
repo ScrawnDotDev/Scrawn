@@ -3,10 +3,19 @@ import { DateTime } from "luxon";
 import { USER_ID_CONFIG } from "../config/identifiers";
 import { fetchTagAmount } from "../utils/fetchTagAmount";
 import { parseAndEvaluateExpr } from "../utils/parseExpr";
+import { EventType, BasicUsageType } from "../gen/event/v1/event_pb";
 import type {
   BasicUsageEventData,
   AITokenUsageEventData,
 } from "../interface/event/Event";
+
+function parseMetadata(val: string): Record<string, unknown> {
+  try {
+    return JSON.parse(val) as Record<string, unknown>;
+  } catch {
+    throw new Error("Invalid JSON in metadata");
+  }
+}
 
 const BaseEvent = z.object({
   type: z.number(),
@@ -14,15 +23,15 @@ const BaseEvent = z.object({
   reportedtimestamp: z
     .number()
     .int()
-    .transform((ts) => DateTime.fromSeconds(ts, { zone: 'utc' })),
+    .transform((ts) => DateTime.fromSeconds(ts, { zone: "utc" })),
 });
 
 const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
   .object({
     basicusagetype: z.union([
-      z.literal(0).transform(() => "RAW" as const),
-      z.literal(1).transform(() => "RAW" as const),
-      z.literal(2).transform(() => "MIDDLEWARE_CALL" as const),
+      z.literal(BasicUsageType.BASIC_USAGE_TYPE_UNSPECIFIED).transform(() => "RAW" as const),
+      z.literal(BasicUsageType.RAW).transform(() => "RAW" as const),
+      z.literal(BasicUsageType.MIDDLEWARE_CALL).transform(() => "MIDDLEWARE_CALL" as const),
     ]),
     amount: z.number(),
     tag: z.string(),
@@ -38,7 +47,11 @@ const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
     } else {
       debitAmount = v.amount;
     }
-    return { basicUsageType: v.basicusagetype, debitAmount, metadata: v.metadata ? JSON.parse(v.metadata) as Record<string, unknown> : undefined };
+    return {
+      basicUsageType: v.basicusagetype,
+      debitAmount,
+      metadata: v.metadata ? parseMetadata(v.metadata) : undefined,
+    };
   });
 
 const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
@@ -85,7 +98,10 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
         `Input cache tag not found: ${v.inputcachetag}`
       );
     } else if (v.inputcacheexpr) {
-      inputCacheDebitAmount = await parseAndEvaluateExpr(v.inputcacheexpr, tokenContext);
+      inputCacheDebitAmount = await parseAndEvaluateExpr(
+        v.inputcacheexpr,
+        tokenContext
+      );
     } else {
       inputCacheDebitAmount = v.inputcacheamount;
     }
@@ -97,7 +113,10 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
         `Output tag not found: ${v.outputtag}`
       );
     } else if (v.outputexpr) {
-      outputDebitAmount = await parseAndEvaluateExpr(v.outputexpr, tokenContext);
+      outputDebitAmount = await parseAndEvaluateExpr(
+        v.outputexpr,
+        tokenContext
+      );
     } else {
       outputDebitAmount = v.outputamount;
     }
@@ -111,22 +130,22 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
       inputDebitAmount,
       inputCacheDebitAmount,
       outputDebitAmount,
-      metadata: v.metadata ? JSON.parse(v.metadata) as Record<string, unknown> : undefined,
+      metadata: v.metadata ? parseMetadata(v.metadata) : undefined,
     };
   });
 
 const RegisterEventBasicUsage = BaseEvent.extend({
-  type: z.literal(1).transform(() => "BASIC_USAGE" as const),
+  type: z.literal(EventType.BASIC_USAGE).transform(() => "BASIC_USAGE" as const),
   basicusage: BasicUsageDataSchema,
 });
 
 const StreamEventBasicUsage = BaseEvent.extend({
-  type: z.literal(1).transform(() => "BASIC_USAGE" as const),
+  type: z.literal(EventType.BASIC_USAGE).transform(() => "BASIC_USAGE" as const),
   basicusage: BasicUsageDataSchema,
 });
 
 const StreamEventAITokenUsage = BaseEvent.extend({
-  type: z.literal(2).transform(() => "AI_TOKEN_USAGE" as const),
+  type: z.literal(EventType.AI_TOKEN_USAGE).transform(() => "AI_TOKEN_USAGE" as const),
   aitokenusage: AITokenUsageDataSchema,
 });
 

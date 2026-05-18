@@ -1,12 +1,15 @@
 import DodoPayments from "dodopayments";
 import * as Sentry from "@sentry/bun";
 import type { WideEventBuilder } from "../../context/requestContext.ts";
-import { handleAddPayment } from "../../storage/db/postgres/helpers/payments.ts";
+import { handleAddPayment } from "../../storage/db/postgres/helpers/payments";
 import { getDodoClient } from "../gRPC/payment/paymentProvider.ts";
+import {
+  getSessionByCheckoutId,
+  markSessionProcessed,
+} from "../../storage/db/postgres/helpers/sessions";
+import { updateUserBilledTimestamp } from "../../storage/db/postgres/helpers/users";
 import { getPostgresDB } from "../../storage/db/postgres/db";
-import { usersTable, sessionsTable } from "../../storage/db/postgres/schema";
-import { eq } from "drizzle-orm";
-import { getSessionByCheckoutId } from "../../storage/db/postgres/helpers/sessions";
+import { executeInTransaction } from "../../storage/adapter/postgres/handlers/addEventUtils";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -15,7 +18,12 @@ interface WebhookResponse {
   body: { message?: string; error?: string };
 }
 
-function errorResponse(statusCode: number, type: string, message: string, builder: WideEventBuilder): WebhookResponse {
+function errorResponse(
+  statusCode: number,
+  type: string,
+  message: string,
+  builder: WideEventBuilder
+): WebhookResponse {
   builder.setError(statusCode, { type, message });
   return { statusCode, body: { error: message } };
 }
@@ -57,28 +65,6 @@ function unwrapWebhookPayload(
   }
 }
 
-async function storePaymentEvent(
-  userId: string,
-  creditAmount: number,
-  apiKeyId: string,
-  mode: "production" | "test",
-  checkoutSessionId: string,
-  paymentId: string,
-  builder: WideEventBuilder
-): Promise<WebhookResponse> {
-  try {
-    await handleAddPayment(userId, creditAmount, apiKeyId, mode);
-    builder.setSuccess(200);
-    return okResponse("Webhook processed successfully");
-  } catch (dbError) {
-    Sentry.captureException(dbError, {
-      extra: { context: "payment event storage", checkoutSessionId, paymentId },
-    });
-    const msg = dbError instanceof Error ? dbError.message : String(dbError);
-    return errorResponse(500, "DatabaseError", `Failed to store payment event: ${msg}`, builder);
-  }
-}
-
 export async function handleDodoWebhook(
   rawBody: string,
   signature: string | undefined,
@@ -92,11 +78,21 @@ export async function handleDodoWebhook(
     const webhookPayload = unwrapWebhookPayload(client, rawBody, headers);
 
     if (!webhookPayload) {
-      return errorResponse(401, "AuthenticationError", "Invalid signature", builder);
+      return errorResponse(
+        401,
+        "AuthenticationError",
+        "Invalid signature",
+        builder
+      );
     }
 
     if (!webhookPayload.type || !webhookPayload.data) {
-      return errorResponse(400, "ParseError", "Invalid webhook payload shape", builder);
+      return errorResponse(
+        400,
+        "ParseError",
+        "Invalid webhook payload shape",
+        builder
+      );
     }
 
     if (webhookPayload.type !== "payment.succeeded") {
@@ -106,28 +102,33 @@ export async function handleDodoWebhook(
     const { payment_id, checkout_session_id } = webhookPayload.data;
     const creditAmount = Math.round(webhookPayload.data.total_amount);
 
-    builder.setWebhookContext({ webhookEvent: webhookPayload.type, orderId: payment_id });
+    builder.setWebhookContext({
+      webhookEvent: webhookPayload.type,
+      orderId: payment_id,
+    });
 
     if (!checkout_session_id) {
-      return errorResponse(400, "ValidationError", "Missing checkout_session_id in webhook payload", builder);
+      return errorResponse(
+        400,
+        "ValidationError",
+        "Missing checkout_session_id in webhook payload",
+        builder
+      );
     }
 
     const session = await getSessionByCheckoutId(checkout_session_id);
 
     if (!session) {
-      return errorResponse(404, "NotFoundError", `Session not found for checkout_session_id: ${checkout_session_id}`, builder);
+      return errorResponse(
+        404,
+        "NotFoundError",
+        `Session not found for checkout_session_id: ${checkout_session_id}`,
+        builder
+      );
     }
 
     if (session.processed) {
       return ignoredResponse(builder);
-    }
-
-    if (!session.userId) {
-      return errorResponse(500, "InternalServerError", `User ID not found for session: ${checkout_session_id}`, builder);
-    }
-
-    if (!session.billed_upto) {
-      return errorResponse(500, "InternalServerError", `billed_upto not found for session: ${checkout_session_id}`, builder);
     }
 
     const userId = session.userId;
@@ -136,16 +137,20 @@ export async function handleDodoWebhook(
     const mode = session.mode;
 
     const db = getPostgresDB();
-
-    await db.update(usersTable).set({ last_billed_timestamp: billedUpto }).where(eq(usersTable.id, userId));
-    await db.update(sessionsTable).set({ processed: true }).where(eq(sessionsTable.sessionId, checkout_session_id));
+    await executeInTransaction(db, "process checkout", async (txn) => {
+      await updateUserBilledTimestamp(userId, billedUpto, txn);
+      await markSessionProcessed(checkout_session_id, txn);
+      await handleAddPayment(userId, creditAmount, apiKeyId, mode, txn);
+    });
 
     builder.setUser(userId);
     builder.setPaymentContext({ creditAmount });
-
-    return await storePaymentEvent(userId, creditAmount, apiKeyId, mode, checkout_session_id, payment_id, builder);
+    builder.setSuccess(200);
+    return okResponse("Webhook processed successfully");
   } catch (error) {
-    Sentry.captureException(error, { extra: { context: "unexpected webhook error" } });
+    Sentry.captureException(error, {
+      extra: { context: "unexpected webhook error" },
+    });
     const errorMessage = error instanceof Error ? error.message : String(error);
     builder.setError(500, {
       type: "InternalError",

@@ -2,6 +2,7 @@ import { getPostgresDB } from "../db";
 import { metadataTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq } from "drizzle-orm";
+import { executeInTransaction } from "../../../adapter/postgres/handlers/addEventUtils";
 
 type UpsertMetadataInput = {
   payment_cron: string;
@@ -25,31 +26,33 @@ export async function upsertMetadata(
     );
   }
 
-  try {
-    const [existingMetadata] = await db
-      .select({ id: metadataTable.id })
-      .from(metadataTable)
-      .limit(1);
+  await executeInTransaction(db, "upsert metadata", async (txn) => {
+    try {
+      const [existingMetadata] = await txn
+        .select({ id: metadataTable.id })
+        .from(metadataTable)
+        .limit(1);
 
-    if (existingMetadata) {
-      await db
-        .update(metadataTable)
-        .set({
-          payment_cron: paymentCron,
-          payment_webhook: paymentWebhook,
-        })
-        .where(eq(metadataTable.id, existingMetadata.id));
-      return;
+      if (existingMetadata) {
+        await txn
+          .update(metadataTable)
+          .set({
+            payment_cron: paymentCron,
+            payment_webhook: paymentWebhook,
+          })
+          .where(eq(metadataTable.id, existingMetadata.id));
+        return;
+      }
+
+      await txn.insert(metadataTable).values({
+        payment_cron: paymentCron,
+        payment_webhook: paymentWebhook,
+      });
+    } catch (e) {
+      throw StorageError.insertFailed(
+        "Failed to upsert metadata record",
+        e instanceof Error ? e : new Error(String(e))
+      );
     }
-
-    await db.insert(metadataTable).values({
-      payment_cron: paymentCron,
-      payment_webhook: paymentWebhook,
-    });
-  } catch (e) {
-    throw StorageError.insertFailed(
-      "Failed to upsert metadata record",
-      e instanceof Error ? e : new Error(String(e))
-    );
-  }
+  });
 }

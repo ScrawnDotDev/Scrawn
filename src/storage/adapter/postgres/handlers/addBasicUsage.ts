@@ -4,6 +4,7 @@ import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
 import { ensureUserExists } from "../../../db/postgres/helpers/users";
+import type { AuthContext } from "../../../../context/auth";
 import {
   validateAndPrepareTimestamp,
   executeInTransaction,
@@ -11,8 +12,7 @@ import {
 
 export async function handleAddBasicUsage(
   event_data: SqlRecordOf<"BASIC_USAGE">,
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -28,7 +28,7 @@ export async function handleAddBasicUsage(
     connectionObject,
     "storing BASIC_USAGE event",
     async (txn) => {
-      await ensureUserExists(event_data.userId);
+      const ensurePromise = ensureUserExists(event_data.userId, txn);
 
       const reportedTimestamp = await validateAndPrepareTimestamp(
         event_data.reported_timestamp
@@ -41,8 +41,8 @@ export async function handleAddBasicUsage(
             reportedTimestamp,
             ingestedTimestamp: DateTime.utc().toString(),
             userId: event_data.userId,
-            apiKeyId: apiKeyId,
-            mode,
+            apiKeyId: auth.apiKeyId,
+            mode: auth.mode,
             type: event_data.data.basicUsageType,
             debitAmount: event_data.data.debitAmount,
             metadata: event_data.data.metadata ?? null,
@@ -51,6 +51,15 @@ export async function handleAddBasicUsage(
 
         if (!result) {
           throw StorageError.emptyResult("Basic usage event insert returned no ID");
+        }
+
+        try {
+          await ensurePromise;
+        } catch (e) {
+          throw StorageError.insertFailed(
+            "Failed to ensure user exists for basic usage event",
+            e instanceof Error ? e : new Error(String(e))
+          );
         }
 
         return { id: result.id };

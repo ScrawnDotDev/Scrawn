@@ -1,6 +1,7 @@
 import type { SerializedEvent, EventKind } from "../event/Event";
 import { type UserId } from "../../config/identifiers";
 import type { DateTime } from "luxon";
+import type { AuthContext } from "../../context/auth";
 
 export type QueryOperator = "EQ" | "GT" | "GTE" | "LT" | "LTE" | "NEQ";
 
@@ -66,14 +67,14 @@ export interface StorageAdapter {
 
   add(
     serialized: SerializedEvent,
-    apiKeyId: string,
-    mode: "production" | "test"
+    auth: AuthContext
   ): Promise<{ id: string } | void>;
   price(
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test"
+    mode: "production" | "test",
+    txn?: unknown
   ): Promise<number>;
   query(request: QueryRequest): Promise<QueryResponse>;
 }

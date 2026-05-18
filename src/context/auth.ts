@@ -5,5 +5,5 @@ export const apiKeyContextKey = Symbol.for("apiKeyContextKey");
 export interface AuthContext {
   apiKeyId: string;
   role: ApiKeyRole;
-  mode: "production" | "test" | null;
+  mode: "production" | "test";
 }

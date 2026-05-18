@@ -8,6 +8,7 @@ import { StorageError } from "../../../../errors/storage";
 import { eq, sum, sql, and, type SQL } from "drizzle-orm";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 type PriceEventTable =
   | typeof basicUsageEventsTable
@@ -19,9 +20,10 @@ export async function handlePriceRequest(
   priceColumn: SQL,
   eventType: string,
   beforeTimestamp: DateTime,
-  mode: "production" | "test"
+  mode: "production" | "test",
+  txn?: PgTransaction<any, any, any>
 ): Promise<number> {
-  const db = getPostgresDB();
+  const db = txn ?? getPostgresDB();
 
   try {
     if (!userId) {

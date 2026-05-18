@@ -2,6 +2,7 @@ import { getPostgresDB } from "../db";
 import { apiKeysTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 type CreateApiKeyInput = {
   name: string;
@@ -11,9 +12,10 @@ type CreateApiKeyInput = {
 };
 
 export async function createApiKey(
-  input: CreateApiKeyInput
+  input: CreateApiKeyInput,
+  txn?: PgTransaction<any, any, any>
 ): Promise<{ id: string }> {
-  const db = getPostgresDB();
+  const db = txn ?? getPostgresDB();
 
   if (!input.name || typeof input.name !== "string") {
     throw StorageError.invalidData(

@@ -65,6 +65,9 @@ export async function authenticateHttpApiKey(
 
   const recordRole = apiKeyRecord.role as ApiKeyRole;
   const mode = getModeForRole(recordRole);
+  if (!mode) {
+    throw AuthError.permissionDenied(`No mode mapping for role: ${recordRole}`);
+  }
 
   apiKeyCache.set(apiKeyHash, {
     id: apiKeyRecord.id,
