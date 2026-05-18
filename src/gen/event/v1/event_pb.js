@@ -1992,7 +1992,10 @@ proto.event.v1.EventType = {
 proto.event.v1.SDKCallType = {
   SDKCALLTYPE_UNSPECIFIED: 0,
   RAW: 1,
-  MIDDLEWARE_CALL: 2
+  MIDDLEWARE_CALL: 2,
 };
+
+proto.event.v1.BasicUsageType = proto.event.v1.SDKCallType;
+proto.event.v1.BasicUsageType.BASIC_USAGE_TYPE_UNSPECIFIED = 0;
 
 goog.object.extend(exports, proto.event.v1);

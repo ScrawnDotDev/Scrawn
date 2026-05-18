@@ -1,7 +1,7 @@
 // GENERATED CODE -- DO NOT EDIT!
 
 'use strict';
-var grpc = require('grpc');
+var grpc = require('@grpc/grpc-js');
 var payment_v1_payment_pb = require('../../payment/v1/payment_pb.js');
 
 function serialize_payment_v1_CreateCheckoutLinkRequest(arg) {

@@ -1,7 +1,7 @@
 // GENERATED CODE -- DO NOT EDIT!
 
 'use strict';
-var grpc = require('grpc');
+var grpc = require('@grpc/grpc-js');
 var auth_v1_auth_pb = require('../../auth/v1/auth_pb.js');
 
 function serialize_auth_v1_CreateAPIKeyRequest(arg) {

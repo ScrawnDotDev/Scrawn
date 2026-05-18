@@ -1,7 +1,7 @@
 // GENERATED CODE -- DO NOT EDIT!
 
 'use strict';
-var grpc = require('grpc');
+var grpc = require('@grpc/grpc-js');
 var event_v1_event_pb = require('../../event/v1/event_pb.js');
 
 function serialize_event_v1_RegisterEventRequest(arg) {
