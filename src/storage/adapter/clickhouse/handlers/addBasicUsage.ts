@@ -3,11 +3,12 @@ import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import { DateTime } from "luxon";
 import { toClickHouseDateTime } from "../utils";
+import type { AuthContext } from "../../../../context/auth";
+import { ensureUserExists } from "../../../db/postgres/helpers/users";
 
 export async function handleAddBasicUsage(
   event_data: SqlRecordOf<"BASIC_USAGE">,
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<{ id: string }> {
   const client = getClickHouseDB();
 
@@ -26,6 +27,8 @@ export async function handleAddBasicUsage(
   }
   const reportedTimestamp = toClickHouseDateTime(event_data.reported_timestamp);
 
+  const ensurePromise = ensureUserExists(event_data.userId);
+
   const id = crypto.randomUUID();
 
   try {
@@ -35,8 +38,8 @@ export async function handleAddBasicUsage(
         {
           id,
           user_id: event_data.userId,
-          api_key_id: apiKeyId,
-          mode: mode,
+          api_key_id: auth.apiKeyId,
+          mode: auth.mode,
           reported_timestamp: reportedTimestamp,
           ingested_timestamp: toClickHouseDateTime(DateTime.utc()),
           type: event_data.data.basicUsageType,
@@ -49,6 +52,15 @@ export async function handleAddBasicUsage(
   } catch (e) {
     throw StorageError.insertFailed(
       `Failed to insert basic usage event for user ${event_data.userId}`,
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+
+  try {
+    await ensurePromise;
+  } catch (e) {
+    throw StorageError.insertFailed(
+      "Failed to ensure user exists for basic usage event",
       e instanceof Error ? e : new Error(String(e))
     );
   }

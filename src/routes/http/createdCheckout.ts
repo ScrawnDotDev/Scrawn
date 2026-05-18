@@ -1,8 +1,7 @@
 import DodoPayments from "dodopayments";
 import * as Sentry from "@sentry/bun";
-import { Payment } from "../../events/Payment.ts";
-import { StorageAdapterFactory } from "../../factory/EventStorageAdapterFactory.ts";
 import type { WideEventBuilder } from "../../context/requestContext.ts";
+import { handleAddPayment } from "../../storage/db/postgres/helpers/payments";
 import { getDodoClient } from "../gRPC/payment/paymentProvider.ts";
 import {
   getSessionByCheckoutId,
@@ -63,36 +62,6 @@ function unwrapWebhookPayload(
       extra: { context: "webhook signature verification" },
     });
     return null;
-  }
-}
-
-async function storePaymentEvent(
-  userId: string,
-  creditAmount: number,
-  apiKeyId: string,
-  mode: "production" | "test",
-  checkoutSessionId: string,
-  paymentId: string,
-  builder: WideEventBuilder
-): Promise<WebhookResponse> {
-  try {
-    const paymentEvent = new Payment(userId, { creditAmount });
-    const adapter =
-      await StorageAdapterFactory.getEventStorageAdapter("PAYMENT");
-    await adapter.add(paymentEvent.serialize(), apiKeyId, mode);
-    builder.setSuccess(200);
-    return okResponse("Webhook processed successfully");
-  } catch (dbError) {
-    Sentry.captureException(dbError, {
-      extra: { context: "payment event storage", checkoutSessionId, paymentId },
-    });
-    const msg = dbError instanceof Error ? dbError.message : String(dbError);
-    return errorResponse(
-      500,
-      "DatabaseError",
-      `Failed to store payment event: ${msg}`,
-      builder
-    );
   }
 }
 
@@ -171,20 +140,13 @@ export async function handleDodoWebhook(
     await executeInTransaction(db, "process checkout", async (txn) => {
       await updateUserBilledTimestamp(userId, billedUpto, txn);
       await markSessionProcessed(checkout_session_id, txn);
+      await handleAddPayment(userId, creditAmount, apiKeyId, mode, txn);
     });
 
     builder.setUser(userId);
     builder.setPaymentContext({ creditAmount });
-
-    return await storePaymentEvent(
-      userId,
-      creditAmount,
-      apiKeyId,
-      mode,
-      checkout_session_id,
-      payment_id,
-      builder
-    );
+    builder.setSuccess(200);
+    return okResponse("Webhook processed successfully");
   } catch (error) {
     Sentry.captureException(error, {
       extra: { context: "unexpected webhook error" },

@@ -4,6 +4,8 @@ import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
 import { toClickHouseDateTime } from "../utils";
+import type { AuthContext } from "../../../../context/auth";
+import { ensureUserExists } from "../../../db/postgres/helpers/users";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -83,8 +85,7 @@ function aggregateAiTokenEvents(
 
 function buildAiTokenInsertRows(
   aggregatedEvents: AggregatedEvent[],
-  apiKeyId: string,
-  mode: "production" | "test",
+  auth: AuthContext,
   firstId: string,
   now: string
 ): Array<Record<string, unknown>> {
@@ -105,8 +106,8 @@ function buildAiTokenInsertRows(
     return {
       id: index === 0 ? firstId : crypto.randomUUID(),
       user_id: aggEvent.userId,
-      api_key_id: apiKeyId,
-      mode,
+      api_key_id: auth.apiKeyId,
+      mode: auth.mode,
       reported_timestamp: aggEvent.reported_timestamp,
       ingested_timestamp: now,
       model: aggEvent.model,
@@ -119,8 +120,7 @@ function buildAiTokenInsertRows(
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<{ id: string } | void> {
   const client = getClickHouseDB();
 
@@ -133,9 +133,15 @@ export async function handleAddAiTokenUsage(
   }
 
   const aggregatedEvents = aggregateAiTokenEvents(events);
+
+  const uniqueUserIds = Array.from(
+    new Set(aggregatedEvents.map((event) => event.userId))
+  );
+  const ensurePromises = uniqueUserIds.map((uid) => ensureUserExists(uid));
+
   const firstId = crypto.randomUUID();
   const now = toClickHouseDateTime(DateTime.utc());
-  const values = buildAiTokenInsertRows(aggregatedEvents, apiKeyId, mode, firstId, now);
+  const values = buildAiTokenInsertRows(aggregatedEvents, auth, firstId, now);
 
   try {
     await client.insert({
@@ -146,6 +152,15 @@ export async function handleAddAiTokenUsage(
   } catch (e) {
     throw StorageError.insertFailed(
       "Failed to insert AI token usage events",
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+
+  try {
+    await Promise.all(ensurePromises);
+  } catch (e) {
+    throw StorageError.insertFailed(
+      "Failed to ensure users exist for AI token usage events",
       e instanceof Error ? e : new Error(String(e))
     );
   }

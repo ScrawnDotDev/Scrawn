@@ -34,8 +34,11 @@ export async function userExists(userId: string): Promise<boolean> {
   return result.length > 0;
 }
 
-export async function ensureUserExists(userId: string): Promise<void> {
-  const db = getPostgresDB();
+export async function ensureUserExists(
+  userId: string,
+  txn?: PgTransaction<any, any, any>
+): Promise<void> {
+  const db = txn ?? getPostgresDB();
 
   try {
     await db

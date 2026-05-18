@@ -7,7 +7,6 @@ import { getPostgresDB } from "../../db/postgres/db";
 import { StorageError } from "../../../errors/storage";
 import {
   handleAddBasicUsage,
-  handleAddPayment,
   handlePriceRequestBasicUsage,
   handleAddAiTokenUsage,
   handlePriceRequestAiTokenUsage,
@@ -20,14 +19,14 @@ import type {
 } from "../../../interface/event/Event";
 import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
+import type { AuthContext } from "../../../context/auth";
 
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
 
   async add(
     serialized: SerializedEvent,
-    apiKeyId: string,
-    mode: "production" | "test"
+    auth: AuthContext
   ) {
     let event_data: SqlRecord;
 
@@ -58,21 +57,17 @@ export class PostgresAdapter implements StorageAdapter {
 
     switch (event_data.type) {
       case "BASIC_USAGE": {
-        if (!apiKeyId) {
+        if (!auth.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddBasicUsage(event_data, apiKeyId, mode);
+        return await handleAddBasicUsage(event_data, auth);
       }
 
       case "AI_TOKEN_USAGE": {
-        if (!apiKeyId) {
+        if (!auth.apiKeyId) {
           throw StorageError.missingApiKeyId();
         }
-        return await handleAddAiTokenUsage([event_data], apiKeyId, mode);
-      }
-
-      case "PAYMENT": {
-        return await handleAddPayment(event_data, apiKeyId, mode);
+        return await handleAddAiTokenUsage([event_data], auth);
       }
 
       default: {

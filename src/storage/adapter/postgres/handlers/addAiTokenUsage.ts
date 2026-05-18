@@ -5,6 +5,7 @@ import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
 import { DateTime } from "luxon";
 import { ensureUserExists } from "../../../db/postgres/helpers/users";
+import type { AuthContext } from "../../../../context/auth";
 import {
   validateAndPrepareTimestamp,
   executeInTransaction,
@@ -87,15 +88,14 @@ async function aggregateAiTokenEvents(
 
 function buildAiTokenInsertValues(
   aggregatedEvents: AggregatedEvent[],
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ) {
   return aggregatedEvents.map((aggEvent) => ({
     reportedTimestamp: aggEvent.reported_timestamp,
     ingestedTimestamp: DateTime.utc().toString(),
     userId: aggEvent.userId,
-    apiKeyId,
-    mode,
+    apiKeyId: auth.apiKeyId,
+    mode: auth.mode,
     model: aggEvent.model,
     provider: aggEvent.provider,
     metrics: metricsSchema.parse({
@@ -116,8 +116,7 @@ function buildAiTokenInsertValues(
 
 export async function handleAddAiTokenUsage(
   events: Array<SqlRecordOf<"AI_TOKEN_USAGE">>,
-  apiKeyId: string,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<{ id: string } | void> {
   const connectionObject = getPostgresDB();
 
@@ -139,12 +138,12 @@ export async function handleAddAiTokenUsage(
         new Set(aggregatedEvents.map((event) => event.userId))
       );
 
-      for (const userId of uniqueUserIds) {
-        await ensureUserExists(userId);
-      }
+      const ensurePromises = uniqueUserIds.map((userId) =>
+        ensureUserExists(userId, txn)
+      );
 
       try {
-        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, apiKeyId, mode);
+        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, auth);
 
         const inserted = await txn
           .insert(aiTokenUsageEventsTable)
@@ -155,6 +154,15 @@ export async function handleAddAiTokenUsage(
           throw StorageError.insertFailed(
             "Missing or invalid ID for the first inserted event",
             new Error(`Invalid first event ID: ${JSON.stringify(inserted[0])}`)
+          );
+        }
+
+        try {
+          await Promise.all(ensurePromises);
+        } catch (e) {
+          throw StorageError.insertFailed(
+            "Failed to ensure users exist for AI token usage events",
+            e instanceof Error ? e : new Error(String(e))
           );
         }
 

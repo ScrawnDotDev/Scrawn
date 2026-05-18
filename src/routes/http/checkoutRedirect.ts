@@ -4,7 +4,7 @@ import { getCheckoutUrl } from "../../storage/db/postgres/helpers/sessions";
 import { formatZodError } from "../../utils/formatZodError";
 
 const checkoutParamsSchema = z.object({
-  sessionId: z.string().uuid({ message: "Invalid session ID format" }),
+  sessionId: z.uuid({ message: "Invalid session ID format" }),
 });
 
 export async function handleCheckoutRedirect(
