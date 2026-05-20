@@ -66,7 +66,7 @@ export async function createCheckoutLink(
 
     const db = getPostgresDB();
 
-    await db.transaction(async (txn) => {
+    const existingResult = await db.transaction(async (txn) => {
       await txn
         .select({ id: usersTable.id })
         .from(usersTable)
@@ -93,6 +93,10 @@ export async function createCheckoutLink(
         return response;
       }
     });
+
+    if (existingResult) {
+      return callback?.(null, existingResult);
+    }
 
     const beforeTimestamp = DateTime.utc();
     const custom_price = await calculatePrice(
