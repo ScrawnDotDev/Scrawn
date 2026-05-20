@@ -12,6 +12,7 @@ import {
 } from "./addEventUtils";
 import { metricsSchema } from "../../../../zod/metrics";
 import type { Metrics } from "../../../../zod/metrics";
+import { eq } from "drizzle-orm";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -29,7 +30,11 @@ type AggregatedEvent = {
   metadata?: Record<string, unknown>;
 };
 
-function validateNonNegative(value: unknown, label: string, userId: UserId): void {
+function validateNonNegative(
+  value: unknown,
+  label: string,
+  userId: UserId
+): void {
   if (typeof value === "number" && value < 0) {
     throw StorageError.insertFailed(
       `Negative ${label} not allowed for AI token usage for user ${userId}`,
@@ -45,7 +50,11 @@ function validateAiTokenEvent(event_data: SqlRecordOf<"AI_TOKEN_USAGE">): void {
   validateNonNegative(data.inputDebitAmount, "inputDebitAmount", userId);
   validateNonNegative(data.outputDebitAmount, "outputDebitAmount", userId);
   validateNonNegative(data.inputCacheTokens, "inputCacheTokens", userId);
-  validateNonNegative(data.inputCacheDebitAmount, "inputCacheDebitAmount", userId);
+  validateNonNegative(
+    data.inputCacheDebitAmount,
+    "inputCacheDebitAmount",
+    userId
+  );
 }
 
 async function aggregateAiTokenEvents(
@@ -54,7 +63,9 @@ async function aggregateAiTokenEvents(
   const aggregationMap = new Map<string, AggregatedEvent>();
 
   for (const event_data of events) {
-    const reported_timestamp = await validateAndPrepareTimestamp(event_data.reported_timestamp);
+    const reported_timestamp = await validateAndPrepareTimestamp(
+      event_data.reported_timestamp
+    );
     const key = `${event_data.userId}:${event_data.data.model}:${event_data.idempotencyKey}`;
     const existing = aggregationMap.get(key);
 
@@ -146,18 +157,45 @@ export async function handleAddAiTokenUsage(
       }
 
       try {
-        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, auth);
+        const aiTokenUsageValues = buildAiTokenInsertValues(
+          aggregatedEvents,
+          auth
+        );
 
         const inserted = await txn
           .insert(aiTokenUsageEventsTable)
           .values(aiTokenUsageValues)
+          .onConflictDoNothing({
+            target: aiTokenUsageEventsTable.idempotencyKey,
+          })
           .returning({ id: aiTokenUsageEventsTable.id });
 
         if (!inserted[0] || !inserted[0].id) {
-          throw StorageError.insertFailed(
-            "Missing or invalid ID for the first inserted event",
-            new Error(`Invalid first event ID: ${JSON.stringify(inserted[0])}`)
-          );
+          const firstIdempotencyKey = aiTokenUsageValues[0]?.idempotencyKey;
+          if (!firstIdempotencyKey) {
+            throw StorageError.insertFailed(
+              "Missing idempotency key in the first event",
+              new Error("First event idempotency key is undefined")
+            );
+          }
+
+          const [existing] = await txn
+            .select({ id: aiTokenUsageEventsTable.id })
+            .from(aiTokenUsageEventsTable)
+            .where(
+              eq(aiTokenUsageEventsTable.idempotencyKey, firstIdempotencyKey)
+            )
+            .limit(1);
+
+          if (!existing) {
+            throw StorageError.insertFailed(
+              "Missing or invalid ID for the first inserted event, and no existing record found",
+              new Error(
+                `Invalid first event ID: ${JSON.stringify(inserted[0])}`
+              )
+            );
+          }
+          return { id: existing.id };
         }
 
         return { id: inserted[0].id };

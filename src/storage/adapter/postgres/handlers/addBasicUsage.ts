@@ -9,6 +9,7 @@ import {
   validateAndPrepareTimestamp,
   executeInTransaction,
 } from "./addEventUtils";
+import { eq } from "drizzle-orm";
 
 export async function handleAddBasicUsage(
   event_data: SqlRecordOf<"BASIC_USAGE">,
@@ -49,12 +50,25 @@ export async function handleAddBasicUsage(
             debitAmount: event_data.data.debitAmount,
             metadata: event_data.data.metadata ?? null,
           })
+          .onConflictDoNothing({ target: basicUsageEventsTable.idempotencyKey })
           .returning({ id: basicUsageEventsTable.id });
 
+        let resultId: string;
         if (!result) {
-          throw StorageError.emptyResult(
-            "Basic usage event insert returned no ID"
-          );
+          const [existing] = await txn
+            .select({ id: basicUsageEventsTable.id })
+            .from(basicUsageEventsTable)
+            .where(eq(basicUsageEventsTable.idempotencyKey, event_data.idempotencyKey))
+            .limit(1);
+
+          if (!existing) {
+            throw StorageError.emptyResult(
+              "Basic usage event insert returned no ID and no existing record found"
+            );
+          }
+          resultId = existing.id;
+        } else {
+          resultId = result.id;
         }
 
         try {
@@ -66,7 +80,7 @@ export async function handleAddBasicUsage(
           );
         }
 
-        return { id: result.id };
+        return { id: resultId };
       } catch (e) {
         throw StorageError.insertFailed(
           "Failed to insert basic usage event",

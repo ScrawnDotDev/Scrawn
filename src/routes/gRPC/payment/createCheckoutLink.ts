@@ -20,13 +20,15 @@ import {
   type CheckoutResult,
 } from "./paymentProvider.ts";
 import { calculatePaymentPrice } from "../../../services/pricingService";
-import type { WideEventBuilder } from "../../../context/requestContext";
-import { apiKeyContextKey, type AuthContext } from "../../../context/auth";
+import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
 import type { UserId } from "../../../config/identifiers";
 import { DateTime } from "luxon";
 import { handleAddSession } from "../../../storage/db/postgres/helpers/sessions";
 import { type ContextUnaryCall } from "../../../interface/types/context.ts";
+import { getPostgresDB } from "../../../storage/db/postgres/db";
+import { checkoutSessionsTable } from "../../../storage/db/postgres/schema";
+import { eq, and, sql } from "drizzle-orm";
 
 export async function createCheckoutLink(
   call: ContextUnaryCall<CreateCheckoutLinkRequest, CreateCheckoutLinkResponse>,
@@ -62,6 +64,26 @@ export async function createCheckoutLink(
     const validatedData = validateRequest(req);
     wideEventBuilder?.setUser(validatedData.userId);
 
+    const db = getPostgresDB();
+
+    const [existing] = await db
+      .select()
+      .from(checkoutSessionsTable)
+      .where(
+        and(
+          eq(checkoutSessionsTable.userId, validatedData.userId),
+          eq(checkoutSessionsTable.isCompleted, false),
+          sql`${checkoutSessionsTable.createdAt} > now() - interval '24 hours'`
+        )
+      )
+      .limit(1);
+
+    if (existing) {
+      const response = new CreateCheckoutLinkResponse();
+      response.setCheckoutlink(existing.link);
+      return callback?.(null, response);
+    }
+
     const beforeTimestamp = DateTime.utc();
     const custom_price = await calculatePrice(
       validatedData.userId,
@@ -90,6 +112,15 @@ export async function createCheckoutLink(
     wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
 
     const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
+
+    await db.execute(sql`
+      INSERT INTO checkout_sessions (user_id, link)
+      VALUES (${validatedData.userId}, ${proxyUrl})
+      ON CONFLICT (user_id) WHERE is_completed = false
+      DO UPDATE SET
+        link = EXCLUDED.link,
+        created_at = ${DateTime.utc().toISO()!}
+    `);
 
     const response = new CreateCheckoutLinkResponse();
     response.setCheckoutlink(proxyUrl);

@@ -10,6 +10,8 @@ import {
 import { updateUserBilledTimestamp } from "../../storage/db/postgres/helpers/users";
 import { getPostgresDB } from "../../storage/db/postgres/db";
 import { executeInTransaction } from "../../storage/adapter/postgres/handlers/addEventUtils";
+import { checkoutSessionsTable } from "../../storage/db/postgres/schema";
+import { eq, and } from "drizzle-orm";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -141,6 +143,15 @@ export async function handleDodoWebhook(
       await updateUserBilledTimestamp(userId, billedUpto, txn);
       await markSessionProcessed(checkout_session_id, txn);
       await handleAddPayment(userId, creditAmount, apiKeyId, mode, txn);
+      await txn
+        .update(checkoutSessionsTable)
+        .set({ isCompleted: true })
+        .where(
+          and(
+            eq(checkoutSessionsTable.userId, userId),
+            eq(checkoutSessionsTable.isCompleted, false)
+          )
+        );
     });
 
     builder.setUser(userId);

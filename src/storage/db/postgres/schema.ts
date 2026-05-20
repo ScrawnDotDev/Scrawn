@@ -247,3 +247,26 @@ export const expressionsTable = pgTable("expressions", {
   key: text("key").notNull().unique(),
   expr: text("expr").notNull(),
 });
+
+export const checkoutSessionsTable = pgTable(
+  "checkout_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: USER_ID_CONFIG.dbType("user_id")
+      .references(() => usersTable.id)
+      .notNull(),
+    link: text("link").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    isCompleted: boolean("is_completed").notNull().default(false),
+  },
+  (table) => ({
+    uniqueActiveCheckout: uniqueIndex("unique_active_checkout_per_user")
+      .on(table.userId)
+      .where(sql`${table.isCompleted} = false`),
+  })
+);

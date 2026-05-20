@@ -27,7 +27,7 @@ export class StorageError extends Error {
   readonly code: number;
 
   constructor(context: StorageErrorContext) {
-    super(context.message);
+    super(context.message, { cause: context.originalError });
     this.name = "StorageError";
     this.type = context.type;
     this.originalError = context.originalError;
