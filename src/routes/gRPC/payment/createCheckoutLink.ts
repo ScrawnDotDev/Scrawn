@@ -20,13 +20,15 @@ import {
   type CheckoutResult,
 } from "./paymentProvider.ts";
 import { calculatePaymentPrice } from "../../../services/pricingService";
-import type { WideEventBuilder } from "../../../context/requestContext";
-import { apiKeyContextKey, type AuthContext } from "../../../context/auth";
+import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
 import type { UserId } from "../../../config/identifiers";
 import { DateTime } from "luxon";
 import { handleAddSession } from "../../../storage/db/postgres/helpers/sessions";
 import { type ContextUnaryCall } from "../../../interface/types/context.ts";
+import { getPostgresDB } from "../../../storage/db/postgres/db";
+import { sessionsTable } from "../../../storage/db/postgres/schema";
+import { eq, and, sql } from "drizzle-orm";
 
 export async function createCheckoutLink(
   call: ContextUnaryCall<CreateCheckoutLinkRequest, CreateCheckoutLinkResponse>,
@@ -61,6 +63,27 @@ export async function createCheckoutLink(
     const config = getPaymentProviderConfig();
     const validatedData = validateRequest(req);
     wideEventBuilder?.setUser(validatedData.userId);
+
+    const db = getPostgresDB();
+
+    const [existing] = await db
+      .select()
+      .from(sessionsTable)
+      .where(
+        and(
+          eq(sessionsTable.userId, validatedData.userId),
+          eq(sessionsTable.processed, false),
+          sql`${sessionsTable.createdAt} > now() - interval '24 hours'`
+        )
+      )
+      .limit(1);
+
+    if (existing) {
+      const response = new CreateCheckoutLinkResponse();
+      const proxyUrl = `${process.env.APP_URL}/checkout/${existing.id}`;
+      response.setCheckoutlink(proxyUrl);
+      return callback?.(null, response);
+    }
 
     const beforeTimestamp = DateTime.utc();
     const custom_price = await calculatePrice(
