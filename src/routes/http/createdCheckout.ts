@@ -149,6 +149,7 @@ export async function handleDodoWebhook(
         .where(
           and(
             eq(sessionsTable.userId, userId),
+            eq(sessionsTable.mode, mode),
             eq(sessionsTable.processed, false)
           )
         );

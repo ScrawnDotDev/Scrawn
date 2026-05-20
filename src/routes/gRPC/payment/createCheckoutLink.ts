@@ -27,7 +27,7 @@ import { DateTime } from "luxon";
 import { handleAddSession } from "../../../storage/db/postgres/helpers/sessions";
 import { type ContextUnaryCall } from "../../../interface/types/context.ts";
 import { getPostgresDB } from "../../../storage/db/postgres/db";
-import { sessionsTable } from "../../../storage/db/postgres/schema";
+import { sessionsTable, usersTable } from "../../../storage/db/postgres/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 export async function createCheckoutLink(
@@ -66,56 +66,68 @@ export async function createCheckoutLink(
 
     const db = getPostgresDB();
 
-    const [existing] = await db
-      .select()
-      .from(sessionsTable)
-      .where(
-        and(
-          eq(sessionsTable.userId, validatedData.userId),
-          eq(sessionsTable.processed, false),
-          sql`${sessionsTable.createdAt} > now() - interval '24 hours'`
+    const response = await db.transaction(async (txn) => {
+      await txn
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.id, validatedData.userId))
+        .for("update");
+
+      const [existing] = await txn
+        .select()
+        .from(sessionsTable)
+        .where(
+          and(
+            eq(sessionsTable.userId, validatedData.userId),
+            eq(sessionsTable.processed, false),
+            eq(sessionsTable.mode, mode),
+            sql`${sessionsTable.createdAt} > now() - interval '24 hours'`
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (existing) {
+      if (existing) {
+        const resp = new CreateCheckoutLinkResponse();
+        const proxyUrl = `${process.env.APP_URL}/checkout/${existing.id}`;
+        resp.setCheckoutlink(proxyUrl);
+        return resp;
+      }
+
+      const beforeTimestamp = DateTime.utc();
+      const custom_price = await calculatePrice(
+        validatedData.userId,
+        beforeTimestamp,
+        mode
+      );
+      wideEventBuilder?.setPaymentContext({ priceAmount: custom_price });
+
+      const checkoutResult = await createCheckoutSession(
+        config,
+        custom_price,
+        validatedData.userId,
+        auth.apiKeyId,
+        beforeTimestamp,
+        mode
+      );
+
+      const sessionResult = await handleAddSession(
+        validatedData.userId,
+        checkoutResult.sessionId,
+        beforeTimestamp,
+        auth.apiKeyId,
+        mode,
+        checkoutResult.checkoutUrl,
+        txn
+      );
+      wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
+
+      const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
+
       const response = new CreateCheckoutLinkResponse();
-      const proxyUrl = `${process.env.APP_URL}/checkout/${existing.id}`;
       response.setCheckoutlink(proxyUrl);
-      return callback?.(null, response);
-    }
+      return response;
+    });
 
-    const beforeTimestamp = DateTime.utc();
-    const custom_price = await calculatePrice(
-      validatedData.userId,
-      beforeTimestamp,
-      mode
-    );
-    wideEventBuilder?.setPaymentContext({ priceAmount: custom_price });
-
-    const checkoutResult = await createCheckoutSession(
-      config,
-      custom_price,
-      validatedData.userId,
-      auth.apiKeyId,
-      beforeTimestamp,
-      mode
-    );
-
-    const sessionResult = await handleAddSession(
-      validatedData.userId,
-      checkoutResult.sessionId,
-      beforeTimestamp,
-      auth.apiKeyId,
-      mode,
-      checkoutResult.checkoutUrl
-    );
-    wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
-
-    const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
-
-    const response = new CreateCheckoutLinkResponse();
-    response.setCheckoutlink(proxyUrl);
     callback?.(null, response);
   } catch (error) {
     callback?.(error as Error);
