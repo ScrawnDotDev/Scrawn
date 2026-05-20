@@ -66,7 +66,7 @@ export async function createCheckoutLink(
 
     const db = getPostgresDB();
 
-    const response = await db.transaction(async (txn) => {
+    await db.transaction(async (txn) => {
       await txn
         .select({ id: usersTable.id })
         .from(usersTable)
@@ -87,47 +87,44 @@ export async function createCheckoutLink(
         .limit(1);
 
       if (existing) {
-        const resp = new CreateCheckoutLinkResponse();
+        const response = new CreateCheckoutLinkResponse();
         const proxyUrl = `${process.env.APP_URL}/checkout/${existing.id}`;
-        resp.setCheckoutlink(proxyUrl);
-        return resp;
+        response.setCheckoutlink(proxyUrl);
+        return response;
       }
-
-      const beforeTimestamp = DateTime.utc();
-      const custom_price = await calculatePrice(
-        validatedData.userId,
-        beforeTimestamp,
-        mode
-      );
-      wideEventBuilder?.setPaymentContext({ priceAmount: custom_price });
-
-      const checkoutResult = await createCheckoutSession(
-        config,
-        custom_price,
-        validatedData.userId,
-        auth.apiKeyId,
-        beforeTimestamp,
-        mode
-      );
-
-      const sessionResult = await handleAddSession(
-        validatedData.userId,
-        checkoutResult.sessionId,
-        beforeTimestamp,
-        auth.apiKeyId,
-        mode,
-        checkoutResult.checkoutUrl,
-        txn
-      );
-      wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
-
-      const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
-
-      const response = new CreateCheckoutLinkResponse();
-      response.setCheckoutlink(proxyUrl);
-      return response;
     });
 
+    const beforeTimestamp = DateTime.utc();
+    const custom_price = await calculatePrice(
+      validatedData.userId,
+      beforeTimestamp,
+      mode
+    );
+    wideEventBuilder?.setPaymentContext({ priceAmount: custom_price });
+
+    const checkoutResult = await createCheckoutSession(
+      config,
+      custom_price,
+      validatedData.userId,
+      auth.apiKeyId,
+      beforeTimestamp,
+      mode
+    );
+
+    const sessionResult = await handleAddSession(
+      validatedData.userId,
+      checkoutResult.sessionId,
+      beforeTimestamp,
+      auth.apiKeyId,
+      mode,
+      checkoutResult.checkoutUrl
+    );
+    wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
+
+    const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
+
+    const response = new CreateCheckoutLinkResponse();
+    response.setCheckoutlink(proxyUrl);
     callback?.(null, response);
   } catch (error) {
     callback?.(error as Error);
