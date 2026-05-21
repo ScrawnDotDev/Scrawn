@@ -81,20 +81,20 @@ export class PostgresAdapter implements StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test",
+    auth: AuthContext,
     txn?: unknown
   ): Promise<number> {
     const tx = txn as PgTransaction<any, any, any> | undefined;
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode, tx);
+        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, auth, tx);
       }
 
       case "AI_TOKEN_USAGE": {
         return await handlePriceRequestAiTokenUsage(
           userID,
           beforeTimestamp,
-          mode,
+          auth,
           tx
         );
       }
@@ -105,7 +105,7 @@ export class PostgresAdapter implements StorageAdapter {
     }
   }
 
-  async query(request: QueryRequest): Promise<QueryResponse> {
-    return await handleQueryEvents(request);
+  async query(request: QueryRequest, auth: AuthContext): Promise<QueryResponse> {
+    return await handleQueryEvents(request, auth);
   }
 }

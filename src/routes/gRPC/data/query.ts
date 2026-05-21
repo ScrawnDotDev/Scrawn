@@ -3,7 +3,7 @@ import {
   QueryRequest,
   QueryResponse,
   Row,
-} from "../../../gen/data/v1/data_pb.js";
+} from "../../../gen/data/v1/data";
 import { dataQuerySchema, type DataQueryRequest } from "../../../zod/data";
 import { EventError } from "../../../errors/event";
 import { formatZodError } from "../../../utils/formatZodError";
@@ -212,7 +212,7 @@ export async function queryData(
     | undefined;
 
   try {
-    const req = call.request.toObject() as Record<string, unknown>;
+    const req = { ...call.request } as Record<string, unknown>;
 
     const validated = dataQuerySchema.parse(req);
 
@@ -261,16 +261,14 @@ export async function queryData(
 
     const total = Number(countResult[0]?.cnt ?? 0);
 
-    const response = new QueryResponse();
-    response.setColumnsList(columns);
-    response.setRowsList(
-      rows.map((row) => {
-        const r = new Row();
-        r.setValuesList(columns.map((c) => String(row[c] ?? "")));
-        return r;
-      })
-    );
-    response.setTotal(total);
+    const response = QueryResponse.create();
+    response.columns = columns;
+    response.rows = rows.map((row) => {
+      const r = Row.create();
+      r.values = columns.map((c) => String(row[c] ?? ""));
+      return r;
+    });
+    response.total = total;
 
     callback?.(null, response);
   } catch (error) {

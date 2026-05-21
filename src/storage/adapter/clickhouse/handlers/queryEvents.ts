@@ -15,6 +15,7 @@ import type {
   QueryResultRow,
   QueryFieldName,
 } from "../../../../interface/storage/Storage";
+import type { AuthContext } from "../../../../context/auth";
 
 interface ChFieldDef {
   select: string | null;
@@ -196,7 +197,8 @@ function buildWhereFromGroup(
 }
 
 export async function handleQueryEvents(
-  request: QueryRequest
+  request: QueryRequest,
+  auth: AuthContext
 ): Promise<QueryResponse> {
   const tables = getTablesForRequest(request.where);
   if (tables.length === 0) {

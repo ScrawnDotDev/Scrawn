@@ -71,7 +71,7 @@ export async function createCheckoutLink(
     const custom_price = await calculatePrice(
       validatedData.userId,
       beforeTimestamp,
-      mode
+      auth
     );
     wideEventBuilder?.setPaymentContext({ priceAmount: custom_price });
 
@@ -131,9 +131,9 @@ function validateRequest(
 async function calculatePrice(
   userId: UserId,
   beforeTimestamp: DateTime,
-  mode: "production" | "test"
+  auth: AuthContext
 ): Promise<number> {
-  const price = await calculatePaymentPrice(userId, beforeTimestamp, mode);
+  const price = await calculatePaymentPrice(userId, beforeTimestamp, auth);
 
   if (typeof price !== "number" || isNaN(price) || price < 0) {
     throw PaymentError.priceCalculationFailed(

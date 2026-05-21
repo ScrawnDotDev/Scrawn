@@ -4,11 +4,12 @@ import { sql } from "drizzle-orm";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { AuthContext } from "../../../../context/auth";
 
 export async function handlePriceRequestBasicUsage(
   userId: UserId,
   beforeTimestamp: DateTime,
-  mode: "production" | "test",
+  auth: AuthContext,
   txn?: PgTransaction<any, any, any>
 ): Promise<number> {
   return handlePriceRequest(
@@ -17,7 +18,7 @@ export async function handlePriceRequestBasicUsage(
     sql`${basicUsageEventsTable.debitAmount}`,
     "REQUEST_BASIC_USAGE",
     beforeTimestamp,
-    mode,
+    auth,
     txn
   );
 }

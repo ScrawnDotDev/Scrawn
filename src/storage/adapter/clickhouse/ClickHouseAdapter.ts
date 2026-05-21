@@ -76,16 +76,16 @@ export class ClickHouseAdapter implements StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test",
+    auth: AuthContext,
     _txn?: unknown
   ): Promise<number> {
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, mode);
+        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, auth);
       }
 
       case "AI_TOKEN_USAGE": {
-        return await handlePriceRequestAiTokenUsage(userID, beforeTimestamp, mode);
+        return await handlePriceRequestAiTokenUsage(userID, beforeTimestamp, auth);
       }
 
       default: {
@@ -94,7 +94,7 @@ export class ClickHouseAdapter implements StorageAdapter {
     }
   }
 
-  async query(request: QueryRequest): Promise<QueryResponse> {
-    return await handleQueryEvents(request);
+  async query(request: QueryRequest, auth: AuthContext): Promise<QueryResponse> {
+    return await handleQueryEvents(request, auth);
   }
 }

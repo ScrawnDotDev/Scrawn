@@ -13,6 +13,7 @@ import type {
   QueryResponse,
   QueryResultRow,
 } from "../../../../interface/storage/Storage";
+import type { AuthContext } from "../../../../context/auth";
 
 interface PGFieldDef {
   select: string | null;
@@ -186,7 +187,8 @@ function buildSelectColumns(table: EventTableName): SQL {
 }
 
 export async function handleQueryEvents(
-  request: QueryRequest
+  request: QueryRequest,
+  auth: AuthContext
 ): Promise<QueryResponse> {
   const tables = getTablesForRequest(request.where);
   if (tables.length === 0) {

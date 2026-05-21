@@ -1,9 +1,9 @@
 import * as grpc from "@grpc/grpc-js";
-import * as authGrpc from "../gen/auth/v1/auth_grpc_pb.js";
-import * as eventGrpc from "../gen/event/v1/event_grpc_pb.js";
-import * as paymentGrpc from "../gen/payment/v1/payment_grpc_pb.js";
-import * as queryGrpc from "../gen/query/v1/query_grpc_pb.js";
-import * as dataGrpc from "../gen/data/v1/data_grpc_pb.js";
+import * as authGrpc from "../gen/auth/v1/auth";
+import * as eventGrpc from "../gen/event/v1/event";
+import * as paymentGrpc from "../gen/payment/v1/payment";
+import * as queryGrpc from "../gen/query/v1/query";
+import * as dataGrpc from "../gen/data/v1/data";
 import { createAPIKey } from "../routes/gRPC/auth/createAPIKey";
 import { registerEvent } from "../routes/gRPC/events/registerEvent";
 import { streamEvents } from "../routes/gRPC/events/streamEvents";

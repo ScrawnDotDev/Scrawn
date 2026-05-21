@@ -9,6 +9,7 @@ import { eq, sum, sql, and, type SQL } from "drizzle-orm";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { AuthContext } from "../../../../context/auth";
 
 type PriceEventTable =
   | typeof basicUsageEventsTable
@@ -20,7 +21,7 @@ export async function handlePriceRequest(
   priceColumn: SQL,
   eventType: string,
   beforeTimestamp: DateTime,
-  mode: "production" | "test",
+  auth: AuthContext,
   txn?: PgTransaction<any, any, any>
 ): Promise<number> {
   const db = txn ?? getPostgresDB();
@@ -36,7 +37,7 @@ export async function handlePriceRequest(
 
     let result;
     try {
-      const baseCondition = sql`${priceTable.reportedTimestamp} > ${usersTable.last_billed_timestamp} AND ${priceTable.userId} = ${userId} AND ${priceTable.mode} = ${mode}`;
+      const baseCondition = sql`${priceTable.reportedTimestamp} > ${usersTable.last_billed_timestamp} AND ${priceTable.userId} = ${userId} AND ${priceTable.mode} = ${auth.mode}`;
       const whereClause = beforeTimestamp
         ? and(
             baseCondition,

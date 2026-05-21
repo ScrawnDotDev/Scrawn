@@ -4,8 +4,9 @@ import {
   QueryEventsResponse,
   EventRow,
   AggregationRow,
-} from "../../../gen/query/v1/query_pb.js";
+} from "../../../gen/query/v1/query";
 import { queryEventsSchema } from "../../../zod/query";
+import { AuthError } from "../../../errors/auth";
 import { EventError } from "../../../errors/event";
 import { formatZodError } from "../../../utils/formatZodError";
 import { StorageAdapterFactory } from "../../../factory";
@@ -14,7 +15,7 @@ import type {
   QueryResponse,
 } from "../../../interface/storage/Storage";
 import type { WideEventBuilder } from "../../../context/requestContext";
-import { apiKeyContextKey } from "../../../context/auth";
+import { apiKeyContextKey, type AuthContext } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
 import type { ContextUnaryCall } from "../../../interface/types/context.js";
 
@@ -33,9 +34,14 @@ export async function queryEvents(
       queryConditions: countConditions(queryRequest.where),
     });
 
+    const auth = call[apiKeyContextKey];
+    if (!auth) {
+      return callback?.(AuthError.invalidAPIKey("API key context not found"));
+    }
+
     const adapter =
       await StorageAdapterFactory.getEventStorageAdapter("BASIC_USAGE");
-    const result = await adapter.query(queryRequest);
+    const result = await adapter.query(queryRequest, auth);
 
     const response = buildProtoResponse(result, queryRequest);
     callback?.(null, response);
@@ -54,60 +60,61 @@ function countConditions(group: QueryRequest["where"]): number {
 
 function validateRequest(req: QueryEventsRequest): QueryRequest {
   try {
-    return queryEventsSchema.parse(req.toObject());
+    return queryEventsSchema.parse({ ...req });
   } catch (error) {
     throw formatZodError(error, (msg) => EventError.validationFailed(msg));
   }
 }
 
 function buildEventRow(row: QueryResponse["rows"][number]): EventRow {
-  const eventRow = new EventRow();
-  eventRow.setEventId(String(row.eventId ?? ""));
-  eventRow.setEventType(String(row.eventType ?? ""));
-  eventRow.setUserId(String(row.userId ?? ""));
-  eventRow.setReportedTimestamp(String(row.reportedTimestamp ?? ""));
-  eventRow.setIngestedTimestamp(String(row.ingestedTimestamp ?? ""));
+  const eventRow = EventRow.create();
+
+  eventRow.eventId = String(row.eventId ?? "");
+  eventRow.eventType = String(row.eventType ?? "");
+  eventRow.userId = String(row.userId ?? "");
+  eventRow.reportedTimestamp = String(row.reportedTimestamp ?? "");
+  eventRow.ingestedTimestamp = String(row.ingestedTimestamp ?? "");
 
   if (row.basicUsageType != null) {
-    eventRow.setBasicUsageType(String(row.basicUsageType));
+    eventRow.basicUsageType = String(row.basicUsageType);
   }
   if (row.debitAmount != null) {
-    eventRow.setDebitAmount(Number(row.debitAmount));
+    eventRow.debitAmount = Number(row.debitAmount);
   }
   if (row.model != null) {
-    eventRow.setModel(String(row.model));
+    eventRow.model = String(row.model);
   }
   if (row.inputTokens != null) {
-    eventRow.setInputTokens(Number(row.inputTokens));
+    eventRow.inputTokens = Number(row.inputTokens);
   }
   if (row.outputTokens != null) {
-    eventRow.setOutputTokens(Number(row.outputTokens));
+    eventRow.outputTokens = Number(row.outputTokens);
   }
   if (row.inputDebitAmount != null) {
-    eventRow.setInputDebitAmount(Number(row.inputDebitAmount));
+    eventRow.inputDebitAmount = Number(row.inputDebitAmount);
   }
   if (row.outputDebitAmount != null) {
-    eventRow.setOutputDebitAmount(Number(row.outputDebitAmount));
+    eventRow.outputDebitAmount = Number(row.outputDebitAmount);
   }
   if (row.inputCacheTokens != null) {
-    eventRow.setInputCacheTokens(Number(row.inputCacheTokens));
+    eventRow.inputCacheTokens = Number(row.inputCacheTokens);
   }
   if (row.inputCacheDebitAmount != null) {
-    eventRow.setInputCacheDebitAmount(Number(row.inputCacheDebitAmount));
+    eventRow.inputCacheDebitAmount = Number(row.inputCacheDebitAmount);
   }
   if (row.metadata != null) {
-    eventRow.setMetadata(JSON.stringify(row.metadata));
+    eventRow.metadata = JSON.stringify(row.metadata);
   }
 
   return eventRow;
 }
 
 function buildAggregationRow(row: QueryResponse["rows"][number]): AggregationRow {
-  const aggRow = new AggregationRow();
+  const aggRow = AggregationRow.create();
   if (row.group_value != null) {
-    aggRow.setGroupValue(String(row.group_value));
+    aggRow.groupValue = String(row.group_value);
   }
-  aggRow.setAggValue(String(row.agg_value ?? "0"));
+  aggRow.aggValue = String(row.agg_value ?? "0");
   return aggRow;
 }
 
@@ -115,18 +122,14 @@ function buildProtoResponse(
   result: QueryResponse,
   request: QueryRequest
 ): QueryEventsResponse {
-  const response = new QueryEventsResponse();
+  const response = QueryEventsResponse.create();
 
   if (request.aggregation) {
-    for (const row of result.rows) {
-      response.addAggRows(buildAggregationRow(row));
-    }
+    response.aggRows = result.rows.map(buildAggregationRow);
   } else {
-    for (const row of result.rows) {
-      response.addRows(buildEventRow(row));
-    }
+    response.rows = result.rows.map(buildEventRow);
   }
 
-  response.setTotal(result.total);
+  response.total = result.total;
   return response;
 }

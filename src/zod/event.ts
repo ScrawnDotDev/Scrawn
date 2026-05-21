@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import { USER_ID_CONFIG } from "../config/identifiers";
 import { fetchTagAmount } from "../utils/fetchTagAmount";
 import { parseAndEvaluateExpr } from "../utils/parseExpr";
-import { EventType, BasicUsageType } from "../gen/event/v1/event_pb";
+import { EventType, BasicUsageType } from "../gen/event/v1/event";
 import type {
   BasicUsageEventData,
   AITokenUsageEventData,
@@ -19,18 +19,18 @@ function parseMetadata(val: string): Record<string, unknown> {
 
 const BaseEvent = z.object({
   type: z.number(),
-  userid: USER_ID_CONFIG.validator,
-  reportedtimestamp: z
+  userId: USER_ID_CONFIG.validator,
+  reportedTimestamp: z
     .number()
     .int()
     .transform((ts) => DateTime.fromSeconds(ts, { zone: "utc" })),
-  eventid: z.uuid(),
-  idempotencykey: z.string().min(1),
+  eventId: z.uuid(),
+  idempotencyKey: z.string().min(1),
 });
 
 const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
   .object({
-    basicusagetype: z.union([
+    basicUsageType: z.union([
       z
         .literal(BasicUsageType.BASIC_USAGE_TYPE_UNSPECIFIED)
         .transform(() => "RAW" as const),
@@ -39,9 +39,9 @@ const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
         .literal(BasicUsageType.MIDDLEWARE_CALL)
         .transform(() => "MIDDLEWARE_CALL" as const),
     ]),
-    amount: z.number(),
-    tag: z.string(),
-    expr: z.string(),
+    amount: z.number().optional(),
+    tag: z.string().optional(),
+    expr: z.string().optional(),
     metadata: z.string().optional(),
   })
   .transform(async (v): Promise<BasicUsageEventData> => {
@@ -51,10 +51,10 @@ const BasicUsageDataSchema: z.ZodType<BasicUsageEventData> = z
     } else if (v.expr) {
       debitAmount = await parseAndEvaluateExpr(v.expr);
     } else {
-      debitAmount = v.amount;
+      debitAmount = v.amount ?? 0;
     }
     return {
-      basicUsageType: v.basicusagetype,
+      basicUsageType: v.basicUsageType,
       debitAmount,
       metadata: v.metadata ? parseMetadata(v.metadata) : undefined,
     };
@@ -64,75 +64,75 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
   .object({
     model: z.string().min(1),
     provider: z.string().optional().default("unknown"),
-    inputtokens: z.number().int().min(0),
-    inputcachetokens: z.number().int().min(0),
-    outputtokens: z.number().int().min(0),
-    inputamount: z.number(),
-    inputtag: z.string(),
-    inputexpr: z.string(),
-    inputcacheamount: z.number(),
-    inputcachetag: z.string(),
-    inputcacheexpr: z.string(),
-    outputamount: z.number(),
-    outputtag: z.string(),
-    outputexpr: z.string(),
+    inputTokens: z.number().int().min(0),
+    inputCacheTokens: z.number().int().min(0),
+    outputTokens: z.number().int().min(0),
+    inputAmount: z.number().optional(),
+    inputTag: z.string().optional(),
+    inputExpr: z.string().optional(),
+    inputCacheAmount: z.number().optional(),
+    inputCacheTag: z.string().optional(),
+    inputCacheExpr: z.string().optional(),
+    outputAmount: z.number().optional(),
+    outputTag: z.string().optional(),
+    outputExpr: z.string().optional(),
     metadata: z.string().optional(),
   })
   .transform(async (v): Promise<AITokenUsageEventData> => {
     const tokenContext = {
-      inputTokens: v.inputtokens,
-      inputCacheTokens: v.inputcachetokens,
-      outputTokens: v.outputtokens,
+      inputTokens: v.inputTokens,
+      inputCacheTokens: v.inputCacheTokens,
+      outputTokens: v.outputTokens,
     };
 
     let inputDebitAmount: number;
-    if (v.inputtag) {
+    if (v.inputTag) {
       inputDebitAmount = await fetchTagAmount(
-        v.inputtag,
-        `Input tag not found: ${v.inputtag}`
+        v.inputTag,
+        `Input tag not found: ${v.inputTag}`
       );
-    } else if (v.inputexpr) {
-      inputDebitAmount = await parseAndEvaluateExpr(v.inputexpr, tokenContext);
+    } else if (v.inputExpr) {
+      inputDebitAmount = await parseAndEvaluateExpr(v.inputExpr, tokenContext);
     } else {
-      inputDebitAmount = v.inputamount;
+      inputDebitAmount = v.inputAmount ?? 0;
     }
 
     let inputCacheDebitAmount: number;
-    if (v.inputcachetag) {
+    if (v.inputCacheTag) {
       inputCacheDebitAmount = await fetchTagAmount(
-        v.inputcachetag,
-        `Input cache tag not found: ${v.inputcachetag}`
+        v.inputCacheTag,
+        `Input cache tag not found: ${v.inputCacheTag}`
       );
-    } else if (v.inputcacheexpr) {
+    } else if (v.inputCacheExpr) {
       inputCacheDebitAmount = await parseAndEvaluateExpr(
-        v.inputcacheexpr,
+        v.inputCacheExpr,
         tokenContext
       );
     } else {
-      inputCacheDebitAmount = v.inputcacheamount;
+      inputCacheDebitAmount = v.inputCacheAmount ?? 0;
     }
 
     let outputDebitAmount: number;
-    if (v.outputtag) {
+    if (v.outputTag) {
       outputDebitAmount = await fetchTagAmount(
-        v.outputtag,
-        `Output tag not found: ${v.outputtag}`
+        v.outputTag,
+        `Output tag not found: ${v.outputTag}`
       );
-    } else if (v.outputexpr) {
+    } else if (v.outputExpr) {
       outputDebitAmount = await parseAndEvaluateExpr(
-        v.outputexpr,
+        v.outputExpr,
         tokenContext
       );
     } else {
-      outputDebitAmount = v.outputamount;
+      outputDebitAmount = v.outputAmount ?? 0;
     }
 
     return {
       model: v.model,
       provider: v.provider,
-      inputTokens: v.inputtokens,
-      inputCacheTokens: v.inputcachetokens,
-      outputTokens: v.outputtokens,
+      inputTokens: v.inputTokens,
+      inputCacheTokens: v.inputCacheTokens,
+      outputTokens: v.outputTokens,
       inputDebitAmount,
       inputCacheDebitAmount,
       outputDebitAmount,
@@ -144,21 +144,21 @@ const RegisterEventBasicUsage = BaseEvent.extend({
   type: z
     .literal(EventType.BASIC_USAGE)
     .transform(() => "BASIC_USAGE" as const),
-  basicusage: BasicUsageDataSchema,
+  basicUsage: BasicUsageDataSchema,
 });
 
 const StreamEventBasicUsage = BaseEvent.extend({
   type: z
     .literal(EventType.BASIC_USAGE)
     .transform(() => "BASIC_USAGE" as const),
-  basicusage: BasicUsageDataSchema,
+  basicUsage: BasicUsageDataSchema,
 });
 
 const StreamEventAITokenUsage = BaseEvent.extend({
   type: z
     .literal(EventType.AI_TOKEN_USAGE)
     .transform(() => "AI_TOKEN_USAGE" as const),
-  aitokenusage: AITokenUsageDataSchema,
+  aiTokenUsage: AITokenUsageDataSchema,
 });
 
 export const registerEventSchema = RegisterEventBasicUsage;

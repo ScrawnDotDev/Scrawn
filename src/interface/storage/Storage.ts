@@ -74,8 +74,8 @@ export interface StorageAdapter {
     userID: UserId,
     event_type: EventKind,
     beforeTimestamp: DateTime,
-    mode: "production" | "test",
+    auth: AuthContext,
     txn?: unknown
   ): Promise<number>;
-  query(request: QueryRequest): Promise<QueryResponse>;
+  query(request: QueryRequest, auth: AuthContext): Promise<QueryResponse>;
 }

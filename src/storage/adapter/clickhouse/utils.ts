@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { StorageError } from "../../../errors/storage";
 import { getClickHouseDB } from "../../db/clickhouse";
 import type { UserId } from "../../../config/identifiers";
+import type { AuthContext } from "../../../context/auth";
 
 export function toClickHouseDateTime(dt: DateTime): string {
   return dt.toUTC().toFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -28,10 +29,10 @@ async function fetchLastBilled(userId: string): Promise<string | null> {
 export async function runClickHousePriceQuery(
   userId: UserId,
   beforeTimestamp: DateTime,
-  mode: "production" | "test",
   baseQuery: string,
   windowQuery: string,
-  eventLabel: string
+  eventLabel: string,
+  auth: AuthContext
 ): Promise<number> {
   const chClient = getClickHouseDB();
 
@@ -67,7 +68,7 @@ export async function runClickHousePriceQuery(
       query = baseQuery;
     }
 
-    params.mode = mode;
+    params.mode = auth.mode;
 
     const rs = await chClient.query({
       query,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Operator, LogicalOperator } from "../gen/data/v1/data_pb";
+import { Operator, LogicalOperator } from "../gen/data/v1/data";
 import { createFilterGroupSchema } from "./internals";
 
 const DATA_TABLE_NAMES = [

@@ -1,7 +1,7 @@
 import {
   RegisterEventRequest,
   RegisterEventResponse,
-} from "../../../gen/event/v1/event_pb.js";
+} from "../../../gen/event/v1/event";
 import type { WideEventBuilder } from "../../../context/requestContext";
 import { apiKeyContextKey } from "../../../context/auth";
 import { wideEventContextKey } from "../../../context/requestContext";
@@ -33,16 +33,16 @@ export async function registerEvent(
       );
     }
 
-    const eventSkeleton = await registerEventSchema.parseAsync(req.toObject());
+    const eventSkeleton = await registerEventSchema.parseAsync({ ...req });
 
-    wideEventBuilder?.setUser(eventSkeleton.userid);
+    wideEventBuilder?.setUser(eventSkeleton.userId);
     wideEventBuilder?.setEventContext({ eventType: eventSkeleton.type });
 
     const event = createEventInstance(eventSkeleton);
     await storeEvent(event, auth);
 
-    const response = new RegisterEventResponse();
-    response.setRandom("Event stored successfully");
+    const response = RegisterEventResponse.create();
+    response.random = "Event stored successfully";
     callback?.(null, response);
   } catch (error) {
     callback?.(error as Error);
