@@ -17,23 +17,23 @@ export function createEventInstance(
   eventSkeleton: RegisterEventSchemaType | StreamEventSchemaType
 ): Event {
   if (eventSkeleton.type === "BASIC_USAGE") {
-    const data = eventSkeleton.basicusage;
+    const data = eventSkeleton.basicUsage;
     return new BasicUsage(
-      eventSkeleton.userid,
-      eventSkeleton.reportedtimestamp,
+      eventSkeleton.userId,
+      eventSkeleton.reportedTimestamp,
       data,
-      eventSkeleton.eventid,
-      eventSkeleton.idempotencykey
+      eventSkeleton.eventId,
+      eventSkeleton.idempotencyKey
     );
   }
   if (eventSkeleton.type === "AI_TOKEN_USAGE") {
-    const data = eventSkeleton.aitokenusage;
+    const data = eventSkeleton.aiTokenUsage;
     return new AITokenUsage(
-      eventSkeleton.userid,
-      eventSkeleton.reportedtimestamp,
+      eventSkeleton.userId,
+      eventSkeleton.reportedTimestamp,
       data,
-      eventSkeleton.eventid,
-      eventSkeleton.idempotencykey
+      eventSkeleton.eventId,
+      eventSkeleton.idempotencyKey
     );
   }
   throw EventError.unsupportedEventType("Unknown event type");

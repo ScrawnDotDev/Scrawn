@@ -2,7 +2,7 @@ import type { sendUnaryData } from "@grpc/grpc-js";
 import {
   CreateAPIKeyRequest,
   CreateAPIKeyResponse,
-} from "../../../gen/auth/v1/auth_pb.js";
+} from "../../../gen/auth/v1/auth";
 import type { WideEventBuilder } from "../../../context/requestContext";
 import { apiKeyContextKey } from "../../../context/auth";
 import { createAPIKeySchema } from "../../../zod/apikey";
@@ -72,12 +72,12 @@ export async function createAPIKey(
       return callback?.(APIKeyError.creationFailed("Storage returned no ID"));
     }
 
-    const response = new CreateAPIKeyResponse();
-    response.setApikeyid(keyEventData.id);
-    response.setApikey(apiKey);
-    response.setName(validatedData.name);
-    response.setCreatedat(now.toISO());
-    response.setExpiresat(expiresAt.toISO());
+    const response = CreateAPIKeyResponse.create();
+    response.apiKeyId = keyEventData.id;
+    response.apiKey = apiKey;
+    response.name = validatedData.name;
+    response.createdAt = now.toISO();
+    response.expiresAt = expiresAt.toISO();
 
     callback?.(null, response);
   } catch (error) {
@@ -88,8 +88,8 @@ export async function createAPIKey(
 function validateRequest(req: CreateAPIKeyRequest, role?: string) {
   try {
     const json = {
-      name: req.getName(),
-      expiresIn: req.getExpiresin(),
+      name: req.name,
+      expiresIn: req.expiresIn,
       role: role || undefined,
     };
     return createAPIKeySchema.parse(json);

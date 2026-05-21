@@ -2,7 +2,7 @@ import type { sendUnaryData } from "@grpc/grpc-js";
 import {
   CreateCheckoutLinkRequest,
   CreateCheckoutLinkResponse,
-} from "../../../gen/payment/v1/payment_pb.js";
+} from "../../../gen/payment/v1/payment";
 import {
   createCheckoutLinkSchema,
   type CreateCheckoutLinkSchemaType,
@@ -91,8 +91,8 @@ export async function createCheckoutLink(
 
     const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
 
-    const response = new CreateCheckoutLinkResponse();
-    response.setCheckoutlink(proxyUrl);
+    const response = CreateCheckoutLinkResponse.create();
+    response.checkoutLink = proxyUrl;
     callback?.(null, response);
   } catch (error) {
     callback?.(error as Error);
@@ -104,7 +104,7 @@ function validateRequest(
 ): CreateCheckoutLinkSchemaType {
   try {
     const json = {
-      userId: req.getUserid(),
+      userId: req.userId,
     };
     return createCheckoutLinkSchema.parse(json);
   } catch (error) {

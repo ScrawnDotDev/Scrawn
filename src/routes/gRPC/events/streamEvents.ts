@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/bun";
 import {
   StreamEventRequest,
   StreamEventResponse,
-} from "../../../gen/event/v1/event_pb.js";
+} from "../../../gen/event/v1/event";
 import { EventError } from "../../../errors/event";
 import { AuthError } from "../../../errors/auth";
 import { streamEventSchema } from "../../../zod/event";
@@ -38,11 +38,9 @@ export async function streamEvents(
 
     for await (const req of call) {
       try {
-        const eventSkeleton = await streamEventSchema.parseAsync(
-          req.toObject()
-        );
+        const eventSkeleton = await streamEventSchema.parseAsync({ ...req });
 
-        wideEventBuilder?.setUser(eventSkeleton.userid);
+        wideEventBuilder?.setUser(eventSkeleton.userId);
         wideEventBuilder?.setEventContext({ eventType: "AI_TOKEN_USAGE" });
 
         const event = createEventInstance(eventSkeleton);
@@ -65,9 +63,9 @@ export async function streamEvents(
       }
     }
 
-    const response = new StreamEventResponse();
-    response.setEventsprocessed(eventsProcessed);
-    response.setMessage(`Successfully processed ${eventsProcessed} events`);
+    const response = StreamEventResponse.create();
+    response.eventsProcessed = eventsProcessed;
+    response.message = `Successfully processed ${eventsProcessed} events`;
 
     callback(null, response);
   } catch (error) {

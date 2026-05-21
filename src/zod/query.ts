@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { QUERY_FIELD_NAMES } from "../interface/storage/Storage";
-import { Operator, AggregationType, LogicalOperator } from "../gen/query/v1/query_pb";
+import { Operator, AggregationType, LogicalOperator } from "../gen/query/v1/query";
 import { createFilterGroupSchema } from "./internals";
 
 const OPERATOR_MAP = {

@@ -14,6 +14,9 @@ coverage
 # local testing
 test-stream-events.ts
 
+# generated protobuf code
+src/gen
+
 # logs
 logs
 _.log

@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "gen": "cd proto && bunx buf generate && bunx grpc_tools_node_protoc --js_out=import_style=commonjs,binary:../src/gen auth/v1/auth.proto event/v1/event.proto payment/v1/payment.proto query/v1/query.proto data/v1/data.proto",
+    "gen": "cd proto && bunx buf generate",
     "dev:backend": "bun --watch src/server.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -24,7 +24,7 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "fallow": "^2.74.0",
-    "grpc-tools": "^1.13.1",
+    "ts-proto": "^2.11.8",
     "tsx": "^4.22.0",
     "vitest": "^4.1.6"
   },
@@ -32,6 +32,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.12.0",
     "@clickhouse/client": "^1.18.5",
     "@grpc/grpc-js": "^1.14.3",
     "@sentry/bun": "^10.53.1",
@@ -41,7 +42,6 @@
     "expr-eval": "^2.0.2",
     "fastify": "^5.8.5",
     "fastify-raw-body": "^5.0.0",
-    "google-protobuf": "^4.0.2",
     "ioredis": "^5.10.1",
     "luxon": "^3.7.2",
     "pino": "^10.3.1",
