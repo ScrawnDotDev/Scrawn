@@ -139,8 +139,8 @@ export async function handleDodoWebhook(
     const db = getPostgresDB();
     await executeInTransaction(db, "process checkout", async (txn) => {
       await updateUserBilledTimestamp(userId, billedUpto, txn);
-      await markSessionProcessed(checkout_session_id, txn);
       await handleAddPayment(userId, creditAmount, apiKeyId, mode, txn);
+      await markSessionProcessed(checkout_session_id, txn);
     });
 
     builder.setUser(userId);

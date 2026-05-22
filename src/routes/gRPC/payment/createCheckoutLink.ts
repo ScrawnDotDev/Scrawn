@@ -29,7 +29,7 @@ import { DateTime } from "luxon";
 import { handleAddSession } from "../../../storage/db/postgres/helpers/sessions";
 import { type ContextUnaryCall } from "../../../interface/types/context.ts";
 import { getPostgresDB } from "../../../storage/db/postgres/db";
-import { checkIfExisting } from "../../../storage/db/postgres/helpers/sessions";
+import { checkIfExistingCheckoutLink } from "../../../storage/db/postgres/helpers/sessions";
 
 export async function createCheckoutLink(
   call: ContextUnaryCall<CreateCheckoutLinkRequest, CreateCheckoutLinkResponse>,
@@ -85,28 +85,36 @@ export async function createCheckoutLink(
       mode
     );
 
-    const checkoutLink = await executeInTransaction(db, "create checkout link", async (txn) => {
-      const existingId = await checkIfExisting(txn, validatedData.userId, mode)
+    const checkoutLink = await executeInTransaction(
+      db,
+      "create checkout link",
+      async (txn) => {
+        const existingId = await checkIfExistingCheckoutLink(
+          txn,
+          validatedData.userId,
+          mode
+        );
 
-      if (existingId) {
-        const proxyUrl = `${process.env.APP_URL}/checkout/${existingId}`;
+        if (existingId) {
+          const proxyUrl = `${process.env.APP_URL}/checkout/${existingId}`;
+          return proxyUrl;
+        }
+
+        const sessionResult = await handleAddSession(
+          validatedData.userId,
+          checkoutResult.sessionId,
+          beforeTimestamp,
+          auth.apiKeyId,
+          mode,
+          checkoutResult.checkoutUrl,
+          txn
+        );
+        wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
+
+        const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
         return proxyUrl;
       }
-
-      const sessionResult = await handleAddSession(
-        validatedData.userId,
-        checkoutResult.sessionId,
-        beforeTimestamp,
-        auth.apiKeyId,
-        mode,
-        checkoutResult.checkoutUrl,
-        txn
-      );
-      wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
-
-      const proxyUrl = `${process.env.APP_URL}/checkout/${sessionResult.id}`;
-      return proxyUrl;
-    });
+    );
 
     callback?.(null, CreateCheckoutLinkResponse.create({ checkoutLink }));
   } catch (error) {

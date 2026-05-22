@@ -25,7 +25,7 @@ export async function markSessionProcessed(
   }
 }
 
-export async function checkIfExisting(
+export async function checkIfExistingCheckoutLink(
   txn: PgTransaction<any, any, any>,
   userId: UserId,
   mode: "test" | "production"
