@@ -162,9 +162,18 @@ export interface AITokenUsage {
   metadata?: string | undefined;
 }
 
+export interface EventFailure {
+  eventIndex: number;
+  idempotencyKey: string;
+  errorCode: string;
+  message: string;
+}
+
 export interface StreamEventResponse {
   eventsProcessed: number;
   message: string;
+  eventsFailed: number;
+  failures: EventFailure[];
 }
 
 function createBaseRegisterEventRequest(): RegisterEventRequest {
@@ -959,8 +968,116 @@ export const AITokenUsage: MessageFns<AITokenUsage> = {
   },
 };
 
+function createBaseEventFailure(): EventFailure {
+  return { eventIndex: 0, idempotencyKey: "", errorCode: "", message: "" };
+}
+
+export const EventFailure: MessageFns<EventFailure> = {
+  encode(message: EventFailure, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventIndex !== 0) {
+      writer.uint32(8).int32(message.eventIndex);
+    }
+    if (message.idempotencyKey !== "") {
+      writer.uint32(18).string(message.idempotencyKey);
+    }
+    if (message.errorCode !== "") {
+      writer.uint32(26).string(message.errorCode);
+    }
+    if (message.message !== "") {
+      writer.uint32(34).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventFailure {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventFailure();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.eventIndex = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.idempotencyKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.errorCode = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventFailure {
+    return {
+      eventIndex: isSet(object.eventIndex) ? globalThis.Number(object.eventIndex) : 0,
+      idempotencyKey: isSet(object.idempotencyKey) ? globalThis.String(object.idempotencyKey) : "",
+      errorCode: isSet(object.errorCode) ? globalThis.String(object.errorCode) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: EventFailure): unknown {
+    const obj: any = {};
+    if (message.eventIndex !== 0) {
+      obj.eventIndex = Math.round(message.eventIndex);
+    }
+    if (message.idempotencyKey !== "") {
+      obj.idempotencyKey = message.idempotencyKey;
+    }
+    if (message.errorCode !== "") {
+      obj.errorCode = message.errorCode;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventFailure>, I>>(base?: I): EventFailure {
+    return EventFailure.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventFailure>, I>>(object: I): EventFailure {
+    const message = createBaseEventFailure();
+    message.eventIndex = object.eventIndex ?? 0;
+    message.idempotencyKey = object.idempotencyKey ?? "";
+    message.errorCode = object.errorCode ?? "";
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
 function createBaseStreamEventResponse(): StreamEventResponse {
-  return { eventsProcessed: 0, message: "" };
+  return { eventsProcessed: 0, message: "", eventsFailed: 0, failures: [] };
 }
 
 export const StreamEventResponse: MessageFns<StreamEventResponse> = {
@@ -970,6 +1087,12 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     }
     if (message.message !== "") {
       writer.uint32(18).string(message.message);
+    }
+    if (message.eventsFailed !== 0) {
+      writer.uint32(24).int32(message.eventsFailed);
+    }
+    for (const v of message.failures) {
+      EventFailure.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -997,6 +1120,22 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
           message.message = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.eventsFailed = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.failures.push(EventFailure.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1010,6 +1149,10 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     return {
       eventsProcessed: isSet(object.eventsProcessed) ? globalThis.Number(object.eventsProcessed) : 0,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
+      eventsFailed: isSet(object.eventsFailed) ? globalThis.Number(object.eventsFailed) : 0,
+      failures: globalThis.Array.isArray(object?.failures)
+        ? object.failures.map((e: any) => EventFailure.fromJSON(e))
+        : [],
     };
   },
 
@@ -1021,6 +1164,12 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     if (message.message !== "") {
       obj.message = message.message;
     }
+    if (message.eventsFailed !== 0) {
+      obj.eventsFailed = Math.round(message.eventsFailed);
+    }
+    if (message.failures?.length) {
+      obj.failures = message.failures.map((e) => EventFailure.toJSON(e));
+    }
     return obj;
   },
 
@@ -1031,6 +1180,8 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     const message = createBaseStreamEventResponse();
     message.eventsProcessed = object.eventsProcessed ?? 0;
     message.message = object.message ?? "";
+    message.eventsFailed = object.eventsFailed ?? 0;
+    message.failures = object.failures?.map((e) => EventFailure.fromPartial(e)) || [];
     return message;
   },
 };

@@ -12,6 +12,24 @@ export type TransactionFn<T> = (
   txn: PgTransaction<any, any, any>
 ) => Promise<T>;
 
+function getPostgresErrorCode(e: unknown): string | null {
+  if (e && typeof e === "object" && "code" in e) {
+    const code = (e as { code: unknown }).code;
+    if (typeof code === "string") return code;
+  }
+  if (e instanceof StorageError && e.originalError) {
+    return getPostgresErrorCode(e.originalError);
+  }
+  if (e && typeof e === "object" && "cause" in e) {
+    return getPostgresErrorCode((e as { cause: unknown }).cause);
+  }
+  return null;
+}
+
+function hasPostgresErrorCode(e: unknown, code: string): boolean {
+  return getPostgresErrorCode(e) === code;
+}
+
 export async function executeInTransaction<T>(
   connectionObject: PgDatabase<any, any>,
   operationName: string,
@@ -20,6 +38,12 @@ export async function executeInTransaction<T>(
   try {
     return await connectionObject.transaction(fn);
   } catch (e) {
+    if (hasPostgresErrorCode(e, "23505")) {
+      throw StorageError.constraintViolation(
+        "Duplicate key violation",
+        e instanceof Error ? e : new Error(String(e))
+      );
+    }
     throw StorageError.transactionFailed(
       `Transaction failed while ${operationName}`,
       e instanceof Error ? e : new Error(String(e))
