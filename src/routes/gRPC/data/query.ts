@@ -1,9 +1,5 @@
 import type { sendUnaryData } from "@grpc/grpc-js";
-import {
-  QueryRequest,
-  QueryResponse,
-  Row,
-} from "../../../gen/data/v1/data";
+import { QueryRequest, QueryResponse, Row } from "../../../gen/data/v1/data";
 import { dataQuerySchema, type DataQueryRequest } from "../../../zod/data";
 import { EventError } from "../../../errors/event";
 import { formatZodError } from "../../../utils/formatZodError";
@@ -72,7 +68,7 @@ const TABLE_REGISTRY: Record<string, TableDef> = {
     tableName: "sessions",
     table: sessionsTable,
     fields: {
-      id: { col: sessionsTable.id, cast: "uuid" },
+      proxy_link_id: { col: sessionsTable.proxy_link_id, cast: "uuid" },
       sessionId: { col: sessionsTable.sessionId, cast: "text" },
       processed: { col: sessionsTable.processed, cast: "boolean" },
       userId: { col: sessionsTable.userId, cast: "uuid" },

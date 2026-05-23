@@ -38,7 +38,7 @@ export const usersRelation = relations(usersTable, ({ many }) => ({
 export const sessionsTable = pgTable(
   "sessions",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    proxy_link_id: uuid("id").primaryKey().defaultRandom(),
     sessionId: text("session_id").notNull().unique(),
     processed: boolean("processed").default(false),
     userId: USER_ID_CONFIG.dbType("user_id")

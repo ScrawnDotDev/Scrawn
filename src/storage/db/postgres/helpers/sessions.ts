@@ -49,7 +49,7 @@ export async function checkIfExistingCheckoutLink(
       .limit(1)
       .for("update");
 
-    return existing?.id;
+    return existing?.proxy_link_id;
   } catch (e) {
     if (e instanceof Error && e.name === "StorageError") {
       throw e;
@@ -93,13 +93,13 @@ export async function handleAddSession(
         mode: mode,
         checkoutUrl: checkoutUrl,
       })
-      .returning({ id: sessionsTable.id });
+      .returning({ proxy_link_id: sessionsTable.proxy_link_id });
 
     if (!insertResult[0]) {
       throw StorageError.emptyResult("Session insert returned no record");
     }
 
-    const insertedId = insertResult[0].id;
+    const insertedId = insertResult[0].proxy_link_id;
     if (!insertedId) {
       throw StorageError.emptyResult("Session insert returned null id");
     }
@@ -159,7 +159,7 @@ export async function getCheckoutUrl(
     const [session] = await db
       .select({ checkoutUrl: sessionsTable.checkoutUrl })
       .from(sessionsTable)
-      .where(eq(sessionsTable.id, sessionId))
+      .where(eq(sessionsTable.proxy_link_id, sessionId))
       .limit(1);
 
     return session?.checkoutUrl;
