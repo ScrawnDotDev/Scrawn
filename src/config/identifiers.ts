@@ -36,3 +36,17 @@ const ID_CONFIGS = {
 export const USER_ID_CONFIG = ID_CONFIGS.uuid;
 
 export type UserId = z.infer<typeof USER_ID_CONFIG.validator>;
+
+export const STORAGE_ADAPTERS = {
+  postgres: "postgres",
+  clickhouse: "clickhouse",
+} as const;
+
+export type StorageAdapterType = (typeof STORAGE_ADAPTERS)[keyof typeof STORAGE_ADAPTERS];
+
+/**
+ * STORAGE ADAPTER CONFIGURATION
+ * Change the key here to switch storage backend.
+ * Options: 'postgres' | 'clickhouse'
+ */
+export const STORAGE_ADAPTER: StorageAdapterType = STORAGE_ADAPTERS.postgres;

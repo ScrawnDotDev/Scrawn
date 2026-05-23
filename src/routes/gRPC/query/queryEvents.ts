@@ -40,7 +40,7 @@ export async function queryEvents(
     }
 
     const adapter =
-      await StorageAdapterFactory.getEventStorageAdapter("BASIC_USAGE");
+      await StorageAdapterFactory.getEventStorageAdapter();
     const result = await adapter.query(queryRequest, auth);
 
     const response = buildProtoResponse(result, queryRequest);

@@ -43,8 +43,6 @@ export async function storeEvent(
   event: Event,
   auth: AuthContext
 ): Promise<void> {
-  const adapter = await StorageAdapterFactory.getEventStorageAdapter(
-    event.type
-  );
+  const adapter = await StorageAdapterFactory.getEventStorageAdapter();
   await adapter.add(event.serialize(), auth);
 }
