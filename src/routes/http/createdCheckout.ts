@@ -5,8 +5,7 @@ import { handleAddPayment } from "../../storage/db/postgres/helpers/payments";
 import { getDodoClient } from "../gRPC/payment/paymentProvider.ts";
 import {
   getSessionByCheckoutId,
-  markSessionProcessed,
-  markSessionFailed,
+  updateSessionStatus,
 } from "../../storage/db/postgres/helpers/sessions";
 import { updateUserBilledTimestamp } from "../../storage/db/postgres/helpers/users";
 import { getPostgresDB } from "../../storage/db/postgres/db";
@@ -138,7 +137,12 @@ export async function handleDodoWebhook(
 
     if (webhookPayload.type === "payment.failed") {
       await executeInTransaction(db, "process failed", async (txn) => {
-        await markSessionFailed(checkout_session_id, txn);
+        const claimed = await updateSessionStatus(
+          checkout_session_id,
+          "failed",
+          txn
+        );
+        if (!claimed) return;
       });
 
       builder.setSuccess(200);
@@ -149,9 +153,14 @@ export async function handleDodoWebhook(
       const { userId, billed_upto, apiKeyId, mode } = session;
 
       await executeInTransaction(db, "process checkout", async (txn) => {
+        const claimed = await updateSessionStatus(
+          checkout_session_id,
+          "succeeded",
+          txn
+        );
+        if (!claimed) return;
         await updateUserBilledTimestamp(userId, billed_upto, txn);
         await handleAddPayment(userId, creditAmount, apiKeyId, mode, txn);
-        await markSessionProcessed(checkout_session_id, txn);
       });
 
       builder.setUser(userId);

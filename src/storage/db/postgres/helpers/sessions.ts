@@ -6,39 +6,25 @@ import { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 
-export async function markSessionProcessed(
+export async function updateSessionStatus(
   checkoutSessionId: string,
-  txn?: PgTransaction<any, any, any>
-): Promise<void> {
-  const db = txn ?? getPostgresDB();
-
+  status: "failed" | "succeeded",
+  txn: PgTransaction<any, any, any>
+): Promise<boolean> {
   try {
-    await db
+    const result = await txn
       .update(sessionsTable)
-      .set({ processed: "succeeded" })
-      .where(eq(sessionsTable.sessionId, checkoutSessionId));
+      .set({ processed: status })
+      .where(
+        and(
+          eq(sessionsTable.sessionId, checkoutSessionId),
+          eq(sessionsTable.processed, "pending")
+        )
+      );
+    return (result.count ?? 0) > 0;
   } catch (e) {
     throw StorageError.queryFailed(
-      "Failed to mark session as processed",
-      e instanceof Error ? e : new Error(String(e))
-    );
-  }
-}
-
-export async function markSessionFailed(
-  checkoutSessionId: string,
-  txn?: PgTransaction<any, any, any>
-): Promise<void> {
-  const db = txn ?? getPostgresDB();
-
-  try {
-    await db
-      .update(sessionsTable)
-      .set({ processed: "failed" })
-      .where(eq(sessionsTable.sessionId, checkoutSessionId));
-  } catch (e) {
-    throw StorageError.queryFailed(
-      "Failed to mark session as failed",
+      "Failed to update session status",
       e instanceof Error ? e : new Error(String(e))
     );
   }

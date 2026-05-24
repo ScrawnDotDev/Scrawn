@@ -70,7 +70,7 @@ const TABLE_REGISTRY: Record<string, TableDef> = {
     fields: {
       proxy_link_id: { col: sessionsTable.proxy_link_id, cast: "uuid" },
       sessionId: { col: sessionsTable.sessionId, cast: "text" },
-      processed: { col: sessionsTable.processed, cast: "boolean" },
+      processed: { col: sessionsTable.processed, cast: "text" },
       userId: { col: sessionsTable.userId, cast: "uuid" },
       billedUpto: { col: sessionsTable.billed_upto, cast: "timestamptz" },
       createdAt: { col: sessionsTable.createdAt, cast: "timestamptz" },
