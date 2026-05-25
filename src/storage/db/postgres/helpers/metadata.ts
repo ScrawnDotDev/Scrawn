@@ -1,7 +1,7 @@
 import { getPostgresDB } from "../db";
 import { metadataTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { executeInTransaction } from "../../../adapter/postgres/handlers/addEventUtils";
 import { DateTime } from "luxon";
 import type { PgTransaction } from "drizzle-orm/pg-core";
@@ -77,13 +77,15 @@ export async function tryClaimWebhookFire(
   txn: PgTransaction<any, any, any>,
   metadataId: string
 ): Promise<string | null> {
-  const [metadata] = await txn.execute(
-    sql`SELECT id, payment_webhook, last_run_at FROM ${metadataTable} WHERE ${eq(metadataTable.id, metadataId)} FOR UPDATE`
-  ) as unknown as Array<{
-    id: string;
-    payment_webhook: string | null;
-    last_run_at: string | null;
-  }>;
+  const [metadata] = await txn
+    .select({
+      id: metadataTable.id,
+      payment_webhook: metadataTable.payment_webhook,
+      last_run_at: metadataTable.last_run_at,
+    })
+    .from(metadataTable)
+    .where(eq(metadataTable.id, metadataId))
+    .for("update");
 
   if (!metadata?.payment_webhook) {
     return null;

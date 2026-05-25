@@ -11,7 +11,7 @@
 
 - **Runtime**: Bun with TypeScript ESNext, strict mode enabled
 - **Imports**: Use `type` keyword for type-only imports (e.g., `import type { Foo } from "..."`)
-- **Types**: Always use explicit types for function parameters and return values; avoid `any`
+- **Types**: Always use explicit types for function parameters and return values; avoid `any` and do NOT cast which can be inferred [ or make it such that it can be inferred from context]
 - **Error handling**: Use custom error classes (APIKeyError, StorageError, etc.) with static factory methods; always include error type, message, and optional originalError
 - **Validation**: Use Zod schemas for all request validation; catch ZodError and convert to domain errors
 - **Logging**: Use the `WideEventLogger` from `errors/logger`; call `logger.emit()` with a `WideEvent` object for request-scoped logging and `logger.lifecycle()` / `logger.lifecycleWarning()` for server lifecycle events
