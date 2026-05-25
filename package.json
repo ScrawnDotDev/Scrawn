@@ -39,13 +39,11 @@
     "@clickhouse/client": "^1.18.5",
     "@grpc/grpc-js": "^1.14.3",
     "@sentry/bun": "^10.53.1",
-
     "dodopayments": "^2.31.2",
     "drizzle-orm": "^0.45.2",
     "expr-eval": "^2.0.2",
     "fastify": "^5.8.5",
     "fastify-raw-body": "^5.0.0",
-
     "luxon": "^3.7.2",
     "node-cron": "^4.2.1",
     "pino": "^10.3.1",
