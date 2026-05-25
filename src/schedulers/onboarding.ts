@@ -10,6 +10,7 @@ const WEBHOOK_TIMEOUT_MS = 15_000;
 export class OnboardingScheduler {
   private tasks: ScheduledTask[] = [];
   private reloading = false;
+  private pendingReload = false;
 
   async start(): Promise<void> {
     await this.reload();
@@ -17,6 +18,7 @@ export class OnboardingScheduler {
 
   async reload(): Promise<void> {
     if (this.reloading) {
+      this.pendingReload = true;
       return;
     }
 
@@ -58,6 +60,11 @@ export class OnboardingScheduler {
       logger.fatal(`[scheduler] Reload failed: ${err.message}`, err);
     } finally {
       this.reloading = false;
+    }
+
+    if (this.pendingReload) {
+      this.pendingReload = false;
+      await this.reload();
     }
   }
 
