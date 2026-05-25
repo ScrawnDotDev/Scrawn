@@ -27,7 +27,7 @@ export interface GrpcTlsOptions {
 export function startRawGrpcServer(
   grpcPort: number,
   tlsOptions?: GrpcTlsOptions
-): void {
+): Promise<grpc.Server> {
   const server = new grpc.Server();
 
   // Wrap handlers with interceptors - cast to GrpcUntypedHandler to accept flexible call types
@@ -113,13 +113,17 @@ export function startRawGrpcServer(
       )
     : grpc.ServerCredentials.createInsecure();
 
-  server.bindAsync(`0.0.0.0:${grpcPort}`, credentials, (error, port) => {
-    if (error) {
-      logger.fatal("Failed to start gRPC server", error as Error);
-      throw error;
-    }
-    logger.lifecycle("gRPC server listening", {
-      url: `0.0.0.0:${port}`,
+  return new Promise((resolve, reject) => {
+    server.bindAsync(`0.0.0.0:${grpcPort}`, credentials, (error, port) => {
+      if (error) {
+        logger.fatal("Failed to start gRPC server", error as Error);
+        reject(error);
+        return;
+      }
+      logger.lifecycle("gRPC server listening", {
+        url: `0.0.0.0:${port}`,
+      });
+      resolve(server);
     });
   });
 }

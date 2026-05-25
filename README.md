@@ -1,26 +1,14 @@
 # Scrawn Backend
 
-The backend service for Scrawn - a usage-based billing platform with gRPC API endpoints for event tracking, authentication, and payment processing.
-
-## Overview
-
-Scrawn backend provides gRPC services for:
-
-- **Event tracking** - Register SDK calls and usage events
-- **Authentication** - API key management
-- **Payment processing** - Checkout link generation via Lemon Squeezy
-
-Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endpoint usage, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
-
-## Railway Quickstart
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/o22nR_?referralCode=jdhNLd&utm_medium=integration&utm_source=template&utm_campaign=generic)
+The backend service for Scrawn — a usage-based billing platform with gRPC and HTTP APIs for event tracking, authentication, and payment processing.
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) (latest version)
-- PostgreSQL database
-- Lemon Squeezy account (for payment processing)
+- [Bun](https://bun.sh) (latest)
+- PostgreSQL 15
+- Redis 7
+- ClickHouse (optional — used for analytics storage adapter)
+- Dodo Payments account (for payment processing)
 
 ## Setup
 
@@ -32,69 +20,103 @@ Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endp
 
 2. **Configure environment variables**
 
-   Create a `.env.local` file in the backend directory:
+   Copy `.env.example` to `.env.local` and fill in:
 
    ```env
    DATABASE_URL=postgresql://user:password@localhost:5432/scrawn
+   REDIS_URL=redis://localhost:6379
+   CLICKHOUSE_URL=http://localhost:8123
    HMAC_SECRET=your-hmac-secret-key
-   LEMON_SQUEEZY_API_KEY=your-ls-api-key
-   LEMON_SQUEEZY_STORE_ID=your-store-id
-   LEMON_SQUEEZY_VARIANT_ID=your-variant-id
-   LEMON_SQUEEZY_WEBHOOK_SECRET=your-webhook-secret
+   SENTRY_DSN=https://your-dsn@sentry.io/your-project
+   DODO_PAYMENTS_API_KEY=your-dodo-api-key
+   DODO_PAYMENTS_WEBHOOK_SECRET=your-webhook-secret
    ```
 
-3. **Run database migrations**
+3. **Start infrastructure**
+
+   ```bash
+   docker compose up -d db redis clickhouse
+   ```
+
+4. **Run database migrations**
 
    ```bash
    bunx drizzle-kit push
    ```
 
-4. **Generate initial API key** (optional)
+5. **Generate an initial API key** (optional)
 
    ```bash
    bun run init_key
    ```
 
-5. **Generate protocol buffers** (if needed)
+6. **Generate protocol buffers** (if proto definitions change)
+
    ```bash
    bun run gen
    ```
 
 ## Running the Server
 
-**Development mode** (with auto-reload):
+**Development** (with auto-reload):
 
 ```bash
 bun run dev:backend
 ```
 
-**Production mode**:
+**Production**:
 
 ```bash
 bun start
 ```
 
-The server will start on `http://localhost:8070`
+The server listens on two ports:
+
+- **gRPC** (h2c / HTTP/2 cleartext): `localhost:8069`
+- **HTTP** (Fastify — webhooks, API routes, health check): `localhost:8070`
+
+## gRPC Services
+
+| Service          | RPC                | Description                                         |
+| ---------------- | ------------------ | --------------------------------------------------- |
+| AuthService      | CreateAPIKey       | Create a new API key                                |
+| EventService     | RegisterEvent      | Register a single usage event                       |
+| EventService     | StreamEvents       | Client-streaming batch event registration           |
+| PaymentService   | CreateCheckoutLink | Generate a Dodo Payments checkout link              |
+| QueryService     | QueryEvents        | Query events with filters, aggregation, group-by    |
+| DataQueryService | Query              | Query internal tables (users, sessions, tags, etc.) |
+
+## HTTP Endpoints
+
+| Method   | Path                                | Purpose                    |
+| -------- | ----------------------------------- | -------------------------- |
+| GET      | `/`                                 | Health check               |
+| GET      | `/checkout/:sessionId`              | Checkout redirect          |
+| POST     | `/webhooks/payment/createdCheckout` | Dodo Payments webhook      |
+| GET/POST | `/api/v1/tags`                      | Manage pricing tags        |
+| GET/POST | `/api/v1/expressions`               | Manage pricing expressions |
+| POST     | `/api/v1/internals/onboarding`      | Onboarding endpoint        |
+
+## Storage Adapters
+
+Scrawn supports two storage backends via an abstract `StorageAdapter` interface:
+
+- **PostgreSQL** (default) — full relational schema via Drizzle ORM
+- **ClickHouse** — columnar analytics DB with `ReplacingMergeTree` for event deduplication
+
+Set `STORAGE_ADAPTER` in `src/config/identifiers.ts` to switch. Only one adapter operates at a time.
 
 ## TLS Configuration (gRPC)
 
-By default, the gRPC server runs without TLS. In production, put the backend behind a TLS-terminating proxy or enable TLS directly.
-
-To enable gRPC TLS, set:
+By default, the gRPC server runs without TLS. In production, put the backend behind a TLS-terminating proxy or enable TLS directly:
 
 ```env
 GRPC_TLS_ENABLED=true
 GRPC_TLS_CERT_PATH="/path/to/server.crt"
 GRPC_TLS_KEY_PATH="/path/to/server.key"
-# Optional
 GRPC_TLS_CA_PATH="/path/to/ca.pem"
 ```
 
-## Endpoints
-
-- **Connect / gRPC-Web / gRPC (h2c / HTTP/2 cleartext)**: `http://localhost:8069` (raw gRPC)
-- **Webhook**: `http://localhost:8070/webhooks/lemonsqueezy/createdCheckout`
-
 ## Documentation
 
-For complete gRPC API documentation, endpoint details, and integration guides, check [API references.](https://scrawn.vercel.app/docs/api-reference).
+For complete gRPC API documentation, endpoint details, and integration guides, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).

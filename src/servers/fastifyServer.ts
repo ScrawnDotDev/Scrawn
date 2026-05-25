@@ -5,7 +5,7 @@ import { registerApiRoutes } from "../routes/http/api/registerApiRoutes.ts";
 import { handleCheckoutRedirect } from "../routes/http/checkoutRedirect.ts";
 import { logger } from "../errors/logger.ts";
 
-export async function startFastifyServer(port: number, grpcPort: number): Promise<void> {
+export async function startFastifyServer(port: number, grpcPort: number) {
   const server = fastify();
 
   await server.register(fastifyRawBody, {
@@ -43,4 +43,6 @@ export async function startFastifyServer(port: number, grpcPort: number): Promis
   logger.lifecycle("Tags endpoint available", {
     url: `http://localhost:${port}/api/v1/tags`,
   });
+
+  return server;
 }
