@@ -117,6 +117,40 @@ GRPC_TLS_KEY_PATH="/path/to/server.key"
 GRPC_TLS_CA_PATH="/path/to/ca.pem"
 ```
 
+## Testing
+
+Integration and black-box tests are set up with Vitest, using an isolated test environment.
+
+1. **Configure test environment variables**
+
+   ```bash
+   cp .env.example .env.test
+   ```
+
+   Edit `.env.test` and ensure the `DATABASE_URL`, `REDIS_URL`, and `CLICKHOUSE_URL` point to test instances (separate ports/databases from development).
+
+2. **Start test infrastructure**
+
+   ```bash
+   docker compose -f docker-compose.test.yml up -d
+   ```
+
+   This runs PostgreSQL, Redis, and ClickHouse on non-overlapping ports (see the compose file).
+
+3. **Prepare test database**
+
+   ```bash
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5433/scrawn_test bunx drizzle-kit push
+   ```
+
+4. **Run tests**
+
+   ```bash
+   bun run test
+   ```
+
+The test suite starts the gRPC and Fastify servers on separate ports (`18069` / `18070`) so they don't conflict with a running dev server.
+
 ## Documentation
 
 For complete gRPC API documentation, endpoint details, and integration guides, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
