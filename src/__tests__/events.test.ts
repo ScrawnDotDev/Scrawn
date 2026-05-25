@@ -12,6 +12,8 @@ import {
 } from "./helpers";
 import { DateTime } from "luxon";
 
+type RegisterEventResult = { random: string };
+
 describe("EventService", () => {
   let rawKey: string;
 
@@ -28,29 +30,43 @@ describe("EventService", () => {
     const metadata = new grpc.Metadata();
     metadata.set("authorization", `Bearer ${rawKey}`);
 
-    const response = await new Promise<{ random: string }>(
-      (resolve, reject) => {
-        client.registerEvent(
-          {
-            type: EventType.BASIC_USAGE,
-            userId: crypto.randomUUID(),
-            reportedTimestamp: Math.floor(DateTime.utc().toSeconds()),
-            eventId: crypto.randomUUID(),
-            idempotencyKey: crypto.randomUUID(),
-            basicUsage: {
-              basicUsageType: BasicUsageType.RAW,
-              amount: 100,
+    const response: RegisterEventResult =
+      await new Promise<RegisterEventResult>(
+        (
+          resolve: (value: RegisterEventResult) => void,
+          reject: (reason?: unknown) => void
+        ): void => {
+          client.registerEvent(
+            {
+              type: EventType.BASIC_USAGE,
+              userId: crypto.randomUUID(),
+              reportedTimestamp: Math.floor(DateTime.utc().toSeconds()),
+              eventId: crypto.randomUUID(),
+              idempotencyKey: crypto.randomUUID(),
+              basicUsage: {
+                basicUsageType: BasicUsageType.RAW,
+                amount: 100,
+              },
             },
-          },
-          metadata,
-          (error, res) => {
-            client.close();
-            if (error) reject(error);
-            else resolve(res);
-          }
-        );
-      }
-    );
+            metadata,
+            (
+              error: grpc.ServiceError | null,
+              res: RegisterEventResult | undefined
+            ): void => {
+              client.close();
+              if (error) {
+                reject(error);
+                return;
+              }
+              if (!res) {
+                reject(new Error("registerEvent returned no response"));
+                return;
+              }
+              resolve(res);
+            }
+          );
+        }
+      );
 
     expect(response.random).toBe("Event stored successfully");
   });
