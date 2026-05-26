@@ -153,6 +153,7 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
       inputTokens: v.inputTokens,
       inputCacheTokens: v.inputCacheTokens,
       outputTokens: v.outputTokens,
+      outputCacheTokens: v.outputCacheTokens,
       inputDebitAmount,
       inputCacheDebitAmount,
       outputCacheDebitAmount,
