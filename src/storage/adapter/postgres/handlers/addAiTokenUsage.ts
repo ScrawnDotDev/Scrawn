@@ -20,8 +20,10 @@ type AggregatedEvent = {
   inputTokens: number;
   inputCacheTokens: number;
   outputTokens: number;
+  outputCacheTokens: number;
   inputDebitAmount: number;
   inputCacheDebitAmount: number;
+  outputCacheDebitAmount: number;
   outputDebitAmount: number;
   reported_timestamp: string;
   eventId: string;
@@ -54,6 +56,12 @@ function validateAiTokenEvent(event_data: SqlRecordOf<"AI_TOKEN_USAGE">): void {
     "inputCacheDebitAmount",
     userId
   );
+  validateNonNegative(data.outputCacheTokens, "outputCacheTokens", userId);
+  validateNonNegative(
+    data.outputCacheDebitAmount,
+    "outputCacheDebitAmount",
+    userId
+  );
 }
 
 async function aggregateAiTokenEvents(
@@ -71,9 +79,11 @@ async function aggregateAiTokenEvents(
     if (existing) {
       existing.inputTokens += event_data.data.inputTokens;
       existing.inputCacheTokens += event_data.data.inputCacheTokens;
+      existing.outputCacheTokens += event_data.data.outputCacheTokens;
       existing.outputTokens += event_data.data.outputTokens;
       existing.inputDebitAmount += event_data.data.inputDebitAmount;
       existing.inputCacheDebitAmount += event_data.data.inputCacheDebitAmount;
+      existing.outputCacheDebitAmount += event_data.data.outputCacheDebitAmount;
       existing.outputDebitAmount += event_data.data.outputDebitAmount;
       if (reported_timestamp > existing.reported_timestamp) {
         existing.reported_timestamp = reported_timestamp;
@@ -85,9 +95,11 @@ async function aggregateAiTokenEvents(
         provider: event_data.data.provider,
         inputTokens: event_data.data.inputTokens,
         inputCacheTokens: event_data.data.inputCacheTokens,
+        outputCacheTokens: event_data.data.outputCacheTokens,
         outputTokens: event_data.data.outputTokens,
         inputDebitAmount: event_data.data.inputDebitAmount,
         inputCacheDebitAmount: event_data.data.inputCacheDebitAmount,
+        outputCacheDebitAmount: event_data.data.outputCacheDebitAmount,
         outputDebitAmount: event_data.data.outputDebitAmount,
         reported_timestamp,
         eventId: event_data.eventId,
@@ -119,11 +131,13 @@ function buildAiTokenInsertValues(
         input: aggEvent.inputTokens,
         input_cache: aggEvent.inputCacheTokens,
         output: aggEvent.outputTokens,
+        output_cache: aggEvent.outputCacheTokens,
       },
       debit_amount: {
         input: aggEvent.inputDebitAmount,
         input_cache: aggEvent.inputCacheDebitAmount,
         output: aggEvent.outputDebitAmount,
+        output_cache: aggEvent.outputCacheDebitAmount,
       },
     } satisfies Metrics),
     metadata: aggEvent.metadata ?? null,

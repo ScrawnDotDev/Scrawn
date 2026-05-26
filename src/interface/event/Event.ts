@@ -13,8 +13,10 @@ export type AITokenUsageEventData = {
   inputTokens: number;
   inputCacheTokens: number;
   outputTokens: number;
+  outputCacheTokens: number;
   inputDebitAmount: number;
   inputCacheDebitAmount: number;
+  outputCacheDebitAmount: number;
   outputDebitAmount: number;
   metadata?: Record<string, unknown>;
 };

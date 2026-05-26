@@ -73,6 +73,10 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
     inputCacheAmount: z.number().optional(),
     inputCacheTag: z.string().optional(),
     inputCacheExpr: z.string().optional(),
+    outputCacheTokens: z.number().int().min(0),
+    outputCacheAmount: z.number().optional(),
+    outputCacheTag: z.string().optional(),
+    outputCacheExpr: z.string().optional(),
     outputAmount: z.number().optional(),
     outputTag: z.string().optional(),
     outputExpr: z.string().optional(),
@@ -83,6 +87,7 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
       inputTokens: v.inputTokens,
       inputCacheTokens: v.inputCacheTokens,
       outputTokens: v.outputTokens,
+      outputCacheTokens: v.outputCacheTokens,
     };
 
     let inputDebitAmount: number;
@@ -112,6 +117,21 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
       inputCacheDebitAmount = v.inputCacheAmount ?? 0;
     }
 
+    let outputCacheDebitAmount: number;
+    if (v.outputCacheTag) {
+      outputCacheDebitAmount = await fetchTagAmount(
+        v.outputCacheTag,
+        `Output cache tag not found: ${v.outputCacheTag}`
+      );
+    } else if (v.outputCacheExpr) {
+      outputCacheDebitAmount = await parseAndEvaluateExpr(
+        v.outputCacheExpr,
+        tokenContext
+      );
+    } else {
+      outputCacheDebitAmount = v.outputCacheAmount ?? 0;
+    }
+
     let outputDebitAmount: number;
     if (v.outputTag) {
       outputDebitAmount = await fetchTagAmount(
@@ -133,8 +153,10 @@ const AITokenUsageDataSchema: z.ZodType<AITokenUsageEventData> = z
       inputTokens: v.inputTokens,
       inputCacheTokens: v.inputCacheTokens,
       outputTokens: v.outputTokens,
+      outputCacheTokens: v.outputCacheTokens,
       inputDebitAmount,
       inputCacheDebitAmount,
+      outputCacheDebitAmount,
       outputDebitAmount,
       metadata: v.metadata ? parseMetadata(v.metadata) : undefined,
     };

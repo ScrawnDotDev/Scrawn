@@ -15,7 +15,10 @@ export async function handlePriceRequestAiTokenUsage(
   return handlePriceRequest(
     userId,
     aiTokenUsageEventsTable,
-    sql`CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'input' AS integer) + CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'input_cache' AS integer) + CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'output' AS integer)`,
+    sql`CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'input' AS integer) +
+CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'input_cache' AS integer) +
+CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'output_cache' AS integer) +
+CAST(${aiTokenUsageEventsTable.metrics}->'debit_amount'->>'output' AS integer)`,
     "REQUEST_AI_TOKEN_USAGE",
     beforeTimestamp,
     auth,

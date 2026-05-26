@@ -4,7 +4,6 @@ import { ZodError } from "zod";
 import {
   StreamEventRequest,
   StreamEventResponse,
-  EventFailure,
 } from "../../../gen/event/v1/event";
 import { EventError } from "../../../errors/event";
 import { AuthError } from "../../../errors/auth";
@@ -60,7 +59,12 @@ export async function streamEvents(
   callback: sendUnaryData<StreamEventResponse>
 ): Promise<void> {
   let eventsProcessed = 0;
-  const failures: EventFailure[] = [];
+  const failures: Array<{
+    eventIndex: number;
+    idempotencyKey: string;
+    errorCode: string;
+    message: string;
+  }> = [];
 
   const wideEventBuilder = call[wideEventContextKey];
   const auth = call[apiKeyContextKey];
@@ -117,23 +121,22 @@ export async function streamEvents(
           },
         });
 
-        const failure = EventFailure.create();
-        failure.eventIndex = eventIndex;
-        failure.idempotencyKey = req.idempotencyKey || "<unknown>";
-        failure.errorCode = errorCode;
-        failure.message = publicMessageForCode(errorCode);
-        failures.push(failure);
+        failures.push({
+          eventIndex,
+          idempotencyKey: req.idempotencyKey || "<unknown>",
+          errorCode,
+          message: publicMessageForCode(errorCode),
+        });
       }
 
       eventIndex++;
     }
 
-    const response = StreamEventResponse.create();
-    response.eventsProcessed = eventsProcessed;
-    response.eventsFailed = failures.length;
-    response.failures = failures;
     const total = eventsProcessed + failures.length;
-    response.message = `Processed ${total} events (${eventsProcessed} succeeded, ${failures.length} failed)`;
+    const response: StreamEventResponse = {
+      eventsProcessed,
+      message: `Processed ${total} events (${eventsProcessed} succeeded, ${failures.length} failed)`,
+    };
 
     wideEventBuilder?.setEventContext({
       eventType: "AI_TOKEN_USAGE",
