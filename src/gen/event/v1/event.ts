@@ -105,8 +105,6 @@ export interface RegisterEventRequest {
   type: EventType;
   userId: string;
   reportedTimestamp: number;
-  eventId: string;
-  idempotencyKey: string;
   basicUsage?: BasicUsage | undefined;
 }
 
@@ -127,8 +125,6 @@ export interface StreamEventRequest {
   type: EventType;
   userId: string;
   reportedTimestamp: number;
-  eventId: string;
-  idempotencyKey: string;
   basicUsage?: BasicUsage | undefined;
   aiTokenUsage?: AITokenUsage | undefined;
 }
@@ -151,32 +147,21 @@ export interface AITokenUsage {
   inputCacheTag?: string | undefined;
   /** Pricing expression for input cache tokens */
   inputCacheExpr?: string | undefined;
+  outputCacheTokens: number;
+  outputCacheAmount?: number | undefined;
+  outputCacheTag?: string | undefined;
+  /** Pricing expression for output cache tokens */
+  outputCacheExpr?: string | undefined;
   metadata?: string | undefined;
-}
-
-export interface EventFailure {
-  eventIndex: number;
-  idempotencyKey: string;
-  errorCode: string;
-  message: string;
 }
 
 export interface StreamEventResponse {
   eventsProcessed: number;
   message: string;
-  eventsFailed: number;
-  failures: EventFailure[];
 }
 
 function createBaseRegisterEventRequest(): RegisterEventRequest {
-  return {
-    type: 0,
-    userId: "",
-    reportedTimestamp: 0,
-    eventId: "",
-    idempotencyKey: "",
-    basicUsage: undefined,
-  };
+  return { type: 0, userId: "", reportedTimestamp: 0, basicUsage: undefined };
 }
 
 export const RegisterEventRequest: MessageFns<RegisterEventRequest> = {
@@ -192,12 +177,6 @@ export const RegisterEventRequest: MessageFns<RegisterEventRequest> = {
     }
     if (message.reportedTimestamp !== 0) {
       writer.uint32(24).int32(message.reportedTimestamp);
-    }
-    if (message.eventId !== "") {
-      writer.uint32(42).string(message.eventId);
-    }
-    if (message.idempotencyKey !== "") {
-      writer.uint32(50).string(message.idempotencyKey);
     }
     if (message.basicUsage !== undefined) {
       BasicUsage.encode(message.basicUsage, writer.uint32(34).fork()).join();
@@ -240,22 +219,6 @@ export const RegisterEventRequest: MessageFns<RegisterEventRequest> = {
           message.reportedTimestamp = reader.int32();
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.eventId = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.idempotencyKey = reader.string();
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
@@ -280,10 +243,6 @@ export const RegisterEventRequest: MessageFns<RegisterEventRequest> = {
       reportedTimestamp: isSet(object.reportedTimestamp)
         ? globalThis.Number(object.reportedTimestamp)
         : 0,
-      eventId: isSet(object.eventId) ? globalThis.String(object.eventId) : "",
-      idempotencyKey: isSet(object.idempotencyKey)
-        ? globalThis.String(object.idempotencyKey)
-        : "",
       basicUsage: isSet(object.basicUsage)
         ? BasicUsage.fromJSON(object.basicUsage)
         : undefined,
@@ -300,12 +259,6 @@ export const RegisterEventRequest: MessageFns<RegisterEventRequest> = {
     }
     if (message.reportedTimestamp !== 0) {
       obj.reportedTimestamp = Math.round(message.reportedTimestamp);
-    }
-    if (message.eventId !== "") {
-      obj.eventId = message.eventId;
-    }
-    if (message.idempotencyKey !== "") {
-      obj.idempotencyKey = message.idempotencyKey;
     }
     if (message.basicUsage !== undefined) {
       obj.basicUsage = BasicUsage.toJSON(message.basicUsage);
@@ -325,8 +278,6 @@ export const RegisterEventRequest: MessageFns<RegisterEventRequest> = {
     message.type = object.type ?? 0;
     message.userId = object.userId ?? "";
     message.reportedTimestamp = object.reportedTimestamp ?? 0;
-    message.eventId = object.eventId ?? "";
-    message.idempotencyKey = object.idempotencyKey ?? "";
     message.basicUsage =
       object.basicUsage !== undefined && object.basicUsage !== null
         ? BasicUsage.fromPartial(object.basicUsage)
@@ -553,8 +504,6 @@ function createBaseStreamEventRequest(): StreamEventRequest {
     type: 0,
     userId: "",
     reportedTimestamp: 0,
-    eventId: "",
-    idempotencyKey: "",
     basicUsage: undefined,
     aiTokenUsage: undefined,
   };
@@ -573,12 +522,6 @@ export const StreamEventRequest: MessageFns<StreamEventRequest> = {
     }
     if (message.reportedTimestamp !== 0) {
       writer.uint32(24).int32(message.reportedTimestamp);
-    }
-    if (message.eventId !== "") {
-      writer.uint32(50).string(message.eventId);
-    }
-    if (message.idempotencyKey !== "") {
-      writer.uint32(58).string(message.idempotencyKey);
     }
     if (message.basicUsage !== undefined) {
       BasicUsage.encode(message.basicUsage, writer.uint32(34).fork()).join();
@@ -627,22 +570,6 @@ export const StreamEventRequest: MessageFns<StreamEventRequest> = {
           message.reportedTimestamp = reader.int32();
           continue;
         }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.eventId = reader.string();
-          continue;
-        }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.idempotencyKey = reader.string();
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
@@ -675,10 +602,6 @@ export const StreamEventRequest: MessageFns<StreamEventRequest> = {
       reportedTimestamp: isSet(object.reportedTimestamp)
         ? globalThis.Number(object.reportedTimestamp)
         : 0,
-      eventId: isSet(object.eventId) ? globalThis.String(object.eventId) : "",
-      idempotencyKey: isSet(object.idempotencyKey)
-        ? globalThis.String(object.idempotencyKey)
-        : "",
       basicUsage: isSet(object.basicUsage)
         ? BasicUsage.fromJSON(object.basicUsage)
         : undefined,
@@ -698,12 +621,6 @@ export const StreamEventRequest: MessageFns<StreamEventRequest> = {
     }
     if (message.reportedTimestamp !== 0) {
       obj.reportedTimestamp = Math.round(message.reportedTimestamp);
-    }
-    if (message.eventId !== "") {
-      obj.eventId = message.eventId;
-    }
-    if (message.idempotencyKey !== "") {
-      obj.idempotencyKey = message.idempotencyKey;
     }
     if (message.basicUsage !== undefined) {
       obj.basicUsage = BasicUsage.toJSON(message.basicUsage);
@@ -726,8 +643,6 @@ export const StreamEventRequest: MessageFns<StreamEventRequest> = {
     message.type = object.type ?? 0;
     message.userId = object.userId ?? "";
     message.reportedTimestamp = object.reportedTimestamp ?? 0;
-    message.eventId = object.eventId ?? "";
-    message.idempotencyKey = object.idempotencyKey ?? "";
     message.basicUsage =
       object.basicUsage !== undefined && object.basicUsage !== null
         ? BasicUsage.fromPartial(object.basicUsage)
@@ -756,6 +671,10 @@ function createBaseAITokenUsage(): AITokenUsage {
     inputCacheAmount: undefined,
     inputCacheTag: undefined,
     inputCacheExpr: undefined,
+    outputCacheTokens: 0,
+    outputCacheAmount: undefined,
+    outputCacheTag: undefined,
+    outputCacheExpr: undefined,
     metadata: undefined,
   };
 }
@@ -806,6 +725,18 @@ export const AITokenUsage: MessageFns<AITokenUsage> = {
     }
     if (message.inputCacheExpr !== undefined) {
       writer.uint32(114).string(message.inputCacheExpr);
+    }
+    if (message.outputCacheTokens !== 0) {
+      writer.uint32(128).int32(message.outputCacheTokens);
+    }
+    if (message.outputCacheAmount !== undefined) {
+      writer.uint32(136).int32(message.outputCacheAmount);
+    }
+    if (message.outputCacheTag !== undefined) {
+      writer.uint32(146).string(message.outputCacheTag);
+    }
+    if (message.outputCacheExpr !== undefined) {
+      writer.uint32(154).string(message.outputCacheExpr);
     }
     if (message.metadata !== undefined) {
       writer.uint32(122).string(message.metadata);
@@ -933,6 +864,38 @@ export const AITokenUsage: MessageFns<AITokenUsage> = {
           message.inputCacheExpr = reader.string();
           continue;
         }
+        case 16: {
+          if (tag !== 128) {
+            break;
+          }
+
+          message.outputCacheTokens = reader.int32();
+          continue;
+        }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.outputCacheAmount = reader.int32();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.outputCacheTag = reader.string();
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.outputCacheExpr = reader.string();
+          continue;
+        }
         case 15: {
           if (tag !== 122) {
             break;
@@ -992,6 +955,18 @@ export const AITokenUsage: MessageFns<AITokenUsage> = {
       inputCacheExpr: isSet(object.inputCacheExpr)
         ? globalThis.String(object.inputCacheExpr)
         : undefined,
+      outputCacheTokens: isSet(object.outputCacheTokens)
+        ? globalThis.Number(object.outputCacheTokens)
+        : 0,
+      outputCacheAmount: isSet(object.outputCacheAmount)
+        ? globalThis.Number(object.outputCacheAmount)
+        : undefined,
+      outputCacheTag: isSet(object.outputCacheTag)
+        ? globalThis.String(object.outputCacheTag)
+        : undefined,
+      outputCacheExpr: isSet(object.outputCacheExpr)
+        ? globalThis.String(object.outputCacheExpr)
+        : undefined,
       metadata: isSet(object.metadata)
         ? globalThis.String(object.metadata)
         : undefined,
@@ -1042,6 +1017,18 @@ export const AITokenUsage: MessageFns<AITokenUsage> = {
     if (message.inputCacheExpr !== undefined) {
       obj.inputCacheExpr = message.inputCacheExpr;
     }
+    if (message.outputCacheTokens !== 0) {
+      obj.outputCacheTokens = Math.round(message.outputCacheTokens);
+    }
+    if (message.outputCacheAmount !== undefined) {
+      obj.outputCacheAmount = Math.round(message.outputCacheAmount);
+    }
+    if (message.outputCacheTag !== undefined) {
+      obj.outputCacheTag = message.outputCacheTag;
+    }
+    if (message.outputCacheExpr !== undefined) {
+      obj.outputCacheExpr = message.outputCacheExpr;
+    }
     if (message.metadata !== undefined) {
       obj.metadata = message.metadata;
     }
@@ -1071,135 +1058,17 @@ export const AITokenUsage: MessageFns<AITokenUsage> = {
     message.inputCacheAmount = object.inputCacheAmount ?? undefined;
     message.inputCacheTag = object.inputCacheTag ?? undefined;
     message.inputCacheExpr = object.inputCacheExpr ?? undefined;
+    message.outputCacheTokens = object.outputCacheTokens ?? 0;
+    message.outputCacheAmount = object.outputCacheAmount ?? undefined;
+    message.outputCacheTag = object.outputCacheTag ?? undefined;
+    message.outputCacheExpr = object.outputCacheExpr ?? undefined;
     message.metadata = object.metadata ?? undefined;
     return message;
   },
 };
 
-function createBaseEventFailure(): EventFailure {
-  return { eventIndex: 0, idempotencyKey: "", errorCode: "", message: "" };
-}
-
-export const EventFailure: MessageFns<EventFailure> = {
-  encode(
-    message: EventFailure,
-    writer: BinaryWriter = new BinaryWriter()
-  ): BinaryWriter {
-    if (message.eventIndex !== 0) {
-      writer.uint32(8).int32(message.eventIndex);
-    }
-    if (message.idempotencyKey !== "") {
-      writer.uint32(18).string(message.idempotencyKey);
-    }
-    if (message.errorCode !== "") {
-      writer.uint32(26).string(message.errorCode);
-    }
-    if (message.message !== "") {
-      writer.uint32(34).string(message.message);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): EventFailure {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEventFailure();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.eventIndex = reader.int32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.idempotencyKey = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.errorCode = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.message = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): EventFailure {
-    return {
-      eventIndex: isSet(object.eventIndex)
-        ? globalThis.Number(object.eventIndex)
-        : 0,
-      idempotencyKey: isSet(object.idempotencyKey)
-        ? globalThis.String(object.idempotencyKey)
-        : "",
-      errorCode: isSet(object.errorCode)
-        ? globalThis.String(object.errorCode)
-        : "",
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-    };
-  },
-
-  toJSON(message: EventFailure): unknown {
-    const obj: any = {};
-    if (message.eventIndex !== 0) {
-      obj.eventIndex = Math.round(message.eventIndex);
-    }
-    if (message.idempotencyKey !== "") {
-      obj.idempotencyKey = message.idempotencyKey;
-    }
-    if (message.errorCode !== "") {
-      obj.errorCode = message.errorCode;
-    }
-    if (message.message !== "") {
-      obj.message = message.message;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<EventFailure>, I>>(
-    base?: I
-  ): EventFailure {
-    return EventFailure.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<EventFailure>, I>>(
-    object: I
-  ): EventFailure {
-    const message = createBaseEventFailure();
-    message.eventIndex = object.eventIndex ?? 0;
-    message.idempotencyKey = object.idempotencyKey ?? "";
-    message.errorCode = object.errorCode ?? "";
-    message.message = object.message ?? "";
-    return message;
-  },
-};
-
 function createBaseStreamEventResponse(): StreamEventResponse {
-  return { eventsProcessed: 0, message: "", eventsFailed: 0, failures: [] };
+  return { eventsProcessed: 0, message: "" };
 }
 
 export const StreamEventResponse: MessageFns<StreamEventResponse> = {
@@ -1212,12 +1081,6 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     }
     if (message.message !== "") {
       writer.uint32(18).string(message.message);
-    }
-    if (message.eventsFailed !== 0) {
-      writer.uint32(24).int32(message.eventsFailed);
-    }
-    for (const v of message.failures) {
-      EventFailure.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -1249,22 +1112,6 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
           message.message = reader.string();
           continue;
         }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.eventsFailed = reader.int32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.failures.push(EventFailure.decode(reader, reader.uint32()));
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1280,12 +1127,6 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
         ? globalThis.Number(object.eventsProcessed)
         : 0,
       message: isSet(object.message) ? globalThis.String(object.message) : "",
-      eventsFailed: isSet(object.eventsFailed)
-        ? globalThis.Number(object.eventsFailed)
-        : 0,
-      failures: globalThis.Array.isArray(object?.failures)
-        ? object.failures.map((e: any) => EventFailure.fromJSON(e))
-        : [],
     };
   },
 
@@ -1296,12 +1137,6 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     }
     if (message.message !== "") {
       obj.message = message.message;
-    }
-    if (message.eventsFailed !== 0) {
-      obj.eventsFailed = Math.round(message.eventsFailed);
-    }
-    if (message.failures?.length) {
-      obj.failures = message.failures.map((e) => EventFailure.toJSON(e));
     }
     return obj;
   },
@@ -1317,9 +1152,6 @@ export const StreamEventResponse: MessageFns<StreamEventResponse> = {
     const message = createBaseStreamEventResponse();
     message.eventsProcessed = object.eventsProcessed ?? 0;
     message.message = object.message ?? "";
-    message.eventsFailed = object.eventsFailed ?? 0;
-    message.failures =
-      object.failures?.map((e) => EventFailure.fromPartial(e)) || [];
     return message;
   },
 };

@@ -38,6 +38,7 @@ const ALLOWED_FUNCTIONS = new Set(["add", "sub", "mul", "div", "tag", "expr"]);
 export interface EvalTokenContext {
   inputTokens?: number;
   outputTokens?: number;
+  outputCacheTokens?: number;
 }
 
 /**
@@ -256,7 +257,7 @@ async function resolveTagsInExpression(exprString: string): Promise<string> {
 }
 
 /**
- * Replaces inputTokens() and outputTokens() placeholders with concrete
+ * Replaces inputTokens() and outputTokens() and outputCacheTokens() placeholders with concrete
  * values from the AI token usage event context.
  *
  * This handles persisted expressions that contain token placeholders,
@@ -268,7 +269,8 @@ function resolveTokenPlaceholders(
 ): string {
   return exprString
     .replace(/inputTokens\(\)/g, String(context.inputTokens ?? 0))
-    .replace(/outputTokens\(\)/g, String(context.outputTokens ?? 0));
+    .replace(/outputTokens\(\)/g, String(context.outputTokens ?? 0))
+    .replace(/outputCacheTokens\(\)/g, String(context.outputCacheTokens ?? 0));
 }
 
 /**
