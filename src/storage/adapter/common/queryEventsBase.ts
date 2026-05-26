@@ -5,9 +5,7 @@ import type {
 
 export type EventTypeLabel = "BASIC_USAGE" | "AI_TOKEN_USAGE";
 
-export type EventTableName =
-  | "basic_usage_events"
-  | "ai_token_usage_events";
+export type EventTableName = "basic_usage_events" | "ai_token_usage_events";
 
 const EVENT_TYPE_TO_TABLE: Record<EventTypeLabel, EventTableName> = {
   BASIC_USAGE: "basic_usage_events",
@@ -19,10 +17,7 @@ export const TABLE_TO_EVENT_TYPE: Record<EventTableName, EventTypeLabel> = {
   ai_token_usage_events: "AI_TOKEN_USAGE",
 };
 
-const ALL_EVENT_TYPES: EventTypeLabel[] = [
-  "BASIC_USAGE",
-  "AI_TOKEN_USAGE",
-];
+const ALL_EVENT_TYPES: EventTypeLabel[] = ["BASIC_USAGE", "AI_TOKEN_USAGE"];
 
 const ALL_TABLES: EventTableName[] = [
   "basic_usage_events",
@@ -56,9 +51,7 @@ function collectEventTypeFilters(group: QueryFilterGroup): EventTypeFilter[] {
   return filters;
 }
 
-export function getTablesForRequest(
-  where: QueryFilterGroup
-): EventTableName[] {
+export function getTablesForRequest(where: QueryFilterGroup): EventTableName[] {
   const filters = collectEventTypeFilters(where);
   if (filters.length === 0) {
     return [...ALL_TABLES];

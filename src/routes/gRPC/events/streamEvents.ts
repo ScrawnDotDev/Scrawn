@@ -20,7 +20,8 @@ function getFailureCode(err: unknown): string {
     if (err.type === "CONSTRAINT_VIOLATION") return "DUPLICATE_IDEMPOTENCY_KEY";
     if (err.type === "INVALID_DATA") return "INVALID_DATA";
     if (err.type === "INVALID_TIMESTAMP") return "INVALID_TIMESTAMP";
-    if (err.type === "PRICE_CALCULATION_FAILED") return "PRICE_CALCULATION_FAILED";
+    if (err.type === "PRICE_CALCULATION_FAILED")
+      return "PRICE_CALCULATION_FAILED";
     return "STORAGE_FAILURE";
   }
   if (err instanceof EventError) {
@@ -35,14 +36,22 @@ function getFailureCode(err: unknown): string {
 
 function publicMessageForCode(code: string): string {
   switch (code) {
-    case "DUPLICATE_IDEMPOTENCY_KEY": return "Duplicate idempotency key";
-    case "VALIDATION_FAILED": return "Event validation failed";
-    case "INVALID_DATA": return "Invalid event data";
-    case "INVALID_TIMESTAMP": return "Invalid event timestamp";
-    case "PRICE_CALCULATION_FAILED": return "Price calculation failed";
-    case "UNSUPPORTED_EVENT_TYPE": return "Unsupported event type";
-    case "STORAGE_FAILURE": return "Storage error";
-    default: return "Internal server error";
+    case "DUPLICATE_IDEMPOTENCY_KEY":
+      return "Duplicate idempotency key";
+    case "VALIDATION_FAILED":
+      return "Event validation failed";
+    case "INVALID_DATA":
+      return "Invalid event data";
+    case "INVALID_TIMESTAMP":
+      return "Invalid event timestamp";
+    case "PRICE_CALCULATION_FAILED":
+      return "Price calculation failed";
+    case "UNSUPPORTED_EVENT_TYPE":
+      return "Unsupported event type";
+    case "STORAGE_FAILURE":
+      return "Storage error";
+    default:
+      return "Internal server error";
   }
 }
 
@@ -94,11 +103,18 @@ export async function streamEvents(
         Sentry.addBreadcrumb({
           category: "streamEvents",
           message: `Event [${eventIndex}] processing failed: ${innerError instanceof Error ? innerError.message : String(innerError)}`,
-          data: { eventIndex, idempotencyKey: req.idempotencyKey || "<unknown>" },
+          data: {
+            eventIndex,
+            idempotencyKey: req.idempotencyKey || "<unknown>",
+          },
           level: "error",
         });
         Sentry.captureException(innerError, {
-          extra: { eventIndex, idempotencyKey: req.idempotencyKey || "<unknown>", errorCode },
+          extra: {
+            eventIndex,
+            idempotencyKey: req.idempotencyKey || "<unknown>",
+            errorCode,
+          },
         });
 
         const failure = EventFailure.create();

@@ -44,5 +44,4 @@ export class APIKeyError extends Error {
       originalError,
     });
   }
-
 }

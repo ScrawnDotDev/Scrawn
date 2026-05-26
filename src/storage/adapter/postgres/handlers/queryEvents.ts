@@ -26,8 +26,16 @@ type PGFieldRegistry = Record<EventTableName, Record<string, PGFieldDef>>;
 
 const PG_FIELDS: PGFieldRegistry = {
   basic_usage_events: {
-    eventId: { select: "event_id::text", whereCol: "event_id", whereCast: "::uuid" },
-    idempotencyKey: { select: "idempotency_key", whereCol: "idempotency_key", whereCast: "" },
+    eventId: {
+      select: "event_id::text",
+      whereCol: "event_id",
+      whereCast: "::uuid",
+    },
+    idempotencyKey: {
+      select: "idempotency_key",
+      whereCol: "idempotency_key",
+      whereCast: "",
+    },
     eventType: { select: "'BASIC_USAGE'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {
@@ -63,8 +71,16 @@ const PG_FIELDS: PGFieldRegistry = {
     metadata: { select: "metadata::text", whereCol: null, whereCast: "" },
   },
   ai_token_usage_events: {
-    eventId: { select: "event_id::text", whereCol: "event_id", whereCast: "::uuid" },
-    idempotencyKey: { select: "idempotency_key", whereCol: "idempotency_key", whereCast: "" },
+    eventId: {
+      select: "event_id::text",
+      whereCol: "event_id",
+      whereCast: "::uuid",
+    },
+    idempotencyKey: {
+      select: "idempotency_key",
+      whereCol: "idempotency_key",
+      whereCast: "",
+    },
     eventType: { select: "'AI_TOKEN_USAGE'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {

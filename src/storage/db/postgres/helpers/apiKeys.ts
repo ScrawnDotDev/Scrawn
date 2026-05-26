@@ -18,15 +18,11 @@ export async function createApiKey(
   const db = txn ?? getPostgresDB();
 
   if (!input.name || typeof input.name !== "string") {
-    throw StorageError.invalidData(
-      "Invalid or missing 'name' in createApiKey"
-    );
+    throw StorageError.invalidData("Invalid or missing 'name' in createApiKey");
   }
 
   if (!input.key || typeof input.key !== "string") {
-    throw StorageError.invalidData(
-      "Invalid or missing 'key' in createApiKey"
-    );
+    throw StorageError.invalidData("Invalid or missing 'key' in createApiKey");
   }
 
   if (input.key.trim().length === 0) {

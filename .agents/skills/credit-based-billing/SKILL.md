@@ -14,6 +14,7 @@ Grant customers a balance of credits (API calls, tokens, compute units, or any c
 ## Overview
 
 Credit-based billing lets you:
+
 - **Issue credits** with subscriptions, one-time purchases, or via API
 - **Deduct automatically** via usage meters or manually via API
 - **Configure rollover** to carry unused credits forward
@@ -29,10 +30,10 @@ Credits work across all product types: subscriptions, one-time purchases, and us
 
 ### Credit Types
 
-| Type | Description | Best For |
-|------|-------------|----------|
-| **Custom Unit** | Your own metric (tokens, API calls, compute hours) with configurable precision (0–3 decimals) | API calls, AI tokens, compute hours, messages |
-| **Fiat Credits** | Real currency value (USD, EUR, etc.) that depletes as customers use your service | Prepaid balances, promotional credits, compensation |
+| Type             | Description                                                                                   | Best For                                            |
+| ---------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **Custom Unit**  | Your own metric (tokens, API calls, compute hours) with configurable precision (0–3 decimals) | API calls, AI tokens, compute hours, messages       |
+| **Fiat Credits** | Real currency value (USD, EUR, etc.) that depletes as customers use your service              | Prepaid balances, promotional credits, compensation |
 
 ### Credit Lifecycle
 
@@ -43,12 +44,12 @@ Credits work across all product types: subscriptions, one-time purchases, and us
 
 ### Grant Sources
 
-| Source | Description |
-|--------|-------------|
-| **Subscription** | Credits issued each billing cycle |
-| **One-Time** | Credits issued with a one-time payment |
-| **API** | Credits granted manually via API or dashboard |
-| **Rollover** | Credits carried over from a previous billing cycle |
+| Source           | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| **Subscription** | Credits issued each billing cycle                  |
+| **One-Time**     | Credits issued with a one-time payment             |
+| **API**          | Credits granted manually via API or dashboard      |
+| **Rollover**     | Credits carried over from a previous billing cycle |
 
 ---
 
@@ -57,16 +58,16 @@ Credits work across all product types: subscriptions, one-time purchases, and us
 ### 1. Create a Credit Entitlement
 
 ```typescript
-import DodoPayments from 'dodopayments';
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY,
 });
 
 const credit = await client.creditEntitlements.create({
-  name: 'API Credits',
-  credit_type: 'custom_unit',
-  unit_name: 'API Calls',
+  name: "API Credits",
+  credit_type: "custom_unit",
+  unit_name: "API Calls",
   precision: 0,
   expiry_duration: 30, // days
   rollover_enabled: false,
@@ -77,6 +78,7 @@ const credit = await client.creditEntitlements.create({
 ### 2. Attach Credits to a Product
 
 In Dashboard → Products → Create/Edit Product → Entitlements → Attach Credits:
+
 - Select the credit entitlement
 - Set credits issued per billing cycle (subscriptions) or total (one-time)
 - Configure trial credits, proration, low balance threshold
@@ -87,12 +89,12 @@ In Dashboard → Products → Create/Edit Product → Entitlements → Attach Cr
 const session = await client.checkoutSessions.create({
   product_cart: [
     {
-      product_id: 'prod_ai_pro_plan', // Product with credits attached
+      product_id: "prod_ai_pro_plan", // Product with credits attached
       quantity: 1,
-    }
+    },
   ],
-  customer: { email: 'customer@example.com' },
-  return_url: 'https://yourapp.com/success',
+  customer: { email: "customer@example.com" },
+  return_url: "https://yourapp.com/success",
 });
 
 // Redirect to session.checkout_url
@@ -103,13 +105,15 @@ const session = await client.checkoutSessions.create({
 ```typescript
 // Meter linked to credit entitlement deducts automatically
 await client.usageEvents.ingest({
-  events: [{
-    event_id: `gen_${Date.now()}_${crypto.randomUUID()}`,
-    customer_id: 'cus_abc123',
-    event_name: 'ai.generation',
-    timestamp: new Date().toISOString(),
-    metadata: { model: 'gpt-4', tokens: '1500' }
-  }]
+  events: [
+    {
+      event_id: `gen_${Date.now()}_${crypto.randomUUID()}`,
+      customer_id: "cus_abc123",
+      event_name: "ai.generation",
+      timestamp: new Date().toISOString(),
+      metadata: { model: "gpt-4", tokens: "1500" },
+    },
+  ],
 });
 ```
 
@@ -117,8 +121,8 @@ await client.usageEvents.ingest({
 
 ```typescript
 const balance = await client.creditEntitlements.balances.get(
-  'cent_credit_id',
-  'cus_abc123'
+  "cent_credit_id",
+  "cus_abc123"
 );
 
 console.log(`Available: ${balance.available_balance}`);
@@ -131,24 +135,24 @@ console.log(`Overage: ${balance.overage_balance}`);
 
 ### Credit Entitlement CRUD
 
-| Operation | Method | Endpoint |
-|-----------|--------|----------|
-| Create | `POST` | `/credit-entitlements` |
-| List | `GET` | `/credit-entitlements` |
-| Get | `GET` | `/credit-entitlements/{id}` |
-| Update | `PATCH` | `/credit-entitlements/{id}` |
-| Delete | `DELETE` | `/credit-entitlements/{id}` |
-| Undelete | `POST` | `/credit-entitlements/{id}/undelete` |
+| Operation | Method   | Endpoint                             |
+| --------- | -------- | ------------------------------------ |
+| Create    | `POST`   | `/credit-entitlements`               |
+| List      | `GET`    | `/credit-entitlements`               |
+| Get       | `GET`    | `/credit-entitlements/{id}`          |
+| Update    | `PATCH`  | `/credit-entitlements/{id}`          |
+| Delete    | `DELETE` | `/credit-entitlements/{id}`          |
+| Undelete  | `POST`   | `/credit-entitlements/{id}/undelete` |
 
 ### Balance & Ledger Operations
 
-| Operation | Method | Endpoint |
-|-----------|--------|----------|
-| List All Balances | `GET` | `/credit-entitlements/{id}/balances` |
-| Get Customer Balance | `GET` | `/credit-entitlements/{id}/balances/{customer_id}` |
-| Create Ledger Entry | `POST` | `/credit-entitlements/{id}/balances/{customer_id}/ledger-entries` |
-| List Customer Ledger | `GET` | `/credit-entitlements/{id}/balances/{customer_id}/ledger` |
-| List Customer Grants | `GET` | `/credit-entitlements/{id}/balances/{customer_id}/grants` |
+| Operation            | Method | Endpoint                                                          |
+| -------------------- | ------ | ----------------------------------------------------------------- |
+| List All Balances    | `GET`  | `/credit-entitlements/{id}/balances`                              |
+| Get Customer Balance | `GET`  | `/credit-entitlements/{id}/balances/{customer_id}`                |
+| Create Ledger Entry  | `POST` | `/credit-entitlements/{id}/balances/{customer_id}/ledger-entries` |
+| List Customer Ledger | `GET`  | `/credit-entitlements/{id}/balances/{customer_id}/ledger`         |
+| List Customer Grants | `GET`  | `/credit-entitlements/{id}/balances/{customer_id}/grants`         |
 
 ---
 
@@ -159,7 +163,7 @@ console.log(`Overage: ${balance.overage_balance}`);
 #### Create Credit Entitlement
 
 ```typescript
-import DodoPayments from 'dodopayments';
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
@@ -167,26 +171,26 @@ const client = new DodoPayments({
 
 // Custom unit credit (AI tokens)
 const tokenCredit = await client.creditEntitlements.create({
-  name: 'AI Tokens',
-  credit_type: 'custom_unit',
-  unit_name: 'tokens',
+  name: "AI Tokens",
+  credit_type: "custom_unit",
+  unit_name: "tokens",
   precision: 0,
   expiry_duration: 30,
   rollover_enabled: true,
   max_rollover_percentage: 25,
-  rollover_timeframe: 'month',
+  rollover_timeframe: "month",
   max_rollover_count: 3,
   allow_overage: true,
   overage_limit: 50000,
   price_per_unit: 0.001,
-  overage_behavior: 'bill_overage_at_billing',
+  overage_behavior: "bill_overage_at_billing",
 });
 
 // Fiat credit (USD balance)
 const usdCredit = await client.creditEntitlements.create({
-  name: 'Platform Credits',
-  credit_type: 'fiat',
-  unit_currency: 'USD',
+  name: "Platform Credits",
+  credit_type: "fiat",
+  unit_currency: "USD",
   expiry_duration: 90,
   rollover_enabled: false,
   allow_overage: false,
@@ -198,24 +202,24 @@ const usdCredit = await client.creditEntitlements.create({
 ```typescript
 // Grant credits manually (e.g., promotional bonus)
 await client.creditEntitlements.balances.createLedgerEntry(
-  'cent_credit_id',
-  'cus_abc123',
+  "cent_credit_id",
+  "cus_abc123",
   {
-    type: 'credit',
-    amount: '500',
-    description: 'Welcome bonus - 500 free API credits',
+    type: "credit",
+    amount: "500",
+    description: "Welcome bonus - 500 free API credits",
     idempotency_key: `welcome_bonus_${customerId}`,
   }
 );
 
 // Debit credits manually (e.g., service compensation deduction)
 await client.creditEntitlements.balances.createLedgerEntry(
-  'cent_credit_id',
-  'cus_abc123',
+  "cent_credit_id",
+  "cus_abc123",
   {
-    type: 'debit',
-    amount: '100',
-    description: 'Manual deduction for premium support',
+    type: "debit",
+    amount: "100",
+    description: "Manual deduction for premium support",
     idempotency_key: `support_deduction_${Date.now()}`,
   }
 );
@@ -226,43 +230,44 @@ await client.creditEntitlements.balances.createLedgerEntry(
 ```typescript
 // Get current balance
 const balance = await client.creditEntitlements.balances.get(
-  'cent_credit_id',
-  'cus_abc123'
+  "cent_credit_id",
+  "cus_abc123"
 );
 console.log(`Balance: ${balance.available_balance}`);
 
 // List all balances for a credit entitlement
-const allBalances = await client.creditEntitlements.balances.list(
-  'cent_credit_id'
-);
+const allBalances =
+  await client.creditEntitlements.balances.list("cent_credit_id");
 
 // Get full transaction history
 const ledger = await client.creditEntitlements.balances.listLedger(
-  'cent_credit_id',
-  'cus_abc123'
+  "cent_credit_id",
+  "cus_abc123"
 );
 
 for (const entry of ledger.items) {
-  console.log(`${entry.type}: ${entry.amount} | Balance: ${entry.balance_after}`);
+  console.log(
+    `${entry.type}: ${entry.amount} | Balance: ${entry.balance_after}`
+  );
 }
 
 // List credit grants
 const grants = await client.creditEntitlements.balances.listGrants(
-  'cent_credit_id',
-  'cus_abc123'
+  "cent_credit_id",
+  "cus_abc123"
 );
 ```
 
 #### Update Credit Entitlement Settings
 
 ```typescript
-await client.creditEntitlements.update('cent_credit_id', {
+await client.creditEntitlements.update("cent_credit_id", {
   rollover_enabled: true,
   max_rollover_percentage: 50,
   allow_overage: true,
   overage_limit: 10000,
   price_per_unit: 0.002,
-  overage_behavior: 'bill_overage_at_billing',
+  overage_behavior: "bill_overage_at_billing",
 });
 ```
 
@@ -385,12 +390,12 @@ func main() {
 
 Carry unused credits forward to the next billing cycle:
 
-| Setting | Description |
-|---------|-------------|
-| **Rollover Enabled** | Toggle to allow unused credits to carry forward |
-| **Max Rollover Percentage** | Limit how much carries over (0–100%) |
-| **Rollover Timeframe** | How long rolled-over credits remain valid (day, week, month, year) |
-| **Max Rollover Count** | Maximum consecutive rollovers before credits are forfeited |
+| Setting                     | Description                                                        |
+| --------------------------- | ------------------------------------------------------------------ |
+| **Rollover Enabled**        | Toggle to allow unused credits to carry forward                    |
+| **Max Rollover Percentage** | Limit how much carries over (0–100%)                               |
+| **Rollover Timeframe**      | How long rolled-over credits remain valid (day, week, month, year) |
+| **Max Rollover Count**      | Maximum consecutive rollovers before credits are forfeited         |
 
 **Example**: 200 unused credits at cycle end, 75% rollover → 150 credits carry forward, 50 forfeited.
 
@@ -398,28 +403,28 @@ Carry unused credits forward to the next billing cycle:
 
 Controls what happens when a customer's balance reaches zero mid-cycle:
 
-| Setting | Description |
-|---------|-------------|
-| **Allow Overage** | Let customers continue past zero balance |
-| **Overage Limit** | Max credits consumable beyond balance |
-| **Price Per Unit** | Cost per additional credit (with currency) |
-| **Overage Behavior** | How overage is handled at cycle end |
+| Setting              | Description                                |
+| -------------------- | ------------------------------------------ |
+| **Allow Overage**    | Let customers continue past zero balance   |
+| **Overage Limit**    | Max credits consumable beyond balance      |
+| **Price Per Unit**   | Cost per additional credit (with currency) |
+| **Overage Behavior** | How overage is handled at cycle end        |
 
 **Overage Behaviors:**
 
-| Behavior | Description |
-|----------|-------------|
-| **Forgive overage at reset** | Overage tracked but not billed (default) |
-| **Bill overage at billing** | Overage charged on next invoice |
-| **Carry over deficit** | Negative balance carries into next cycle |
+| Behavior                            | Description                                     |
+| ----------------------------------- | ----------------------------------------------- |
+| **Forgive overage at reset**        | Overage tracked but not billed (default)        |
+| **Bill overage at billing**         | Overage charged on next invoice                 |
+| **Carry over deficit**              | Negative balance carries into next cycle        |
 | **Carry over deficit (auto-repay)** | Deficit auto-repaid from new credits next cycle |
 
 ### Expiration
 
-| Setting | Description |
-|---------|-------------|
-| **Credit Expiry** | Duration after issuance: 7, 30, 60, 90, custom days, or never |
-| **Trial Credits Expire After Trial** | Whether trial-specific credits expire when trial ends |
+| Setting                              | Description                                                   |
+| ------------------------------------ | ------------------------------------------------------------- |
+| **Credit Expiry**                    | Duration after issuance: 7, 30, 60, 90, custom days, or never |
+| **Trial Credits Expire After Trial** | Whether trial-specific credits expire when trial ends         |
 
 ---
 
@@ -427,40 +432,40 @@ Controls what happens when a customer's balance reaches zero mid-cycle:
 
 Credit-based billing fires these webhook events:
 
-| Event | Description |
-|-------|-------------|
-| `credit.added` | Credits granted to a customer |
-| `credit.deducted` | Credits consumed through usage or manual debit |
-| `credit.expired` | Unused credits expired |
-| `credit.rolled_over` | Credits carried forward to a new grant |
-| `credit.rollover_forfeited` | Credits forfeited at max rollover count |
-| `credit.overage_charged` | Overage charges applied |
-| `credit.manual_adjustment` | Manual credit/debit adjustment made |
-| `credit.balance_low` | Balance dropped below configured threshold |
+| Event                       | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| `credit.added`              | Credits granted to a customer                  |
+| `credit.deducted`           | Credits consumed through usage or manual debit |
+| `credit.expired`            | Unused credits expired                         |
+| `credit.rolled_over`        | Credits carried forward to a new grant         |
+| `credit.rollover_forfeited` | Credits forfeited at max rollover count        |
+| `credit.overage_charged`    | Overage charges applied                        |
+| `credit.manual_adjustment`  | Manual credit/debit adjustment made            |
+| `credit.balance_low`        | Balance dropped below configured threshold     |
 
 ### Webhook Handler Example
 
 ```typescript
 // app/api/webhooks/dodo/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const event = await req.json();
 
   switch (event.type) {
-    case 'credit.added':
+    case "credit.added":
       await handleCreditAdded(event.data);
       break;
-    case 'credit.deducted':
+    case "credit.deducted":
       await handleCreditDeducted(event.data);
       break;
-    case 'credit.balance_low':
+    case "credit.balance_low":
       await handleBalanceLow(event.data);
       break;
-    case 'credit.expired':
+    case "credit.expired":
       await handleCreditExpired(event.data);
       break;
-    case 'credit.overage_charged':
+    case "credit.overage_charged":
       await handleOverageCharged(event.data);
       break;
   }
@@ -470,11 +475,20 @@ export async function POST(req: NextRequest) {
 
 async function handleCreditAdded(data: any) {
   const { customer_id, credit_entitlement_id, amount, balance_after } = data;
-  
+
   // Update internal records
   await prisma.creditBalance.upsert({
-    where: { customerId_creditId: { customerId: customer_id, creditId: credit_entitlement_id } },
-    create: { customerId: customer_id, creditId: credit_entitlement_id, balance: balance_after },
+    where: {
+      customerId_creditId: {
+        customerId: customer_id,
+        creditId: credit_entitlement_id,
+      },
+    },
+    create: {
+      customerId: customer_id,
+      creditId: credit_entitlement_id,
+      balance: balance_after,
+    },
     update: { balance: balance_after },
   });
 }
@@ -483,7 +497,12 @@ async function handleCreditDeducted(data: any) {
   const { customer_id, credit_entitlement_id, amount, balance_after } = data;
 
   await prisma.creditBalance.update({
-    where: { customerId_creditId: { customerId: customer_id, creditId: credit_entitlement_id } },
+    where: {
+      customerId_creditId: {
+        customerId: customer_id,
+        creditId: credit_entitlement_id,
+      },
+    },
     data: { balance: balance_after },
   });
 }
@@ -507,7 +526,12 @@ async function handleCreditExpired(data: any) {
   const { customer_id, credit_entitlement_id, amount, balance_after } = data;
 
   await prisma.creditBalance.update({
-    where: { customerId_creditId: { customerId: customer_id, creditId: credit_entitlement_id } },
+    where: {
+      customerId_creditId: {
+        customerId: customer_id,
+        creditId: credit_entitlement_id,
+      },
+    },
     data: { balance: balance_after },
   });
 
@@ -569,6 +593,7 @@ When credits are linked to usage meters, meter events automatically deduct credi
 ### Meter-Credit Configuration
 
 In Dashboard → Products → Usage-Based Product → Select Meter:
+
 1. Toggle **Bill usage in Credits**
 2. Select the credit entitlement
 3. Set **Meter units per credit** (e.g., 1000 API calls = 1 credit)
@@ -577,7 +602,7 @@ In Dashboard → Products → Usage-Based Product → Select Meter:
 ### AI Token Billing Example
 
 ```typescript
-import DodoPayments from 'dodopayments';
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
@@ -593,23 +618,25 @@ async function trackAIUsage(
   const totalTokens = promptTokens + completionTokens;
 
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `ai_${Date.now()}_${crypto.randomUUID()}`,
-      customer_id: customerId,
-      event_name: 'ai.tokens',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        tokens: totalTokens.toString(),
-        prompt_tokens: promptTokens.toString(),
-        completion_tokens: completionTokens.toString(),
-        model,
-      }
-    }]
+    events: [
+      {
+        event_id: `ai_${Date.now()}_${crypto.randomUUID()}`,
+        customer_id: customerId,
+        event_name: "ai.tokens",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          tokens: totalTokens.toString(),
+          prompt_tokens: promptTokens.toString(),
+          completion_tokens: completionTokens.toString(),
+          model,
+        },
+      },
+    ],
   });
 }
 
 // After AI completion
-await trackAIUsage('cus_abc123', 500, 1200, 'gpt-4');
+await trackAIUsage("cus_abc123", 500, 1200, "gpt-4");
 ```
 
 ### API Rate Tracking Example
@@ -618,16 +645,18 @@ await trackAIUsage('cus_abc123', 500, 1200, 'gpt-4');
 // Middleware to track and deduct API credits
 async function trackAPICredit(customerId: string, req: Request) {
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `api_${Date.now()}_${crypto.randomUUID()}`,
-      customer_id: customerId,
-      event_name: 'api.call',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        endpoint: new URL(req.url).pathname,
-        method: req.method,
-      }
-    }]
+    events: [
+      {
+        event_id: `api_${Date.now()}_${crypto.randomUUID()}`,
+        customer_id: customerId,
+        event_name: "api.call",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          endpoint: new URL(req.url).pathname,
+          method: req.method,
+        },
+      },
+    ],
   });
 }
 ```
@@ -640,23 +669,26 @@ async function trackAPICredit(customerId: string, req: Request) {
 
 ```typescript
 // app/api/credits/balance/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import DodoPayments from 'dodopayments';
+import { NextRequest, NextResponse } from "next/server";
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
 });
 
 export async function GET(req: NextRequest) {
-  const customerId = req.nextUrl.searchParams.get('customer_id');
-  const creditId = req.nextUrl.searchParams.get('credit_id');
+  const customerId = req.nextUrl.searchParams.get("customer_id");
+  const creditId = req.nextUrl.searchParams.get("credit_id");
 
   if (!customerId || !creditId) {
-    return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
   }
 
   try {
-    const balance = await client.creditEntitlements.balances.get(creditId, customerId);
+    const balance = await client.creditEntitlements.balances.get(
+      creditId,
+      customerId
+    );
 
     return NextResponse.json({
       available: balance.available_balance,
@@ -672,8 +704,8 @@ export async function GET(req: NextRequest) {
 
 ```typescript
 // app/api/credits/grant/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import DodoPayments from 'dodopayments';
+import { NextRequest, NextResponse } from "next/server";
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
@@ -687,14 +719,17 @@ export async function POST(req: NextRequest) {
       creditId,
       customerId,
       {
-        type: 'credit',
+        type: "credit",
         amount: amount.toString(),
         description,
         idempotency_key: `grant_${customerId}_${Date.now()}`,
       }
     );
 
-    return NextResponse.json({ success: true, balance_after: entry.balance_after });
+    return NextResponse.json({
+      success: true,
+      balance_after: entry.balance_after,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -751,11 +786,9 @@ Sell credit packs as one-time products:
 ```typescript
 // Product: "500 API Credit Pack" with 500 credits attached
 const session = await client.checkoutSessions.create({
-  product_cart: [
-    { product_id: 'prod_credit_pack_500', quantity: 1 }
-  ],
-  customer: { email: 'customer@example.com' },
-  return_url: 'https://yourapp.com/credits/success',
+  product_cart: [{ product_id: "prod_credit_pack_500", quantity: 1 }],
+  customer: { email: "customer@example.com" },
+  return_url: "https://yourapp.com/credits/success",
 });
 ```
 
@@ -770,12 +803,10 @@ const session = await client.checkoutSessions.create({
 //   - Overage behavior: Bill overage at billing
 
 const session = await client.checkoutSessions.create({
-  product_cart: [
-    { product_id: 'prod_pro_with_credits', quantity: 1 }
-  ],
+  product_cart: [{ product_id: "prod_pro_with_credits", quantity: 1 }],
   subscription_data: { trial_period_days: 14 },
-  customer: { email: 'customer@example.com' },
-  return_url: 'https://yourapp.com/success',
+  customer: { email: "customer@example.com" },
+  return_url: "https://yourapp.com/success",
 });
 ```
 
@@ -783,9 +814,15 @@ const session = await client.checkoutSessions.create({
 
 ```typescript
 // Middleware to check credit balance before allowing API access
-async function requireCredits(customerId: string, creditId: string): Promise<boolean> {
+async function requireCredits(
+  customerId: string,
+  creditId: string
+): Promise<boolean> {
   try {
-    const balance = await client.creditEntitlements.balances.get(creditId, customerId);
+    const balance = await client.creditEntitlements.balances.get(
+      creditId,
+      customerId
+    );
     const available = parseFloat(balance.available_balance);
     return available > 0;
   } catch {
@@ -795,13 +832,14 @@ async function requireCredits(customerId: string, creditId: string): Promise<boo
 
 // Express middleware
 async function creditGate(req: Request, res: Response, next: Function) {
-  const customerId = req.headers['x-customer-id'] as string;
-  const hasCredits = await requireCredits(customerId, 'cent_api_credits');
+  const customerId = req.headers["x-customer-id"] as string;
+  const hasCredits = await requireCredits(customerId, "cent_api_credits");
 
   if (!hasCredits) {
     return res.status(402).json({
-      error: 'Insufficient credits',
-      message: 'Your credit balance is exhausted. Please upgrade your plan or purchase more credits.',
+      error: "Insufficient credits",
+      message:
+        "Your credit balance is exhausted. Please upgrade your plan or purchase more credits.",
     });
   }
 
@@ -823,7 +861,7 @@ async function grantPromoCredits(
     creditId,
     customerId,
     {
-      type: 'credit',
+      type: "credit",
       amount: amount.toString(),
       description: `Promotional credit: ${promoCode}`,
       idempotency_key: `promo_${promoCode}_${customerId}`, // Prevents double-granting
@@ -889,17 +927,17 @@ Credit Config:
 
 Every credit operation is recorded with full audit trail:
 
-| Transaction Type | Description |
-|-----------------|-------------|
-| **Credit Added** | Credits granted (subscription, one-time, or API) |
-| **Credit Deducted** | Credits consumed through usage or manual debit |
-| **Credit Expired** | Credits expired without rollover |
-| **Credit Rolled Over** | Credits carried forward to the next period |
+| Transaction Type       | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| **Credit Added**       | Credits granted (subscription, one-time, or API) |
+| **Credit Deducted**    | Credits consumed through usage or manual debit   |
+| **Credit Expired**     | Credits expired without rollover                 |
+| **Credit Rolled Over** | Credits carried forward to the next period       |
 | **Rollover Forfeited** | Rolled credits forfeited after max count reached |
-| **Overage Charged** | Usage beyond credit balance with overage enabled |
-| **Auto Top-Up** | Automatic credit replenishment at low balance |
-| **Manual Adjustment** | Credit or debit applied manually by merchant |
-| **Refund** | Credits refunded |
+| **Overage Charged**    | Usage beyond credit balance with overage enabled |
+| **Auto Top-Up**        | Automatic credit replenishment at low balance    |
+| **Manual Adjustment**  | Credit or debit applied manually by merchant     |
+| **Refund**             | Credits refunded                                 |
 
 Each ledger entry records balance before/after, overage before/after, description, and reference to the source.
 
@@ -908,27 +946,35 @@ Each ledger entry records balance before/after, overage before/after, descriptio
 ## Best Practices
 
 ### 1. Start Simple
+
 Begin with a single credit type and no rollover. Add complexity based on customer usage patterns.
 
 ### 2. Use Meaningful Units
+
 Name credits after what they represent ("API Calls", "AI Tokens") not generic terms.
 
 ### 3. Set Low Balance Thresholds
+
 Configure thresholds and subscribe to `credit.balance_low` to alert customers before they run out.
 
 ### 4. Use Idempotency Keys
+
 Always include idempotency keys for manual ledger entries to prevent double-granting:
+
 ```typescript
-idempotency_key: `promo_${promoCode}_${customerId}`
+idempotency_key: `promo_${promoCode}_${customerId}`;
 ```
 
 ### 5. Configure Expiry Thoughtfully
+
 Short expiry (7 days) drives urgency but may frustrate. 30–90 days is customer-friendly for most SaaS.
 
 ### 6. Test the Full Cycle
+
 In test mode: create credits → attach to product → purchase → send usage events → verify deduction → test expiration and rollover.
 
 ### 7. Monitor Overage
+
 If using "Bill overage at billing", monitor overage amounts to avoid unexpected charges for customers.
 
 ---

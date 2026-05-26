@@ -29,7 +29,11 @@ type AggregatedEvent = {
   metadata?: Record<string, unknown>;
 };
 
-function validateNonNegative(value: unknown, label: string, userId: UserId): void {
+function validateNonNegative(
+  value: unknown,
+  label: string,
+  userId: UserId
+): void {
   if (typeof value === "number" && value < 0) {
     throw StorageError.insertFailed(
       `Negative ${label} not allowed for AI token usage for user ${userId}`,
@@ -45,7 +49,11 @@ function validateAiTokenEvent(event_data: SqlRecordOf<"AI_TOKEN_USAGE">): void {
   validateNonNegative(data.inputDebitAmount, "inputDebitAmount", userId);
   validateNonNegative(data.outputDebitAmount, "outputDebitAmount", userId);
   validateNonNegative(data.inputCacheTokens, "inputCacheTokens", userId);
-  validateNonNegative(data.inputCacheDebitAmount, "inputCacheDebitAmount", userId);
+  validateNonNegative(
+    data.inputCacheDebitAmount,
+    "inputCacheDebitAmount",
+    userId
+  );
 }
 
 async function aggregateAiTokenEvents(
@@ -54,7 +62,9 @@ async function aggregateAiTokenEvents(
   const aggregationMap = new Map<string, AggregatedEvent>();
 
   for (const event_data of events) {
-    const reported_timestamp = await validateAndPrepareTimestamp(event_data.reported_timestamp);
+    const reported_timestamp = await validateAndPrepareTimestamp(
+      event_data.reported_timestamp
+    );
     const key = `${event_data.userId}:${event_data.data.model}:${event_data.idempotencyKey}`;
     const existing = aggregationMap.get(key);
 
@@ -146,7 +156,10 @@ export async function handleAddAiTokenUsage(
       }
 
       try {
-        const aiTokenUsageValues = buildAiTokenInsertValues(aggregatedEvents, auth);
+        const aiTokenUsageValues = buildAiTokenInsertValues(
+          aggregatedEvents,
+          auth
+        );
 
         const inserted = await txn
           .insert(aiTokenUsageEventsTable)

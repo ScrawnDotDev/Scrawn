@@ -42,7 +42,8 @@ export const STORAGE_ADAPTERS = {
   clickhouse: "clickhouse",
 } as const;
 
-export type StorageAdapterType = (typeof STORAGE_ADAPTERS)[keyof typeof STORAGE_ADAPTERS];
+export type StorageAdapterType =
+  (typeof STORAGE_ADAPTERS)[keyof typeof STORAGE_ADAPTERS];
 
 /**
  * STORAGE ADAPTER CONFIGURATION

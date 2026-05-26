@@ -14,6 +14,7 @@ Webhooks provide real-time notifications when payment events occur. Use them to 
 ## Quick Setup
 
 ### 1. Configure Webhook in Dashboard
+
 1. Go to Dashboard → Developer → Webhooks
 2. Click "Create Webhook"
 3. Enter your endpoint URL
@@ -21,6 +22,7 @@ Webhooks provide real-time notifications when payment events occur. Use them to 
 5. Copy the webhook secret
 
 ### 2. Environment Variables
+
 ```bash
 DODO_PAYMENTS_WEBHOOK_SECRET=your_webhook_secret_here
 ```
@@ -30,48 +32,54 @@ DODO_PAYMENTS_WEBHOOK_SECRET=your_webhook_secret_here
 ## Webhook Events
 
 ### Payment Events
-| Event | Description |
-|-------|-------------|
-| `payment.succeeded` | Payment completed successfully |
-| `payment.failed` | Payment attempt failed |
-| `payment.processing` | Payment is being processed |
-| `payment.cancelled` | Payment was cancelled |
+
+| Event                | Description                    |
+| -------------------- | ------------------------------ |
+| `payment.succeeded`  | Payment completed successfully |
+| `payment.failed`     | Payment attempt failed         |
+| `payment.processing` | Payment is being processed     |
+| `payment.cancelled`  | Payment was cancelled          |
 
 ### Subscription Events
-| Event | Description |
-|-------|-------------|
-| `subscription.active` | Subscription is now active |
-| `subscription.updated` | Subscription details changed |
-| `subscription.on_hold` | Subscription on hold (failed renewal) |
-| `subscription.renewed` | Subscription renewed successfully |
-| `subscription.plan_changed` | Plan upgraded/downgraded |
-| `subscription.cancelled` | Subscription cancelled |
-| `subscription.failed` | Subscription creation failed |
-| `subscription.expired` | Subscription term ended |
+
+| Event                       | Description                           |
+| --------------------------- | ------------------------------------- |
+| `subscription.active`       | Subscription is now active            |
+| `subscription.updated`      | Subscription details changed          |
+| `subscription.on_hold`      | Subscription on hold (failed renewal) |
+| `subscription.renewed`      | Subscription renewed successfully     |
+| `subscription.plan_changed` | Plan upgraded/downgraded              |
+| `subscription.cancelled`    | Subscription cancelled                |
+| `subscription.failed`       | Subscription creation failed          |
+| `subscription.expired`      | Subscription term ended               |
 
 ### Other Events
-| Event | Description |
-|-------|-------------|
-| `refund.succeeded` | Refund processed successfully |
-| `dispute.opened` | New dispute received |
-| `license_key.created` | License key generated |
+
+| Event                 | Description                   |
+| --------------------- | ----------------------------- |
+| `refund.succeeded`    | Refund processed successfully |
+| `dispute.opened`      | New dispute received          |
+| `license_key.created` | License key generated         |
 
 ### Credit Events
-| Event | Description |
-|-------|-------------|
-| `credit.added` | Credits granted to a customer (subscription, one-time, or API) |
-| `credit.deducted` | Credits consumed through usage or manual debit |
-| `credit.expired` | Unused credits expired after configured period |
-| `credit.rolled_over` | Unused credits carried forward at cycle end |
-| `credit.rollover_forfeited` | Credits forfeited at max rollover count |
-| `credit.overage_charged` | Overage charges applied beyond zero balance |
-| `credit.manual_adjustment` | Manual credit/debit adjustment via dashboard or API |
-| `credit.balance_low` | Credit balance dropped below configured threshold |
+
+| Event                       | Description                                                    |
+| --------------------------- | -------------------------------------------------------------- |
+| `credit.added`              | Credits granted to a customer (subscription, one-time, or API) |
+| `credit.deducted`           | Credits consumed through usage or manual debit                 |
+| `credit.expired`            | Unused credits expired after configured period                 |
+| `credit.rolled_over`        | Unused credits carried forward at cycle end                    |
+| `credit.rollover_forfeited` | Credits forfeited at max rollover count                        |
+| `credit.overage_charged`    | Overage charges applied beyond zero balance                    |
+| `credit.manual_adjustment`  | Manual credit/debit adjustment via dashboard or API            |
+| `credit.balance_low`        | Credit balance dropped below configured threshold              |
+
 ---
 
 ## Webhook Payload Structure
 
 ### Request Headers
+
 ```http
 POST /your-webhook-url
 Content-Type: application/json
@@ -81,6 +89,7 @@ webhook-timestamp: 1234567890
 ```
 
 ### Payload Format
+
 ```json
 {
   "business_id": "bus_xxxxx",
@@ -109,76 +118,80 @@ webhook-timestamp: 1234567890
 
 ```typescript
 // app/api/webhooks/dodo/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
 const WEBHOOK_SECRET = process.env.DODO_PAYMENTS_WEBHOOK_SECRET!;
 
-function verifySignature(payload: string, signature: string, timestamp: string): boolean {
+function verifySignature(
+  payload: string,
+  signature: string,
+  timestamp: string
+): boolean {
   const signedPayload = `${timestamp}.${payload}`;
   const expectedSignature = crypto
-    .createHmac('sha256', WEBHOOK_SECRET)
+    .createHmac("sha256", WEBHOOK_SECRET)
     .update(signedPayload)
-    .digest('base64');
-  
+    .digest("base64");
+
   // Extract signature from "v1,signature" format
-  const providedSig = signature.split(',')[1];
-  
+  const providedSig = signature.split(",")[1];
+
   return crypto.timingSafeEqual(
     Buffer.from(expectedSignature),
-    Buffer.from(providedSig || '')
+    Buffer.from(providedSig || "")
   );
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const signature = req.headers.get('webhook-signature') || '';
-  const timestamp = req.headers.get('webhook-timestamp') || '';
-  const webhookId = req.headers.get('webhook-id');
+  const signature = req.headers.get("webhook-signature") || "";
+  const timestamp = req.headers.get("webhook-timestamp") || "";
+  const webhookId = req.headers.get("webhook-id");
 
   // Verify signature
   if (!verifySignature(body, signature, timestamp)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   // Check timestamp to prevent replay attacks (5 minute tolerance)
   const eventTime = parseInt(timestamp) * 1000;
   if (Math.abs(Date.now() - eventTime) > 300000) {
-    return NextResponse.json({ error: 'Timestamp too old' }, { status: 401 });
+    return NextResponse.json({ error: "Timestamp too old" }, { status: 401 });
   }
 
   const event = JSON.parse(body);
 
   // Handle events
   switch (event.type) {
-    case 'payment.succeeded':
+    case "payment.succeeded":
       await handlePaymentSucceeded(event.data);
       break;
-    case 'payment.failed':
+    case "payment.failed":
       await handlePaymentFailed(event.data);
       break;
-    case 'subscription.active':
+    case "subscription.active":
       await handleSubscriptionActive(event.data);
       break;
-    case 'subscription.cancelled':
+    case "subscription.cancelled":
       await handleSubscriptionCancelled(event.data);
       break;
-    case 'refund.succeeded':
+    case "refund.succeeded":
       await handleRefundSucceeded(event.data);
       break;
-    case 'dispute.opened':
+    case "dispute.opened":
       await handleDisputeOpened(event.data);
       break;
-    case 'license_key.created':
+    case "license_key.created":
       await handleLicenseKeyCreated(event.data);
       break;
-    case 'credit.added':
+    case "credit.added":
       await handleCreditAdded(event.data);
       break;
-    case 'credit.deducted':
+    case "credit.deducted":
       await handleCreditDeducted(event.data);
       break;
-    case 'credit.balance_low':
+    case "credit.balance_low":
       await handleCreditBalanceLow(event.data);
       break;
     default:
@@ -189,8 +202,9 @@ export async function POST(req: NextRequest) {
 }
 
 async function handlePaymentSucceeded(data: any) {
-  const { payment_id, customer, total_amount, product_id, subscription_id } = data;
-  
+  const { payment_id, customer, total_amount, product_id, subscription_id } =
+    data;
+
   // Update database
   // Send confirmation email
   // Grant access to product
@@ -199,7 +213,7 @@ async function handlePaymentSucceeded(data: any) {
 
 async function handlePaymentFailed(data: any) {
   const { payment_id, customer, error_message } = data;
-  
+
   // Log failure
   // Notify customer
   // Update UI state
@@ -208,16 +222,23 @@ async function handlePaymentFailed(data: any) {
 
 async function handleSubscriptionActive(data: any) {
   const { subscription_id, customer, product_id, next_billing_date } = data;
-  
+
   // Grant subscription access
   // Update user record
   // Send welcome email
-  console.log(`Subscription ${subscription_id} activated for ${customer.email}`);
+  console.log(
+    `Subscription ${subscription_id} activated for ${customer.email}`
+  );
 }
 
 async function handleSubscriptionCancelled(data: any) {
-  const { subscription_id, customer, cancelled_at, cancel_at_next_billing_date } = data;
-  
+  const {
+    subscription_id,
+    customer,
+    cancelled_at,
+    cancel_at_next_billing_date,
+  } = data;
+
   // Schedule access revocation
   // Send cancellation confirmation
   console.log(`Subscription ${subscription_id} cancelled`);
@@ -225,7 +246,7 @@ async function handleSubscriptionCancelled(data: any) {
 
 async function handleRefundSucceeded(data: any) {
   const { refund_id, payment_id, amount } = data;
-  
+
   // Update order status
   // Revoke access if needed
   console.log(`Refund ${refund_id} processed for payment ${payment_id}`);
@@ -233,7 +254,7 @@ async function handleRefundSucceeded(data: any) {
 
 async function handleDisputeOpened(data: any) {
   const { dispute_id, payment_id, amount, dispute_status } = data;
-  
+
   // Alert team
   // Prepare evidence
   console.log(`Dispute ${dispute_id} opened for payment ${payment_id}`);
@@ -241,7 +262,7 @@ async function handleDisputeOpened(data: any) {
 
 async function handleLicenseKeyCreated(data: any) {
   const { id, key, product_id, customer_id, expires_at } = data;
-  
+
   // Store license key
   // Send to customer
   console.log(`License key created: ${key.substring(0, 8)}...`);
@@ -249,60 +270,75 @@ async function handleLicenseKeyCreated(data: any) {
 
 async function handleCreditAdded(data: any) {
   const { customer_id, credit_entitlement_id, amount, balance_after } = data;
-  
+
   // Update internal credit balance
   // Log credit grant
-  console.log(`${amount} credits added for customer ${customer_id}, balance: ${balance_after}`);
+  console.log(
+    `${amount} credits added for customer ${customer_id}, balance: ${balance_after}`
+  );
 }
 
 async function handleCreditDeducted(data: any) {
   const { customer_id, credit_entitlement_id, amount, balance_after } = data;
-  
+
   // Update internal credit balance
   // Check if balance is getting low
-  console.log(`${amount} credits deducted for customer ${customer_id}, balance: ${balance_after}`);
+  console.log(
+    `${amount} credits deducted for customer ${customer_id}, balance: ${balance_after}`
+  );
 }
 
 async function handleCreditBalanceLow(data: any) {
-  const { customer_id, credit_entitlement_name, available_balance, threshold_percent } = data;
-  
+  const {
+    customer_id,
+    credit_entitlement_name,
+    available_balance,
+    threshold_percent,
+  } = data;
+
   // Notify customer about low balance
   // Suggest upgrading plan or purchasing more credits
-  console.log(`Low balance alert: ${available_balance} ${credit_entitlement_name} remaining for ${customer_id}`);
+  console.log(
+    `Low balance alert: ${available_balance} ${credit_entitlement_name} remaining for ${customer_id}`
+  );
 }
 ```
 
 ### Express.js
 
 ```typescript
-import express from 'express';
-import crypto from 'crypto';
+import express from "express";
+import crypto from "crypto";
 
 const app = express();
 const WEBHOOK_SECRET = process.env.DODO_PAYMENTS_WEBHOOK_SECRET!;
 
 // Use raw body for signature verification
-app.post('/webhooks/dodo', 
-  express.raw({ type: 'application/json' }),
+app.post(
+  "/webhooks/dodo",
+  express.raw({ type: "application/json" }),
   async (req, res) => {
-    const signature = req.headers['webhook-signature'] as string;
-    const timestamp = req.headers['webhook-timestamp'] as string;
+    const signature = req.headers["webhook-signature"] as string;
+    const timestamp = req.headers["webhook-timestamp"] as string;
     const payload = req.body.toString();
 
     // Verify signature
     const signedPayload = `${timestamp}.${payload}`;
     const expectedSig = crypto
-      .createHmac('sha256', WEBHOOK_SECRET)
+      .createHmac("sha256", WEBHOOK_SECRET)
       .update(signedPayload)
-      .digest('base64');
-    
-    const providedSig = signature?.split(',')[1];
-    
-    if (!providedSig || !crypto.timingSafeEqual(
-      Buffer.from(expectedSig),
-      Buffer.from(providedSig)
-    )) {
-      return res.status(401).json({ error: 'Invalid signature' });
+      .digest("base64");
+
+    const providedSig = signature?.split(",")[1];
+
+    if (
+      !providedSig ||
+      !crypto.timingSafeEqual(
+        Buffer.from(expectedSig),
+        Buffer.from(providedSig)
+      )
+    ) {
+      return res.status(401).json({ error: "Invalid signature" });
     }
 
     const event = JSON.parse(payload);
@@ -310,18 +346,18 @@ app.post('/webhooks/dodo',
     // Process event
     try {
       switch (event.type) {
-        case 'payment.succeeded':
+        case "payment.succeeded":
           await processPayment(event.data);
           break;
-        case 'subscription.active':
+        case "subscription.active":
           await activateSubscription(event.data);
           break;
         // ... handle other events
       }
       res.json({ received: true });
     } catch (error) {
-      console.error('Webhook processing error:', error);
-      res.status(500).json({ error: 'Processing failed' });
+      console.error("Webhook processing error:", error);
+      res.status(500).json({ error: "Processing failed" });
     }
   }
 );
@@ -348,7 +384,7 @@ def verify_signature(payload: bytes, signature: str, timestamp: str) -> bool:
             hashlib.sha256
         ).digest()
     ).decode()
-    
+
     provided_sig = signature.split(',')[1] if ',' in signature else ''
     return hmac.compare_digest(expected_sig, provided_sig)
 
@@ -357,23 +393,23 @@ async def handle_webhook(request: Request):
     body = await request.body()
     signature = request.headers.get("webhook-signature", "")
     timestamp = request.headers.get("webhook-timestamp", "")
-    
+
     if not verify_signature(body, signature, timestamp):
         raise HTTPException(status_code=401, detail="Invalid signature")
-    
+
     # Check timestamp freshness
     event_time = int(timestamp)
     if abs(time.time() - event_time) > 300:
         raise HTTPException(status_code=401, detail="Timestamp too old")
-    
+
     event = json.loads(body)
-    
+
     if event["type"] == "payment.succeeded":
         await handle_payment_succeeded(event["data"])
     elif event["type"] == "subscription.active":
         await handle_subscription_active(event["data"])
     # ... handle other events
-    
+
     return {"received": True}
 ```
 
@@ -399,16 +435,16 @@ var webhookSecret = os.Getenv("DODO_PAYMENTS_WEBHOOK_SECRET")
 
 func verifySignature(payload []byte, signature, timestamp string) bool {
     signedPayload := timestamp + "." + string(payload)
-    
+
     mac := hmac.New(sha256.New, []byte(webhookSecret))
     mac.Write([]byte(signedPayload))
     expectedSig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
-    
+
     parts := strings.Split(signature, ",")
     if len(parts) < 2 {
         return false
     }
-    
+
     return hmac.Equal([]byte(expectedSig), []byte(parts[1]))
 }
 
@@ -416,29 +452,29 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
     body, _ := io.ReadAll(r.Body)
     signature := r.Header.Get("webhook-signature")
     timestamp := r.Header.Get("webhook-timestamp")
-    
+
     if !verifySignature(body, signature, timestamp) {
         http.Error(w, "Invalid signature", http.StatusUnauthorized)
         return
     }
-    
+
     // Check timestamp
     ts, _ := strconv.ParseInt(timestamp, 10, 64)
     if time.Since(time.Unix(ts, 0)) > 5*time.Minute {
         http.Error(w, "Timestamp too old", http.StatusUnauthorized)
         return
     }
-    
+
     var event map[string]interface{}
     json.Unmarshal(body, &event)
-    
+
     switch event["type"] {
     case "payment.succeeded":
         handlePaymentSucceeded(event["data"].(map[string]interface{}))
     case "subscription.active":
         handleSubscriptionActive(event["data"].(map[string]interface{}))
     }
-    
+
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]bool{"received": true})
 }
@@ -449,10 +485,13 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 ## Best Practices
 
 ### 1. Always Verify Signatures
+
 Never process webhooks without signature verification to prevent spoofing.
 
 ### 2. Implement Idempotency
+
 Use `webhook-id` header to prevent duplicate processing:
+
 ```typescript
 const processedIds = new Set<string>();
 
@@ -463,22 +502,27 @@ processedIds.add(webhookId);
 ```
 
 ### 3. Respond Quickly
+
 Return 200 immediately, process asynchronously if needed:
+
 ```typescript
 // Queue for async processing
-await queue.add('process-webhook', event);
+await queue.add("process-webhook", event);
 return NextResponse.json({ received: true });
 ```
 
 ### 4. Handle Retries
+
 Dodo Payments retries failed webhooks. Design handlers to be idempotent.
 
 ### 5. Log Everything
+
 Keep detailed logs for debugging:
+
 ```typescript
 console.log(`[Webhook] ${event.type} - ${webhookId}`, {
   timestamp: event.timestamp,
-  data: event.data
+  data: event.data,
 });
 ```
 
@@ -487,6 +531,7 @@ console.log(`[Webhook] ${event.type} - ${webhookId}`, {
 ## Local Development
 
 ### Using ngrok
+
 ```bash
 # Start ngrok tunnel
 ngrok http 3000
@@ -496,7 +541,9 @@ ngrok http 3000
 ```
 
 ### Testing Webhooks
+
 You can trigger test webhooks from the Dodo Payments dashboard:
+
 1. Go to Developer → Webhooks
 2. Select your webhook
 3. Click "Send Test Event"
@@ -506,16 +553,19 @@ You can trigger test webhooks from the Dodo Payments dashboard:
 ## Troubleshooting
 
 ### Signature Verification Failing
+
 - Ensure you're using the raw request body
 - Check webhook secret is correct
 - Verify timestamp format (Unix seconds)
 
 ### Not Receiving Webhooks
+
 - Check endpoint is publicly accessible
 - Verify webhook is enabled in dashboard
 - Check server logs for errors
 
 ### Duplicate Events
+
 - Implement idempotency using webhook-id
 - Store processed event IDs in database
 

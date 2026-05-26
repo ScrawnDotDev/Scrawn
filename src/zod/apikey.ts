@@ -5,9 +5,7 @@ export const createAPIKeySchema = z.object({
     .string()
     .min(1, "API key name is required")
     .max(255, "API key name must be less than 255 characters"),
-  role: z
-    .enum(["dashboard", "production", "test"])
-    .default("production"),
+  role: z.enum(["dashboard", "production", "test"]).default("production"),
   expiresIn: z
     .union([z.number(), z.bigint()])
     .transform((val) => (typeof val === "bigint" ? Number(val) : val))

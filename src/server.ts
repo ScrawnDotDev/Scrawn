@@ -1,9 +1,15 @@
 import { STORAGE_ADAPTER } from "./config/identifiers.ts";
 import { getPostgresDB } from "./storage/db/postgres/db.ts";
 import { logger } from "./errors/logger.ts";
-import { startRawGrpcServer, type GrpcTlsOptions } from "./servers/rawGrpcServer.ts";
+import {
+  startRawGrpcServer,
+  type GrpcTlsOptions,
+} from "./servers/rawGrpcServer.ts";
 import { startFastifyServer } from "./servers/fastifyServer.ts";
-import { initScheduler, type OnboardingScheduler } from "./schedulers/onboarding.ts";
+import {
+  initScheduler,
+  type OnboardingScheduler,
+} from "./schedulers/onboarding.ts";
 import { getClickHouseDB } from "./storage/db/clickhouse.ts";
 import { readFileSync } from "node:fs";
 import * as Sentry from "@sentry/bun";
@@ -56,7 +62,9 @@ if (STORAGE_ADAPTER === "clickhouse") {
 }
 
 if (!process.env.SENTRY_DSN) {
-  logger.fatal("SENTRY_DSN environment variable is not set — errors will NOT be reported to Sentry");
+  logger.fatal(
+    "SENTRY_DSN environment variable is not set — errors will NOT be reported to Sentry"
+  );
 }
 
 const PORT = Number(process.env.PORT ?? 8070);
@@ -72,7 +80,9 @@ function loadGrpcTlsOptions(): GrpcTlsOptions | undefined {
   }
 
   if (!GRPC_TLS_CERT_PATH || !GRPC_TLS_KEY_PATH) {
-    logger.fatal("GRPC_TLS_ENABLED requires GRPC_TLS_CERT_PATH and GRPC_TLS_KEY_PATH");
+    logger.fatal(
+      "GRPC_TLS_ENABLED requires GRPC_TLS_CERT_PATH and GRPC_TLS_KEY_PATH"
+    );
     throw new Error("gRPC TLS config incomplete");
   }
 

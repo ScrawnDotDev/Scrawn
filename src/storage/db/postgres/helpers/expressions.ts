@@ -19,9 +19,7 @@ export async function listExpressions(): Promise<string[]> {
   }
 }
 
-export async function findExpressionByKey(
-  key: string
-): Promise<string | null> {
+export async function findExpressionByKey(key: string): Promise<string | null> {
   const db = getPostgresDB();
 
   try {

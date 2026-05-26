@@ -45,5 +45,4 @@ export class EventError extends Error {
       originalError,
     });
   }
-
 }

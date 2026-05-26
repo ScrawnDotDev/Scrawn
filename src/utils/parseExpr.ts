@@ -190,9 +190,7 @@ async function resolveExprRefsInExpression(
 
     const storedExpr = await findExpressionByKey(refName);
     if (!storedExpr) {
-      throw EventError.validationFailed(
-        `Expression not found: ${refName}`
-      );
+      throw EventError.validationFailed(`Expression not found: ${refName}`);
     }
 
     resolving.add(refName);

@@ -43,7 +43,9 @@ export async function runClickHousePriceQuery(
   }
 
   if (!beforeTimestamp.isValid) {
-    throw StorageError.invalidTimestamp("beforeTimestamp is not a valid DateTime");
+    throw StorageError.invalidTimestamp(
+      "beforeTimestamp is not a valid DateTime"
+    );
   }
   const beforeTs = toClickHouseDateTime(beforeTimestamp);
 

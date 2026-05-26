@@ -168,5 +168,4 @@ export class StorageError extends Error {
       originalError,
     });
   }
-
 }

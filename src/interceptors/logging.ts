@@ -35,7 +35,12 @@ export function loggingInterceptor(
 
     // Wrap callback to capture errors
     const originalCallback = callback;
-    const wrappedCallback: sendUnaryData<unknown> = (error, response, trailer, flags) => {
+    const wrappedCallback: sendUnaryData<unknown> = (
+      error,
+      response,
+      trailer,
+      flags
+    ) => {
       if (error) {
         const errorDetails = extractErrorDetails(error);
         const statusCode = grpcStatusToHttpStatus(errorDetails.code);
@@ -65,9 +70,9 @@ export function loggingInterceptor(
     const result = handler(call, wrappedCallback);
 
     // Handle async handlers that might throw
-    if (result && typeof result.then === 'function') {
+    if (result && typeof result.then === "function") {
       return result.catch((error: unknown) => {
-        if (!builder['event'].outcome) {
+        if (!builder["event"].outcome) {
           const errorDetails = extractErrorDetails(error);
           const statusCode = grpcStatusToHttpStatus(errorDetails.code);
 
@@ -145,7 +150,10 @@ function extractErrorDetails(error: unknown): ErrorDetails {
       type: error.name,
       message: error.message,
       cause: error.cause instanceof Error ? error.cause.message : undefined,
-      code: "code" in error ? (error as { code: number }).code : grpcStatus.INTERNAL,
+      code:
+        "code" in error
+          ? (error as { code: number }).code
+          : grpcStatus.INTERNAL,
       stack: isDev ? error.stack : undefined,
     };
   }

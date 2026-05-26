@@ -38,10 +38,7 @@ export function parseRoleFromApiKey(apiKey: string): ApiKeyRole | null {
  * Validate the full API key format for a given role.
  * Checks prefix matches and total length is correct.
  */
-export function isValidApiKeyFormat(
-  apiKey: string,
-  role: ApiKeyRole
-): boolean {
+export function isValidApiKeyFormat(apiKey: string, role: ApiKeyRole): boolean {
   const prefix = ROLE_TO_PREFIX[role];
   if (!prefix) return false;
   if (!apiKey.startsWith(prefix)) return false;

@@ -39,8 +39,7 @@ export async function queryEvents(
       return callback?.(AuthError.invalidAPIKey("API key context not found"));
     }
 
-    const adapter =
-      await StorageAdapterFactory.getEventStorageAdapter();
+    const adapter = await StorageAdapterFactory.getEventStorageAdapter();
     const result = await adapter.query(queryRequest, auth);
 
     const response = buildProtoResponse(result, queryRequest);
@@ -109,7 +108,9 @@ function buildEventRow(row: QueryResponse["rows"][number]): EventRow {
   return eventRow;
 }
 
-function buildAggregationRow(row: QueryResponse["rows"][number]): AggregationRow {
+function buildAggregationRow(
+  row: QueryResponse["rows"][number]
+): AggregationRow {
   const aggRow = AggregationRow.create();
   if (row.group_value != null) {
     aggRow.groupValue = String(row.group_value);

@@ -38,12 +38,16 @@ export async function createAPIKey(
     }
 
     // Read role from gRPC metadata (not in proto message yet)
-    const roleFromMeta = call.metadata.get("x-scrawn-role")?.[0] as string | undefined;
+    const roleFromMeta = call.metadata.get("x-scrawn-role")?.[0] as
+      | string
+      | undefined;
     const validatedData = validateRequest(req, roleFromMeta);
 
     if (validatedData.role === "dashboard" && auth.role !== "dashboard") {
       return callback?.(
-        AuthError.permissionDenied("Only dashboard keys can create dashboard keys")
+        AuthError.permissionDenied(
+          "Only dashboard keys can create dashboard keys"
+        )
       );
     }
 

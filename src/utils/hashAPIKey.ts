@@ -12,5 +12,3 @@ function getSecret(): string {
 export function hashAPIKey(apiKey: string): string {
   return createHmac("sha256", getSecret()).update(apiKey).digest("hex");
 }
-
-

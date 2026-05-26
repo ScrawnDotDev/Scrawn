@@ -14,6 +14,7 @@ Charge customers for what they actually use—API calls, storage, AI tokens, or 
 ## Overview
 
 Usage-based billing is perfect for:
+
 - **APIs**: Charge per request or operation
 - **AI Services**: Bill per token, generation, or inference
 - **Infrastructure**: Charge for compute, storage, bandwidth
@@ -24,7 +25,9 @@ Usage-based billing is perfect for:
 ## Core Concepts
 
 ### Events
+
 Usage actions sent from your application:
+
 ```json
 {
   "event_id": "evt_unique_123",
@@ -36,6 +39,7 @@ Usage actions sent from your application:
 ```
 
 ### Meters
+
 Aggregate events into billable quantities:
 | Aggregation | Use Case | Example |
 |-------------|----------|---------|
@@ -45,6 +49,7 @@ Aggregate events into billable quantities:
 | **Last** | Most recent | Current storage used |
 
 ### Products with Usage Pricing
+
 - Price per unit (e.g., $0.001 per API call)
 - Free threshold (e.g., 1,000 free calls)
 - Automatic billing each cycle
@@ -77,23 +82,25 @@ In Dashboard → Products → Create Product:
 ### 3. Send Events
 
 ```typescript
-import DodoPayments from 'dodopayments';
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY,
 });
 
 await client.usageEvents.ingest({
-  events: [{
-    event_id: `api_${Date.now()}_${Math.random()}`,
-    customer_id: 'cus_abc123',
-    event_name: 'api.call',
-    timestamp: new Date().toISOString(),
-    metadata: {
-      endpoint: '/v1/users',
-      method: 'GET',
-    }
-  }]
+  events: [
+    {
+      event_id: `api_${Date.now()}_${Math.random()}`,
+      customer_id: "cus_abc123",
+      event_name: "api.call",
+      timestamp: new Date().toISOString(),
+      metadata: {
+        endpoint: "/v1/users",
+        method: "GET",
+      },
+    },
+  ],
 });
 ```
 
@@ -104,7 +111,7 @@ await client.usageEvents.ingest({
 ### TypeScript/Node.js
 
 ```typescript
-import DodoPayments from 'dodopayments';
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
@@ -117,26 +124,28 @@ async function trackUsage(
   metadata: Record<string, string>
 ) {
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `${eventName}_${Date.now()}_${crypto.randomUUID()}`,
-      customer_id: customerId,
-      event_name: eventName,
-      timestamp: new Date().toISOString(),
-      metadata,
-    }]
+    events: [
+      {
+        event_id: `${eventName}_${Date.now()}_${crypto.randomUUID()}`,
+        customer_id: customerId,
+        event_name: eventName,
+        timestamp: new Date().toISOString(),
+        metadata,
+      },
+    ],
   });
 }
 
 // Track API call
-await trackUsage('cus_abc123', 'api.call', {
-  endpoint: '/v1/generate',
-  method: 'POST',
+await trackUsage("cus_abc123", "api.call", {
+  endpoint: "/v1/generate",
+  method: "POST",
 });
 
 // Track token usage (for Sum aggregation)
-await trackUsage('cus_abc123', 'token.usage', {
-  tokens: '1500',
-  model: 'gpt-4',
+await trackUsage("cus_abc123", "token.usage", {
+  tokens: "1500",
+  model: "gpt-4",
 });
 ```
 
@@ -166,9 +175,21 @@ async function trackBatchUsage(
 
 // Batch track multiple API calls
 await trackBatchUsage([
-  { customerId: 'cus_abc', eventName: 'api.call', metadata: { endpoint: '/v1/users' } },
-  { customerId: 'cus_abc', eventName: 'api.call', metadata: { endpoint: '/v1/orders' } },
-  { customerId: 'cus_xyz', eventName: 'api.call', metadata: { endpoint: '/v1/products' } },
+  {
+    customerId: "cus_abc",
+    eventName: "api.call",
+    metadata: { endpoint: "/v1/users" },
+  },
+  {
+    customerId: "cus_abc",
+    eventName: "api.call",
+    metadata: { endpoint: "/v1/orders" },
+  },
+  {
+    customerId: "cus_xyz",
+    eventName: "api.call",
+    metadata: { endpoint: "/v1/products" },
+  },
 ]);
 ```
 
@@ -252,6 +273,7 @@ func main() {
 ### Aggregation Types
 
 #### Count (API Calls, Requests)
+
 ```
 Meter: API Requests
 Event Name: api.call
@@ -260,6 +282,7 @@ Unit: calls
 ```
 
 #### Sum (Tokens, Bytes)
+
 ```
 Meter: Token Usage
 Event Name: token.usage
@@ -269,18 +292,22 @@ Unit: tokens
 ```
 
 Events must include the property in metadata:
+
 ```typescript
 await client.usageEvents.ingest({
-  events: [{
-    event_id: 'token_123',
-    customer_id: 'cus_abc',
-    event_name: 'token.usage',
-    metadata: { tokens: '1500' } // This value gets summed
-  }]
+  events: [
+    {
+      event_id: "token_123",
+      customer_id: "cus_abc",
+      event_name: "token.usage",
+      metadata: { tokens: "1500" }, // This value gets summed
+    },
+  ],
 });
 ```
 
 #### Max (Peak Concurrent Users)
+
 ```
 Meter: Peak Users
 Event Name: concurrent.users
@@ -290,6 +317,7 @@ Unit: users
 ```
 
 #### Last (Current Storage)
+
 ```
 Meter: Storage Used
 Event Name: storage.snapshot
@@ -329,23 +357,25 @@ async function trackAIUsage(
   const totalTokens = promptTokens + completionTokens;
 
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `ai_${Date.now()}_${crypto.randomUUID()}`,
-      customer_id: customerId,
-      event_name: 'ai.tokens',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        tokens: totalTokens.toString(),
-        prompt_tokens: promptTokens.toString(),
-        completion_tokens: completionTokens.toString(),
-        model,
-      }
-    }]
+    events: [
+      {
+        event_id: `ai_${Date.now()}_${crypto.randomUUID()}`,
+        customer_id: customerId,
+        event_name: "ai.tokens",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          tokens: totalTokens.toString(),
+          prompt_tokens: promptTokens.toString(),
+          completion_tokens: completionTokens.toString(),
+          model,
+        },
+      },
+    ],
   });
 }
 
 // After AI completion
-await trackAIUsage('cus_abc', 500, 1200, 'gpt-4');
+await trackAIUsage("cus_abc", 500, 1200, "gpt-4");
 ```
 
 ### Image Generation
@@ -359,16 +389,18 @@ async function trackImageGeneration(
   model: string
 ) {
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `img_${Date.now()}_${crypto.randomUUID()}`,
-      customer_id: customerId,
-      event_name: 'image.generated',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        size: imageSize,
-        model,
-      }
-    }]
+    events: [
+      {
+        event_id: `img_${Date.now()}_${crypto.randomUUID()}`,
+        customer_id: customerId,
+        event_name: "image.generated",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          size: imageSize,
+          model,
+        },
+      },
+    ],
   });
 }
 ```
@@ -378,22 +410,21 @@ async function trackImageGeneration(
 ```typescript
 // Middleware for Express/Next.js
 
-async function trackAPIUsage(
-  req: Request,
-  customerId: string
-) {
+async function trackAPIUsage(req: Request, customerId: string) {
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `api_${Date.now()}_${crypto.randomUUID()}`,
-      customer_id: customerId,
-      event_name: 'api.call',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        endpoint: req.url,
-        method: req.method,
-        user_agent: req.headers['user-agent'] || 'unknown',
-      }
-    }]
+    events: [
+      {
+        event_id: `api_${Date.now()}_${crypto.randomUUID()}`,
+        customer_id: customerId,
+        event_name: "api.call",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          endpoint: req.url,
+          method: req.method,
+          user_agent: req.headers["user-agent"] || "unknown",
+        },
+      },
+    ],
   });
 }
 ```
@@ -405,21 +436,23 @@ async function trackAPIUsage(
 
 async function updateStorageUsage(customerId: string, bytesUsed: number) {
   await client.usageEvents.ingest({
-    events: [{
-      event_id: `storage_${Date.now()}_${customerId}`,
-      customer_id: customerId,
-      event_name: 'storage.snapshot',
-      timestamp: new Date().toISOString(),
-      metadata: {
-        bytes: bytesUsed.toString(),
-        gb: (bytesUsed / 1024 / 1024 / 1024).toFixed(2),
-      }
-    }]
+    events: [
+      {
+        event_id: `storage_${Date.now()}_${customerId}`,
+        customer_id: customerId,
+        event_name: "storage.snapshot",
+        timestamp: new Date().toISOString(),
+        metadata: {
+          bytes: bytesUsed.toString(),
+          gb: (bytesUsed / 1024 / 1024 / 1024).toFixed(2),
+        },
+      },
+    ],
   });
 }
 
 // Call periodically or after storage changes
-await updateStorageUsage('cus_abc', 5368709120); // 5GB
+await updateStorageUsage("cus_abc", 5368709120); // 5GB
 ```
 
 ---
@@ -430,8 +463,8 @@ await updateStorageUsage('cus_abc', 5368709120); // 5GB
 
 ```typescript
 // app/api/track-usage/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import DodoPayments from 'dodopayments';
+import { NextRequest, NextResponse } from "next/server";
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
@@ -442,21 +475,20 @@ export async function POST(req: NextRequest) {
 
   try {
     await client.usageEvents.ingest({
-      events: [{
-        event_id: `${eventName}_${Date.now()}_${crypto.randomUUID()}`,
-        customer_id: customerId,
-        event_name: eventName,
-        timestamp: new Date().toISOString(),
-        metadata,
-      }]
+      events: [
+        {
+          event_id: `${eventName}_${Date.now()}_${crypto.randomUUID()}`,
+          customer_id: customerId,
+          event_name: eventName,
+          timestamp: new Date().toISOString(),
+          metadata,
+        },
+      ],
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 ```
@@ -465,34 +497,34 @@ export async function POST(req: NextRequest) {
 
 ```typescript
 // hooks/useUsageTracking.ts
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
 export function useUsageTracking(customerId: string) {
-  const trackUsage = useCallback(async (
-    eventName: string,
-    metadata: Record<string, string>
-  ) => {
-    await fetch('/api/track-usage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, eventName, metadata }),
-    });
-  }, [customerId]);
+  const trackUsage = useCallback(
+    async (eventName: string, metadata: Record<string, string>) => {
+      await fetch("/api/track-usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId, eventName, metadata }),
+      });
+    },
+    [customerId]
+  );
 
   return { trackUsage };
 }
 
 // Usage in component
 function AIChat() {
-  const { trackUsage } = useUsageTracking('cus_abc123');
+  const { trackUsage } = useUsageTracking("cus_abc123");
 
   const handleGenerate = async () => {
     const result = await generateAIResponse(prompt);
-    
+
     // Track token usage
-    await trackUsage('ai.tokens', {
+    await trackUsage("ai.tokens", {
       tokens: result.totalTokens.toString(),
-      model: 'gpt-4',
+      model: "gpt-4",
     });
   };
 }
@@ -511,7 +543,7 @@ Combine usage-based with subscriptions:
 // Product: Pro Plan - $49/month + $0.01/call after 10,000 free
 
 // 2. Track all usage events
-await trackUsage('cus_abc', 'api.call', { endpoint: '/v1/generate' });
+await trackUsage("cus_abc", "api.call", { endpoint: "/v1/generate" });
 
 // 3. Dodo automatically:
 //    - Applies free threshold (10,000 calls)
@@ -547,38 +579,46 @@ Link meters to credit entitlements so usage events deduct from a customer's cred
 
 // Usage events deduct credits automatically
 await client.usageEvents.ingest({
-  events: [{
-    event_id: `ai_${Date.now()}_${crypto.randomUUID()}`,
-    customer_id: 'cus_abc123',
-    event_name: 'ai.tokens',
-    timestamp: new Date().toISOString(),
-    metadata: { tokens: '1500', model: 'gpt-4' }
-  }]
+  events: [
+    {
+      event_id: `ai_${Date.now()}_${crypto.randomUUID()}`,
+      customer_id: "cus_abc123",
+      event_name: "ai.tokens",
+      timestamp: new Date().toISOString(),
+      metadata: { tokens: "1500", model: "gpt-4" },
+    },
+  ],
 });
 
 // Check remaining credit balance
 const balance = await client.creditEntitlements.balances.get(
-  'cent_ai_credits',
-  'cus_abc123'
+  "cent_ai_credits",
+  "cus_abc123"
 );
 console.log(`Credits remaining: ${balance.available_balance}`);
 ```
 
 Credit deduction runs via a background worker every minute using FIFO ordering (oldest grants consumed first). When credits run out:
+
 - **Overage disabled**: Usage is blocked
 - **Overage enabled**: Usage continues and overage is tracked per your configured behavior (forgive, bill, or carry deficit)
+
 ---
 
 ## Best Practices
 
 ### 1. Unique Event IDs
+
 Always generate unique IDs for idempotency:
+
 ```typescript
 const eventId = `${eventName}_${Date.now()}_${crypto.randomUUID()}`;
 ```
 
 ### 2. Batch Events
+
 For high-volume, batch events (max 1000/request):
+
 ```typescript
 // Queue events and send in batches
 const eventQueue: Event[] = [];
@@ -601,7 +641,9 @@ setInterval(flushEvents, 5000);
 ```
 
 ### 3. Handle Failures Gracefully
+
 Implement retry logic for event ingestion:
+
 ```typescript
 async function trackWithRetry(event: Event, retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -617,7 +659,9 @@ async function trackWithRetry(event: Event, retries = 3) {
 ```
 
 ### 4. Include Relevant Metadata
+
 Add context for debugging and filtering:
+
 ```typescript
 metadata: {
   endpoint: '/v1/generate',
@@ -629,7 +673,9 @@ metadata: {
 ```
 
 ### 5. Monitor in Dashboard
+
 Check Meters dashboard for:
+
 - Event volume and trends
 - Usage per customer
 - Aggregated quantities
@@ -639,6 +685,7 @@ Check Meters dashboard for:
 ## Pricing Examples
 
 ### API Service
+
 ```
 Meter: API Calls (Count)
 Price: $0.001 per call
@@ -649,6 +696,7 @@ Customer uses 15,000 calls:
 ```
 
 ### AI Token Service
+
 ```
 Meter: Tokens (Sum over "tokens")
 Price: $0.00001 per token ($0.01 per 1,000)
@@ -659,6 +707,7 @@ Customer uses 50,000 tokens:
 ```
 
 ### Image Generation
+
 ```
 Meter: Images (Count)
 Price: $0.05 per image

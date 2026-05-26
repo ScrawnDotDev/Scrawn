@@ -14,7 +14,9 @@ Implement recurring billing with trials, plan changes, and usage-based pricing.
 ## Quick Start
 
 ### 1. Create Subscription Product
+
 In the dashboard (Products → Create Product):
+
 - Select "Subscription" type
 - Set billing interval (monthly, yearly, etc.)
 - Configure pricing
@@ -22,30 +24,29 @@ In the dashboard (Products → Create Product):
 ### 2. Create Checkout Session
 
 ```typescript
-import DodoPayments from 'dodopayments';
+import DodoPayments from "dodopayments";
 
 const client = new DodoPayments({
   bearerToken: process.env.DODO_PAYMENTS_API_KEY,
 });
 
 const session = await client.checkoutSessions.create({
-  product_cart: [
-    { product_id: 'prod_monthly_plan', quantity: 1 }
-  ],
+  product_cart: [{ product_id: "prod_monthly_plan", quantity: 1 }],
   subscription_data: {
     trial_period_days: 14, // Optional trial
   },
   customer: {
-    email: 'subscriber@example.com',
-    name: 'Jane Doe',
+    email: "subscriber@example.com",
+    name: "Jane Doe",
   },
-  return_url: 'https://yoursite.com/success',
+  return_url: "https://yoursite.com/success",
 });
 
 // Redirect to session.checkout_url
 ```
 
 ### 3. Handle Webhook Events
+
 ```typescript
 // subscription.active - Grant access
 // subscription.cancelled - Schedule access revocation
@@ -78,16 +79,16 @@ const session = await client.checkoutSessions.create({
 
 ## Webhook Events
 
-| Event | When | Action |
-|-------|------|--------|
-| `subscription.active` | Subscription starts | Grant access |
-| `subscription.updated` | Any field changes | Sync state |
-| `subscription.on_hold` | Payment fails | Notify user, retry |
-| `subscription.renewed` | Successful renewal | Log, send receipt |
-| `subscription.plan_changed` | Upgrade/downgrade | Update entitlements |
-| `subscription.cancelled` | User cancels | Schedule end of access |
-| `subscription.failed` | Mandate creation fails | Notify, retry options |
-| `subscription.expired` | Term ends | Revoke access |
+| Event                       | When                   | Action                 |
+| --------------------------- | ---------------------- | ---------------------- |
+| `subscription.active`       | Subscription starts    | Grant access           |
+| `subscription.updated`      | Any field changes      | Sync state             |
+| `subscription.on_hold`      | Payment fails          | Notify user, retry     |
+| `subscription.renewed`      | Successful renewal     | Log, send receipt      |
+| `subscription.plan_changed` | Upgrade/downgrade      | Update entitlements    |
+| `subscription.cancelled`    | User cancels           | Schedule end of access |
+| `subscription.failed`       | Mandate creation fails | Notify, retry options  |
+| `subscription.expired`      | Term ends              | Revoke access          |
 
 ---
 
@@ -97,30 +98,30 @@ const session = await client.checkoutSessions.create({
 
 ```typescript
 // app/api/webhooks/subscription/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const event = await req.json();
   const data = event.data;
 
   switch (event.type) {
-    case 'subscription.active':
+    case "subscription.active":
       await handleSubscriptionActive(data);
       break;
-    case 'subscription.cancelled':
+    case "subscription.cancelled":
       await handleSubscriptionCancelled(data);
       break;
-    case 'subscription.on_hold':
+    case "subscription.on_hold":
       await handleSubscriptionOnHold(data);
       break;
-    case 'subscription.renewed':
+    case "subscription.renewed":
       await handleSubscriptionRenewed(data);
       break;
-    case 'subscription.plan_changed':
+    case "subscription.plan_changed":
       await handlePlanChanged(data);
       break;
-    case 'subscription.expired':
+    case "subscription.expired":
       await handleSubscriptionExpired(data);
       break;
   }
@@ -146,13 +147,13 @@ async function handleSubscriptionActive(data: any) {
       userId: customer.customer_id,
       email: customer.email,
       productId: product_id,
-      status: 'active',
+      status: "active",
       currentPeriodEnd: new Date(next_billing_date),
       amount: recurring_pre_tax_amount,
       interval: payment_frequency_interval,
     },
     update: {
-      status: 'active',
+      status: "active",
       currentPeriodEnd: new Date(next_billing_date),
     },
   });
@@ -160,8 +161,8 @@ async function handleSubscriptionActive(data: any) {
   // Grant access
   await prisma.user.update({
     where: { id: customer.customer_id },
-    data: { 
-      subscriptionStatus: 'active',
+    data: {
+      subscriptionStatus: "active",
       plan: product_id,
     },
   });
@@ -171,16 +172,21 @@ async function handleSubscriptionActive(data: any) {
 }
 
 async function handleSubscriptionCancelled(data: any) {
-  const { subscription_id, customer, cancelled_at, cancel_at_next_billing_date } = data;
+  const {
+    subscription_id,
+    customer,
+    cancelled_at,
+    cancel_at_next_billing_date,
+  } = data;
 
   await prisma.subscription.update({
     where: { externalId: subscription_id },
     data: {
-      status: 'cancelled',
+      status: "cancelled",
       cancelledAt: new Date(cancelled_at),
       // Keep access until end of billing period if cancel_at_next_billing_date
-      accessEndsAt: cancel_at_next_billing_date 
-        ? new Date(data.next_billing_date) 
+      accessEndsAt: cancel_at_next_billing_date
+        ? new Date(data.next_billing_date)
         : new Date(),
     },
   });
@@ -194,7 +200,7 @@ async function handleSubscriptionOnHold(data: any) {
 
   await prisma.subscription.update({
     where: { externalId: subscription_id },
-    data: { status: 'on_hold' },
+    data: { status: "on_hold" },
   });
 
   // Notify user about payment issue
@@ -207,7 +213,7 @@ async function handleSubscriptionRenewed(data: any) {
   await prisma.subscription.update({
     where: { externalId: subscription_id },
     data: {
-      status: 'active',
+      status: "active",
       currentPeriodEnd: new Date(next_billing_date),
     },
   });
@@ -233,14 +239,14 @@ async function handleSubscriptionExpired(data: any) {
 
   await prisma.subscription.update({
     where: { externalId: subscription_id },
-    data: { status: 'expired' },
+    data: { status: "expired" },
   });
 
   // Revoke access
   await prisma.user.update({
     where: { id: customer.customer_id },
-    data: { 
-      subscriptionStatus: 'expired',
+    data: {
+      subscriptionStatus: "expired",
       plan: null,
     },
   });
@@ -251,17 +257,15 @@ async function handleSubscriptionExpired(data: any) {
 
 ```typescript
 const session = await client.checkoutSessions.create({
-  product_cart: [
-    { product_id: 'prod_pro_monthly', quantity: 1 }
-  ],
+  product_cart: [{ product_id: "prod_pro_monthly", quantity: 1 }],
   subscription_data: {
     trial_period_days: 14,
   },
   customer: {
-    email: 'user@example.com',
-    name: 'John Doe',
+    email: "user@example.com",
+    name: "John Doe",
   },
-  return_url: 'https://yoursite.com/welcome',
+  return_url: "https://yoursite.com/welcome",
 });
 ```
 
@@ -272,14 +276,15 @@ Allow customers to manage their subscription:
 ```typescript
 // Create portal session
 const portal = await client.customers.createPortalSession({
-  customer_id: 'cust_xxxxx',
-  return_url: 'https://yoursite.com/account',
+  customer_id: "cust_xxxxx",
+  return_url: "https://yoursite.com/account",
 });
 
 // Redirect to portal.url
 ```
 
 Portal features:
+
 - View subscription details
 - Update payment method
 - Cancel subscription
@@ -295,11 +300,9 @@ For metered/usage-based billing:
 
 ```typescript
 const session = await client.checkoutSessions.create({
-  product_cart: [
-    { product_id: 'prod_usage_based', quantity: 1 }
-  ],
-  customer: { email: 'user@example.com' },
-  return_url: 'https://yoursite.com/success',
+  product_cart: [{ product_id: "prod_usage_based", quantity: 1 }],
+  customer: { email: "user@example.com" },
+  return_url: "https://yoursite.com/success",
 });
 ```
 
@@ -308,9 +311,9 @@ const session = await client.checkoutSessions.create({
 ```typescript
 // When usage occurs, create a charge
 const charge = await client.subscriptions.charge({
-  subscription_id: 'sub_xxxxx',
+  subscription_id: "sub_xxxxx",
   amount: 1500, // $15.00 in cents
-  description: 'API calls for January 2025',
+  description: "API calls for January 2025",
 });
 ```
 
@@ -339,20 +342,19 @@ Attach credit entitlements to subscription products to grant credits each billin
 ```typescript
 // Product has credit entitlement attached (e.g., 10,000 AI tokens/month)
 const session = await client.checkoutSessions.create({
-  product_cart: [
-    { product_id: 'prod_pro_with_credits', quantity: 1 }
-  ],
+  product_cart: [{ product_id: "prod_pro_with_credits", quantity: 1 }],
   subscription_data: {
     trial_period_days: 14, // Trial credits can differ from regular amount
   },
-  customer: { email: 'user@example.com' },
-  return_url: 'https://yoursite.com/success',
+  customer: { email: "user@example.com" },
+  return_url: "https://yoursite.com/success",
 });
 ```
 
 ### Credit Lifecycle per Cycle
 
 Each billing cycle:
+
 1. **New credits issued** — `credit.added` webhook fires
 2. **Usage deducts credits** — Automatically via meters or manually via API
 3. **Cycle ends** — Unused credits expire or roll over based on settings
@@ -378,6 +380,7 @@ case 'credit.deducted':
 ### Plan Changes with Credits
 
 When customers upgrade/downgrade, credit proration can be enabled:
+
 - **Proration enabled**: Remaining credits are prorated based on time left in cycle
 - **Proration disabled**: Credits continue as-is until next cycle
 
@@ -388,14 +391,14 @@ When customers upgrade/downgrade, credit proration can be enabled:
 ```typescript
 // Get available plans
 const plans = await client.products.list({
-  type: 'subscription',
+  type: "subscription",
 });
 
 // Change plan
 await client.subscriptions.update({
-  subscription_id: 'sub_xxxxx',
-  product_id: 'prod_new_plan',
-  proration_behavior: 'create_prorations', // or 'none'
+  subscription_id: "sub_xxxxx",
+  product_id: "prod_new_plan",
+  proration_behavior: "create_prorations", // or 'none'
 });
 ```
 
@@ -404,10 +407,10 @@ await client.subscriptions.update({
 ```typescript
 async function handlePlanChanged(data: any) {
   const { subscription_id, product_id, customer } = data;
-  
+
   // Map product to features/limits
   const planFeatures = getPlanFeatures(product_id);
-  
+
   await prisma.user.update({
     where: { externalId: customer.customer_id },
     data: {
@@ -428,28 +431,28 @@ async function handlePlanChanged(data: any) {
 
 ```typescript
 // middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   // Check subscription status
   const session = await getSession(request);
-  
+
   if (!session?.user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const subscription = await getSubscription(session.user.id);
 
   // Check if accessing premium feature
-  if (request.nextUrl.pathname.startsWith('/dashboard/pro')) {
-    if (!subscription || subscription.status !== 'active') {
-      return NextResponse.redirect(new URL('/pricing', request.url));
+  if (request.nextUrl.pathname.startsWith("/dashboard/pro")) {
+    if (!subscription || subscription.status !== "active") {
+      return NextResponse.redirect(new URL("/pricing", request.url));
     }
-    
+
     // Check if plan includes this feature
-    if (!subscription.features.includes('pro')) {
-      return NextResponse.redirect(new URL('/upgrade', request.url));
+    if (!subscription.features.includes("pro")) {
+      return NextResponse.redirect(new URL("/upgrade", request.url));
     }
   }
 
@@ -501,12 +504,14 @@ function PremiumFeature() {
 ```typescript
 async function handleSubscriptionOnHold(data: any) {
   const gracePeriodDays = 7;
-  
+
   await prisma.subscription.update({
     where: { externalId: data.subscription_id },
     data: {
-      status: 'on_hold',
-      gracePeriodEnds: new Date(Date.now() + gracePeriodDays * 24 * 60 * 60 * 1000),
+      status: "on_hold",
+      gracePeriodEnds: new Date(
+        Date.now() + gracePeriodDays * 24 * 60 * 60 * 1000
+      ),
     },
   });
 
@@ -518,13 +523,14 @@ async function handleSubscriptionOnHold(data: any) {
 ### Prorated Upgrades
 
 When upgrading mid-cycle:
+
 ```typescript
 // Dodo handles proration automatically
 // Customer pays difference for remaining days
 await client.subscriptions.update({
-  subscription_id: 'sub_xxxxx',
-  product_id: 'prod_higher_plan',
-  proration_behavior: 'create_prorations',
+  subscription_id: "sub_xxxxx",
+  product_id: "prod_higher_plan",
+  proration_behavior: "create_prorations",
 });
 ```
 
@@ -538,7 +544,7 @@ await client.subscriptions.update({
 if (data.cancel_at_next_billing_date) {
   // Keep access until next_billing_date
   await scheduleAccessRevocation(
-    data.subscription_id, 
+    data.subscription_id,
     new Date(data.next_billing_date)
   );
 }
@@ -549,6 +555,7 @@ if (data.cancel_at_next_billing_date) {
 ## Testing
 
 ### Test Scenarios
+
 1. New subscription → `subscription.active`
 2. Renewal success → `subscription.renewed` + `payment.succeeded`
 3. Renewal failure → `subscription.on_hold` + `payment.failed`
@@ -557,6 +564,7 @@ if (data.cancel_at_next_billing_date) {
 6. Expiration → `subscription.expired`
 
 ### Test in Dashboard
+
 Use test mode and trigger events manually from the webhook settings.
 
 ---

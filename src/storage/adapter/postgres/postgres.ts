@@ -25,10 +25,7 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 export class PostgresAdapter implements StorageAdapter {
   connectionObject = getPostgresDB();
 
-  async add(
-    serialized: SerializedEvent,
-    auth: AuthContext
-  ) {
+  async add(serialized: SerializedEvent, auth: AuthContext) {
     let event_data: SqlRecord;
 
     try {
@@ -87,7 +84,12 @@ export class PostgresAdapter implements StorageAdapter {
     const tx = txn as PgTransaction<any, any, any> | undefined;
     switch (event_type) {
       case "BASIC_USAGE": {
-        return await handlePriceRequestBasicUsage(userID, beforeTimestamp, auth, tx);
+        return await handlePriceRequestBasicUsage(
+          userID,
+          beforeTimestamp,
+          auth,
+          tx
+        );
       }
 
       case "AI_TOKEN_USAGE": {
@@ -105,7 +107,10 @@ export class PostgresAdapter implements StorageAdapter {
     }
   }
 
-  async query(request: QueryRequest, auth: AuthContext): Promise<QueryResponse> {
+  async query(
+    request: QueryRequest,
+    auth: AuthContext
+  ): Promise<QueryResponse> {
     return await handleQueryEvents(request, auth);
   }
 }

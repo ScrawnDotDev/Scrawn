@@ -2,7 +2,10 @@ import cron from "node-cron";
 import type { ScheduledTask } from "node-cron";
 import { DateTime } from "luxon";
 import { logger } from "../errors/logger";
-import { getMetadata, tryClaimWebhookFire } from "../storage/db/postgres/helpers/metadata";
+import {
+  getMetadata,
+  tryClaimWebhookFire,
+} from "../storage/db/postgres/helpers/metadata";
 import { getPostgresDB } from "../storage/db/postgres/db";
 
 const WEBHOOK_TIMEOUT_MS = 15_000;
@@ -35,7 +38,9 @@ export class OnboardingScheduler {
 
       for (const expr of metadata.payment_cron) {
         if (!cron.validate(expr)) {
-          logger.lifecycleWarning(`[scheduler] Invalid cron expression: ${expr}`);
+          logger.lifecycleWarning(
+            `[scheduler] Invalid cron expression: ${expr}`
+          );
           continue;
         }
 
@@ -111,7 +116,10 @@ export class OnboardingScheduler {
         return;
       }
 
-      logger.fatal(`[scheduler] Webhook error: ${err.message} — ${webhookUrl}`, err);
+      logger.fatal(
+        `[scheduler] Webhook error: ${err.message} — ${webhookUrl}`,
+        err
+      );
     } finally {
       clearTimeout(timeoutId);
     }

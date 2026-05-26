@@ -1,6 +1,9 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import * as Sentry from "@sentry/bun";
-import { createWideEventBuilder, generateRequestId } from "../../../context/requestContext.ts";
+import {
+  createWideEventBuilder,
+  generateRequestId,
+} from "../../../context/requestContext.ts";
 import { logger } from "../../../errors/logger.ts";
 import { AuthError } from "../../../errors/auth.ts";
 import { authenticateHttpApiKey } from "../../../utils/authenticateHttpApiKey.ts";

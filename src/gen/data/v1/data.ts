@@ -424,7 +424,10 @@ function createBaseFilterCondition(): FilterCondition {
 }
 
 export const FilterCondition: MessageFns<FilterCondition> = {
-  encode(message: FilterCondition, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: FilterCondition,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.field !== "") {
       writer.uint32(10).string(message.field);
     }
@@ -438,7 +441,8 @@ export const FilterCondition: MessageFns<FilterCondition> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): FilterCondition {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFilterCondition();
     while (reader.pos < end) {
@@ -499,10 +503,14 @@ export const FilterCondition: MessageFns<FilterCondition> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<FilterCondition>, I>>(base?: I): FilterCondition {
+  create<I extends Exact<DeepPartial<FilterCondition>, I>>(
+    base?: I
+  ): FilterCondition {
     return FilterCondition.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FilterCondition>, I>>(object: I): FilterCondition {
+  fromPartial<I extends Exact<DeepPartial<FilterCondition>, I>>(
+    object: I
+  ): FilterCondition {
     const message = createBaseFilterCondition();
     message.field = object.field ?? "";
     message.operator = object.operator ?? 0;
@@ -516,7 +524,10 @@ function createBaseFilterGroup(): FilterGroup {
 }
 
 export const FilterGroup: MessageFns<FilterGroup> = {
-  encode(message: FilterGroup, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: FilterGroup,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.logical !== 0) {
       writer.uint32(8).int32(message.logical);
     }
@@ -530,7 +541,8 @@ export const FilterGroup: MessageFns<FilterGroup> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): FilterGroup {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFilterGroup();
     while (reader.pos < end) {
@@ -549,7 +561,9 @@ export const FilterGroup: MessageFns<FilterGroup> = {
             break;
           }
 
-          message.conditions.push(FilterCondition.decode(reader, reader.uint32()));
+          message.conditions.push(
+            FilterCondition.decode(reader, reader.uint32())
+          );
           continue;
         }
         case 3: {
@@ -571,11 +585,15 @@ export const FilterGroup: MessageFns<FilterGroup> = {
 
   fromJSON(object: any): FilterGroup {
     return {
-      logical: isSet(object.logical) ? logicalOperatorFromJSON(object.logical) : 0,
+      logical: isSet(object.logical)
+        ? logicalOperatorFromJSON(object.logical)
+        : 0,
       conditions: globalThis.Array.isArray(object?.conditions)
         ? object.conditions.map((e: any) => FilterCondition.fromJSON(e))
         : [],
-      groups: globalThis.Array.isArray(object?.groups) ? object.groups.map((e: any) => FilterGroup.fromJSON(e)) : [],
+      groups: globalThis.Array.isArray(object?.groups)
+        ? object.groups.map((e: any) => FilterGroup.fromJSON(e))
+        : [],
     };
   },
 
@@ -596,11 +614,15 @@ export const FilterGroup: MessageFns<FilterGroup> = {
   create<I extends Exact<DeepPartial<FilterGroup>, I>>(base?: I): FilterGroup {
     return FilterGroup.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FilterGroup>, I>>(object: I): FilterGroup {
+  fromPartial<I extends Exact<DeepPartial<FilterGroup>, I>>(
+    object: I
+  ): FilterGroup {
     const message = createBaseFilterGroup();
     message.logical = object.logical ?? 0;
-    message.conditions = object.conditions?.map((e) => FilterCondition.fromPartial(e)) || [];
-    message.groups = object.groups?.map((e) => FilterGroup.fromPartial(e)) || [];
+    message.conditions =
+      object.conditions?.map((e) => FilterCondition.fromPartial(e)) || [];
+    message.groups =
+      object.groups?.map((e) => FilterGroup.fromPartial(e)) || [];
     return message;
   },
 };
@@ -610,7 +632,10 @@ function createBaseOrderBy(): OrderBy {
 }
 
 export const OrderBy: MessageFns<OrderBy> = {
-  encode(message: OrderBy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: OrderBy,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.field !== "") {
       writer.uint32(10).string(message.field);
     }
@@ -621,7 +646,8 @@ export const OrderBy: MessageFns<OrderBy> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): OrderBy {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOrderBy();
     while (reader.pos < end) {
@@ -655,7 +681,9 @@ export const OrderBy: MessageFns<OrderBy> = {
   fromJSON(object: any): OrderBy {
     return {
       field: isSet(object.field) ? globalThis.String(object.field) : "",
-      descending: isSet(object.descending) ? globalThis.Boolean(object.descending) : false,
+      descending: isSet(object.descending)
+        ? globalThis.Boolean(object.descending)
+        : false,
     };
   },
 
@@ -686,7 +714,10 @@ function createBaseQueryRequest(): QueryRequest {
 }
 
 export const QueryRequest: MessageFns<QueryRequest> = {
-  encode(message: QueryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: QueryRequest,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.table !== "") {
       writer.uint32(10).string(message.table);
     }
@@ -706,7 +737,8 @@ export const QueryRequest: MessageFns<QueryRequest> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): QueryRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryRequest();
     while (reader.pos < end) {
@@ -764,12 +796,14 @@ export const QueryRequest: MessageFns<QueryRequest> = {
   fromJSON(object: any): QueryRequest {
     return {
       table: isSet(object.table) ? globalThis.String(object.table) : "",
-      where: isSet(object.where) ? FilterGroup.fromJSON(object.where) : undefined,
+      where: isSet(object.where)
+        ? FilterGroup.fromJSON(object.where)
+        : undefined,
       orderBy: globalThis.Array.isArray(object?.orderBy)
         ? object.orderBy.map((e: any) => OrderBy.fromJSON(e))
         : globalThis.Array.isArray(object?.order_by)
-        ? object.order_by.map((e: any) => OrderBy.fromJSON(e))
-        : [],
+          ? object.order_by.map((e: any) => OrderBy.fromJSON(e))
+          : [],
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       offset: isSet(object.offset) ? globalThis.Number(object.offset) : 0,
     };
@@ -795,15 +829,20 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<QueryRequest>, I>>(base?: I): QueryRequest {
+  create<I extends Exact<DeepPartial<QueryRequest>, I>>(
+    base?: I
+  ): QueryRequest {
     return QueryRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QueryRequest>, I>>(object: I): QueryRequest {
+  fromPartial<I extends Exact<DeepPartial<QueryRequest>, I>>(
+    object: I
+  ): QueryRequest {
     const message = createBaseQueryRequest();
     message.table = object.table ?? "";
-    message.where = (object.where !== undefined && object.where !== null)
-      ? FilterGroup.fromPartial(object.where)
-      : undefined;
+    message.where =
+      object.where !== undefined && object.where !== null
+        ? FilterGroup.fromPartial(object.where)
+        : undefined;
     message.orderBy = object.orderBy?.map((e) => OrderBy.fromPartial(e)) || [];
     message.limit = object.limit ?? 0;
     message.offset = object.offset ?? 0;
@@ -816,7 +855,10 @@ function createBaseQueryResponse(): QueryResponse {
 }
 
 export const QueryResponse: MessageFns<QueryResponse> = {
-  encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: QueryResponse,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     for (const v of message.columns) {
       writer.uint32(10).string(v!);
     }
@@ -830,7 +872,8 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): QueryResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueryResponse();
     while (reader.pos < end) {
@@ -871,8 +914,12 @@ export const QueryResponse: MessageFns<QueryResponse> = {
 
   fromJSON(object: any): QueryResponse {
     return {
-      columns: globalThis.Array.isArray(object?.columns) ? object.columns.map((e: any) => globalThis.String(e)) : [],
-      rows: globalThis.Array.isArray(object?.rows) ? object.rows.map((e: any) => Row.fromJSON(e)) : [],
+      columns: globalThis.Array.isArray(object?.columns)
+        ? object.columns.map((e: any) => globalThis.String(e))
+        : [],
+      rows: globalThis.Array.isArray(object?.rows)
+        ? object.rows.map((e: any) => Row.fromJSON(e))
+        : [],
       total: isSet(object.total) ? globalThis.Number(object.total) : 0,
     };
   },
@@ -891,10 +938,14 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<QueryResponse>, I>>(base?: I): QueryResponse {
+  create<I extends Exact<DeepPartial<QueryResponse>, I>>(
+    base?: I
+  ): QueryResponse {
     return QueryResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QueryResponse>, I>>(object: I): QueryResponse {
+  fromPartial<I extends Exact<DeepPartial<QueryResponse>, I>>(
+    object: I
+  ): QueryResponse {
     const message = createBaseQueryResponse();
     message.columns = object.columns?.map((e) => e) || [];
     message.rows = object.rows?.map((e) => Row.fromPartial(e)) || [];
@@ -908,7 +959,10 @@ function createBaseRow(): Row {
 }
 
 export const Row: MessageFns<Row> = {
-  encode(message: Row, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: Row,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     for (const v of message.values) {
       writer.uint32(10).string(v!);
     }
@@ -916,7 +970,8 @@ export const Row: MessageFns<Row> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): Row {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRow();
     while (reader.pos < end) {
@@ -941,7 +996,9 @@ export const Row: MessageFns<Row> = {
 
   fromJSON(object: any): Row {
     return {
-      values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
+      values: globalThis.Array.isArray(object?.values)
+        ? object.values.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -969,10 +1026,14 @@ export const DataQueryServiceService = {
     path: "/data.v1.DataQueryService/Query" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: QueryRequest): Buffer => Buffer.from(QueryRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): QueryRequest => QueryRequest.decode(value),
-    responseSerialize: (value: QueryResponse): Buffer => Buffer.from(QueryResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): QueryResponse => QueryResponse.decode(value),
+    requestSerialize: (value: QueryRequest): Buffer =>
+      Buffer.from(QueryRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): QueryRequest =>
+      QueryRequest.decode(value),
+    responseSerialize: (value: QueryResponse): Buffer =>
+      Buffer.from(QueryResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): QueryResponse =>
+      QueryResponse.decode(value),
   },
 } as const;
 
@@ -983,41 +1044,59 @@ export interface DataQueryServiceServer extends UntypedServiceImplementation {
 export interface DataQueryServiceClient extends Client {
   query(
     request: QueryRequest,
-    callback: (error: ServiceError | null, response: QueryResponse) => void,
+    callback: (error: ServiceError | null, response: QueryResponse) => void
   ): ClientUnaryCall;
   query(
     request: QueryRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: QueryResponse) => void,
+    callback: (error: ServiceError | null, response: QueryResponse) => void
   ): ClientUnaryCall;
   query(
     request: QueryRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: QueryResponse) => void,
+    callback: (error: ServiceError | null, response: QueryResponse) => void
   ): ClientUnaryCall;
 }
 
 export const DataQueryServiceClient = makeGenericClientConstructor(
   DataQueryServiceService,
-  "data.v1.DataQueryService",
+  "data.v1.DataQueryService"
 ) as unknown as {
-  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): DataQueryServiceClient;
+  new (
+    address: string,
+    credentials: ChannelCredentials,
+    options?: Partial<ClientOptions>
+  ): DataQueryServiceClient;
   service: typeof DataQueryServiceService;
   serviceName: string;
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

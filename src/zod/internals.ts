@@ -10,23 +10,24 @@ export function createFilterGroupSchema<C extends z.ZodTypeAny>(
   conditionSchema: C,
   logicalMap: Record<number, "AND" | "OR">
 ): z.ZodType<FilterGroupOutput<z.output<C>>> {
-  const filterGroupSchema: z.ZodType<FilterGroupOutput<z.output<C>>> = z.lazy(() =>
-    z
-      .object({
-        logical: z
-          .number()
-          .int()
-          .min(1)
-          .max(2)
-          .transform((v) => (logicalMap[v] ?? "AND") as "AND" | "OR"),
-        conditionsList: z.array(conditionSchema).default([]),
-        groupsList: z.array(filterGroupSchema).default([]),
-      })
-      .transform((v) => ({
-        logical: v.logical,
-        conditions: v.conditionsList,
-        groups: v.groupsList,
-      }))
+  const filterGroupSchema: z.ZodType<FilterGroupOutput<z.output<C>>> = z.lazy(
+    () =>
+      z
+        .object({
+          logical: z
+            .number()
+            .int()
+            .min(1)
+            .max(2)
+            .transform((v) => (logicalMap[v] ?? "AND") as "AND" | "OR"),
+          conditionsList: z.array(conditionSchema).default([]),
+          groupsList: z.array(filterGroupSchema).default([]),
+        })
+        .transform((v) => ({
+          logical: v.logical,
+          conditions: v.conditionsList,
+          groups: v.groupsList,
+        }))
   );
   return filterGroupSchema;
 }

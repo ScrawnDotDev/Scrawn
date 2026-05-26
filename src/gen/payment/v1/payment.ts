@@ -33,117 +33,147 @@ function createBaseCreateCheckoutLinkRequest(): CreateCheckoutLinkRequest {
   return { userId: "" };
 }
 
-export const CreateCheckoutLinkRequest: MessageFns<CreateCheckoutLinkRequest> = {
-  encode(message: CreateCheckoutLinkRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.userId !== "") {
-      writer.uint32(10).string(message.userId);
-    }
-    return writer;
-  },
+export const CreateCheckoutLinkRequest: MessageFns<CreateCheckoutLinkRequest> =
+  {
+    encode(
+      message: CreateCheckoutLinkRequest,
+      writer: BinaryWriter = new BinaryWriter()
+    ): BinaryWriter {
+      if (message.userId !== "") {
+        writer.uint32(10).string(message.userId);
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CreateCheckoutLinkRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateCheckoutLinkRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number
+    ): CreateCheckoutLinkRequest {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseCreateCheckoutLinkRequest();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.userId = reader.string();
+            continue;
           }
-
-          message.userId = reader.string();
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): CreateCheckoutLinkRequest {
+      return {
+        userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      };
+    },
+
+    toJSON(message: CreateCheckoutLinkRequest): unknown {
+      const obj: any = {};
+      if (message.userId !== "") {
+        obj.userId = message.userId;
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): CreateCheckoutLinkRequest {
-    return { userId: isSet(object.userId) ? globalThis.String(object.userId) : "" };
-  },
-
-  toJSON(message: CreateCheckoutLinkRequest): unknown {
-    const obj: any = {};
-    if (message.userId !== "") {
-      obj.userId = message.userId;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<CreateCheckoutLinkRequest>, I>>(base?: I): CreateCheckoutLinkRequest {
-    return CreateCheckoutLinkRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<CreateCheckoutLinkRequest>, I>>(object: I): CreateCheckoutLinkRequest {
-    const message = createBaseCreateCheckoutLinkRequest();
-    message.userId = object.userId ?? "";
-    return message;
-  },
-};
+    create<I extends Exact<DeepPartial<CreateCheckoutLinkRequest>, I>>(
+      base?: I
+    ): CreateCheckoutLinkRequest {
+      return CreateCheckoutLinkRequest.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<CreateCheckoutLinkRequest>, I>>(
+      object: I
+    ): CreateCheckoutLinkRequest {
+      const message = createBaseCreateCheckoutLinkRequest();
+      message.userId = object.userId ?? "";
+      return message;
+    },
+  };
 
 function createBaseCreateCheckoutLinkResponse(): CreateCheckoutLinkResponse {
   return { checkoutLink: "" };
 }
 
-export const CreateCheckoutLinkResponse: MessageFns<CreateCheckoutLinkResponse> = {
-  encode(message: CreateCheckoutLinkResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.checkoutLink !== "") {
-      writer.uint32(10).string(message.checkoutLink);
-    }
-    return writer;
-  },
+export const CreateCheckoutLinkResponse: MessageFns<CreateCheckoutLinkResponse> =
+  {
+    encode(
+      message: CreateCheckoutLinkResponse,
+      writer: BinaryWriter = new BinaryWriter()
+    ): BinaryWriter {
+      if (message.checkoutLink !== "") {
+        writer.uint32(10).string(message.checkoutLink);
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CreateCheckoutLinkResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateCheckoutLinkResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number
+    ): CreateCheckoutLinkResponse {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseCreateCheckoutLinkResponse();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.checkoutLink = reader.string();
+            continue;
           }
-
-          message.checkoutLink = reader.string();
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): CreateCheckoutLinkResponse {
+      return {
+        checkoutLink: isSet(object.checkoutLink)
+          ? globalThis.String(object.checkoutLink)
+          : "",
+      };
+    },
+
+    toJSON(message: CreateCheckoutLinkResponse): unknown {
+      const obj: any = {};
+      if (message.checkoutLink !== "") {
+        obj.checkoutLink = message.checkoutLink;
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): CreateCheckoutLinkResponse {
-    return { checkoutLink: isSet(object.checkoutLink) ? globalThis.String(object.checkoutLink) : "" };
-  },
-
-  toJSON(message: CreateCheckoutLinkResponse): unknown {
-    const obj: any = {};
-    if (message.checkoutLink !== "") {
-      obj.checkoutLink = message.checkoutLink;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<CreateCheckoutLinkResponse>, I>>(base?: I): CreateCheckoutLinkResponse {
-    return CreateCheckoutLinkResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<CreateCheckoutLinkResponse>, I>>(object: I): CreateCheckoutLinkResponse {
-    const message = createBaseCreateCheckoutLinkResponse();
-    message.checkoutLink = object.checkoutLink ?? "";
-    return message;
-  },
-};
+    create<I extends Exact<DeepPartial<CreateCheckoutLinkResponse>, I>>(
+      base?: I
+    ): CreateCheckoutLinkResponse {
+      return CreateCheckoutLinkResponse.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<CreateCheckoutLinkResponse>, I>>(
+      object: I
+    ): CreateCheckoutLinkResponse {
+      const message = createBaseCreateCheckoutLinkResponse();
+      message.checkoutLink = object.checkoutLink ?? "";
+      return message;
+    },
+  };
 
 export type PaymentServiceService = typeof PaymentServiceService;
 export const PaymentServiceService = {
@@ -154,57 +184,89 @@ export const PaymentServiceService = {
     responseStream: false as const,
     requestSerialize: (value: CreateCheckoutLinkRequest): Buffer =>
       Buffer.from(CreateCheckoutLinkRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): CreateCheckoutLinkRequest => CreateCheckoutLinkRequest.decode(value),
+    requestDeserialize: (value: Buffer): CreateCheckoutLinkRequest =>
+      CreateCheckoutLinkRequest.decode(value),
     responseSerialize: (value: CreateCheckoutLinkResponse): Buffer =>
       Buffer.from(CreateCheckoutLinkResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): CreateCheckoutLinkResponse => CreateCheckoutLinkResponse.decode(value),
+    responseDeserialize: (value: Buffer): CreateCheckoutLinkResponse =>
+      CreateCheckoutLinkResponse.decode(value),
   },
 } as const;
 
 export interface PaymentServiceServer extends UntypedServiceImplementation {
   /** CreateCheckoutLink creates a checkout link for the given user */
-  createCheckoutLink: handleUnaryCall<CreateCheckoutLinkRequest, CreateCheckoutLinkResponse>;
+  createCheckoutLink: handleUnaryCall<
+    CreateCheckoutLinkRequest,
+    CreateCheckoutLinkResponse
+  >;
 }
 
 export interface PaymentServiceClient extends Client {
   /** CreateCheckoutLink creates a checkout link for the given user */
   createCheckoutLink(
     request: CreateCheckoutLinkRequest,
-    callback: (error: ServiceError | null, response: CreateCheckoutLinkResponse) => void,
+    callback: (
+      error: ServiceError | null,
+      response: CreateCheckoutLinkResponse
+    ) => void
   ): ClientUnaryCall;
   createCheckoutLink(
     request: CreateCheckoutLinkRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: CreateCheckoutLinkResponse) => void,
+    callback: (
+      error: ServiceError | null,
+      response: CreateCheckoutLinkResponse
+    ) => void
   ): ClientUnaryCall;
   createCheckoutLink(
     request: CreateCheckoutLinkRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: CreateCheckoutLinkResponse) => void,
+    callback: (
+      error: ServiceError | null,
+      response: CreateCheckoutLinkResponse
+    ) => void
   ): ClientUnaryCall;
 }
 
 export const PaymentServiceClient = makeGenericClientConstructor(
   PaymentServiceService,
-  "payment.v1.PaymentService",
+  "payment.v1.PaymentService"
 ) as unknown as {
-  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): PaymentServiceClient;
+  new (
+    address: string,
+    credentials: ChannelCredentials,
+    options?: Partial<ClientOptions>
+  ): PaymentServiceClient;
   service: typeof PaymentServiceService;
   serviceName: string;
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

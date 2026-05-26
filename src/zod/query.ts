@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { QUERY_FIELD_NAMES } from "../interface/storage/Storage";
-import { Operator, AggregationType, LogicalOperator } from "../gen/query/v1/query";
+import {
+  Operator,
+  AggregationType,
+  LogicalOperator,
+} from "../gen/query/v1/query";
 import { createFilterGroupSchema } from "./internals";
 
 const OPERATOR_MAP = {
@@ -33,7 +37,10 @@ const filterConditionSchema = z.object({
   value: z.string(),
 });
 
-const filterGroupSchema = createFilterGroupSchema(filterConditionSchema, LOGICAL_MAP);
+const filterGroupSchema = createFilterGroupSchema(
+  filterConditionSchema,
+  LOGICAL_MAP
+);
 
 const aggregationSchema = z.object({
   type: z

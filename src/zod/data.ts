@@ -36,7 +36,10 @@ const filterConditionSchema = z.object({
   value: z.string(),
 });
 
-const filterGroupSchema = createFilterGroupSchema(filterConditionSchema, LOGICAL_MAP);
+const filterGroupSchema = createFilterGroupSchema(
+  filterConditionSchema,
+  LOGICAL_MAP
+);
 
 const orderBySchema = z.object({
   field: z.string(),

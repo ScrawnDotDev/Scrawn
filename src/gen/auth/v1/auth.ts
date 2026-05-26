@@ -40,7 +40,10 @@ function createBaseCreateAPIKeyRequest(): CreateAPIKeyRequest {
 }
 
 export const CreateAPIKeyRequest: MessageFns<CreateAPIKeyRequest> = {
-  encode(message: CreateAPIKeyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: CreateAPIKeyRequest,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -50,8 +53,12 @@ export const CreateAPIKeyRequest: MessageFns<CreateAPIKeyRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CreateAPIKeyRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number
+  ): CreateAPIKeyRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateAPIKeyRequest();
     while (reader.pos < end) {
@@ -85,7 +92,9 @@ export const CreateAPIKeyRequest: MessageFns<CreateAPIKeyRequest> = {
   fromJSON(object: any): CreateAPIKeyRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      expiresIn: isSet(object.expiresIn) ? globalThis.Number(object.expiresIn) : 0,
+      expiresIn: isSet(object.expiresIn)
+        ? globalThis.Number(object.expiresIn)
+        : 0,
     };
   },
 
@@ -100,10 +109,14 @@ export const CreateAPIKeyRequest: MessageFns<CreateAPIKeyRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CreateAPIKeyRequest>, I>>(base?: I): CreateAPIKeyRequest {
+  create<I extends Exact<DeepPartial<CreateAPIKeyRequest>, I>>(
+    base?: I
+  ): CreateAPIKeyRequest {
     return CreateAPIKeyRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CreateAPIKeyRequest>, I>>(object: I): CreateAPIKeyRequest {
+  fromPartial<I extends Exact<DeepPartial<CreateAPIKeyRequest>, I>>(
+    object: I
+  ): CreateAPIKeyRequest {
     const message = createBaseCreateAPIKeyRequest();
     message.name = object.name ?? "";
     message.expiresIn = object.expiresIn ?? 0;
@@ -116,7 +129,10 @@ function createBaseCreateAPIKeyResponse(): CreateAPIKeyResponse {
 }
 
 export const CreateAPIKeyResponse: MessageFns<CreateAPIKeyResponse> = {
-  encode(message: CreateAPIKeyResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: CreateAPIKeyResponse,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.apiKeyId !== "") {
       writer.uint32(10).string(message.apiKeyId);
     }
@@ -135,8 +151,12 @@ export const CreateAPIKeyResponse: MessageFns<CreateAPIKeyResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CreateAPIKeyResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number
+  ): CreateAPIKeyResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateAPIKeyResponse();
     while (reader.pos < end) {
@@ -193,11 +213,17 @@ export const CreateAPIKeyResponse: MessageFns<CreateAPIKeyResponse> = {
 
   fromJSON(object: any): CreateAPIKeyResponse {
     return {
-      apiKeyId: isSet(object.apiKeyId) ? globalThis.String(object.apiKeyId) : "",
+      apiKeyId: isSet(object.apiKeyId)
+        ? globalThis.String(object.apiKeyId)
+        : "",
       apiKey: isSet(object.apiKey) ? globalThis.String(object.apiKey) : "",
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : "",
-      expiresAt: isSet(object.expiresAt) ? globalThis.String(object.expiresAt) : "",
+      createdAt: isSet(object.createdAt)
+        ? globalThis.String(object.createdAt)
+        : "",
+      expiresAt: isSet(object.expiresAt)
+        ? globalThis.String(object.expiresAt)
+        : "",
     };
   },
 
@@ -221,10 +247,14 @@ export const CreateAPIKeyResponse: MessageFns<CreateAPIKeyResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CreateAPIKeyResponse>, I>>(base?: I): CreateAPIKeyResponse {
+  create<I extends Exact<DeepPartial<CreateAPIKeyResponse>, I>>(
+    base?: I
+  ): CreateAPIKeyResponse {
     return CreateAPIKeyResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CreateAPIKeyResponse>, I>>(object: I): CreateAPIKeyResponse {
+  fromPartial<I extends Exact<DeepPartial<CreateAPIKeyResponse>, I>>(
+    object: I
+  ): CreateAPIKeyResponse {
     const message = createBaseCreateAPIKeyResponse();
     message.apiKeyId = object.apiKeyId ?? "";
     message.apiKey = object.apiKey ?? "";
@@ -242,11 +272,14 @@ export const AuthServiceService = {
     path: "/auth.v1.AuthService/CreateAPIKey" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: CreateAPIKeyRequest): Buffer => Buffer.from(CreateAPIKeyRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): CreateAPIKeyRequest => CreateAPIKeyRequest.decode(value),
+    requestSerialize: (value: CreateAPIKeyRequest): Buffer =>
+      Buffer.from(CreateAPIKeyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateAPIKeyRequest =>
+      CreateAPIKeyRequest.decode(value),
     responseSerialize: (value: CreateAPIKeyResponse): Buffer =>
       Buffer.from(CreateAPIKeyResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer): CreateAPIKeyResponse => CreateAPIKeyResponse.decode(value),
+    responseDeserialize: (value: Buffer): CreateAPIKeyResponse =>
+      CreateAPIKeyResponse.decode(value),
   },
 } as const;
 
@@ -259,38 +292,68 @@ export interface AuthServiceClient extends Client {
   /** CreateAPIKey creates a new API key for the authenticated user */
   createApiKey(
     request: CreateAPIKeyRequest,
-    callback: (error: ServiceError | null, response: CreateAPIKeyResponse) => void,
+    callback: (
+      error: ServiceError | null,
+      response: CreateAPIKeyResponse
+    ) => void
   ): ClientUnaryCall;
   createApiKey(
     request: CreateAPIKeyRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: CreateAPIKeyResponse) => void,
+    callback: (
+      error: ServiceError | null,
+      response: CreateAPIKeyResponse
+    ) => void
   ): ClientUnaryCall;
   createApiKey(
     request: CreateAPIKeyRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: CreateAPIKeyResponse) => void,
+    callback: (
+      error: ServiceError | null,
+      response: CreateAPIKeyResponse
+    ) => void
   ): ClientUnaryCall;
 }
 
-export const AuthServiceClient = makeGenericClientConstructor(AuthServiceService, "auth.v1.AuthService") as unknown as {
-  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): AuthServiceClient;
+export const AuthServiceClient = makeGenericClientConstructor(
+  AuthServiceService,
+  "auth.v1.AuthService"
+) as unknown as {
+  new (
+    address: string,
+    credentials: ChannelCredentials,
+    options?: Partial<ClientOptions>
+  ): AuthServiceClient;
   service: typeof AuthServiceService;
   serviceName: string;
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

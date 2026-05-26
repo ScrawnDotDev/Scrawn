@@ -5,7 +5,7 @@
 - **Dev server**: `bun run dev:backend` (gRPC - 8069, HTTP - 8070)
 - **Generate protobuf**: `bun run gen` (from proto/ directory)
 - **DB migrations**: `bunx drizzle-kit push`
-- **Type Checking: `bunx tsgo`
+- \*\*Type Checking: `bunx tsgo`
 
 ## Code Style
 
@@ -23,4 +23,5 @@
   - Use `dt.toUTC()` on any DateTime that might enter with a local zone
 
 ## Quirks
+
 - The Storage Factory can only return 1 adapter for ALL events, so either all events use Postgres or all events use Clickhouse.

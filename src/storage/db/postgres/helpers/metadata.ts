@@ -19,7 +19,9 @@ export async function upsertMetadata(
   const { payment_cron: paymentCron, payment_webhook: paymentWebhook } = input;
 
   if (!paymentCron || paymentCron.length === 0) {
-    throw StorageError.invalidData("Invalid payment_cron: at least one expression is required");
+    throw StorageError.invalidData(
+      "Invalid payment_cron: at least one expression is required"
+    );
   }
 
   if (paymentCron.some((e) => !e || e.trim().length === 0)) {
