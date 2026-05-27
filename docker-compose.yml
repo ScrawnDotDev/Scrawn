@@ -34,6 +34,27 @@ services:
       timeout: 5s
       retries: 5
 
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8070:8070"
+      - "8069:8069"
+    depends_on:
+      db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
+      NODE_ENV: production
+    volumes:
+      - .:/app
+      - /app/node_modules
+
 volumes:
   pgdata:
   chdata:

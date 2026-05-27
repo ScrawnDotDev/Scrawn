@@ -1,14 +1,26 @@
 # Scrawn Backend
 
-The backend service for Scrawn — a usage-based billing platform with gRPC and HTTP APIs for event tracking, authentication, and payment processing.
+The backend service for Scrawn - a usage-based billing platform with gRPC API endpoints for event tracking, authentication, and payment processing.
+
+## Overview
+
+Scrawn backend provides gRPC services for:
+
+- **Event tracking** - Register SDK calls and usage events
+- **Authentication** - API key management
+- **Payment processing** - Checkout link generation via Lemon Squeezy
+
+Works with the Scrawn frontend SDK. For detailed API documentation and gRPC endpoint usage, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
+
+## Railway Quickstart
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/o22nR_?referralCode=jdhNLd&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) (latest)
-- PostgreSQL 15
-- Redis 7
-- ClickHouse (optional — used for analytics storage adapter)
-- Dodo Payments account (for payment processing)
+- [Bun](https://bun.sh) (latest version)
+- PostgreSQL database
+- Lemon Squeezy account (for payment processing)
 
 ## Setup
 
@@ -20,137 +32,69 @@ The backend service for Scrawn — a usage-based billing platform with gRPC and 
 
 2. **Configure environment variables**
 
-   Copy `.env.example` to `.env.local` and fill in:
+   Create a `.env.local` file in the backend directory:
 
    ```env
    DATABASE_URL=postgresql://user:password@localhost:5432/scrawn
-   REDIS_URL=redis://localhost:6379
-   CLICKHOUSE_URL=http://localhost:8123
    HMAC_SECRET=your-hmac-secret-key
-   SENTRY_DSN=https://your-dsn@sentry.io/your-project
-   DODO_PAYMENTS_API_KEY=your-dodo-api-key
-   DODO_PAYMENTS_WEBHOOK_SECRET=your-webhook-secret
+   LEMON_SQUEEZY_API_KEY=your-ls-api-key
+   LEMON_SQUEEZY_STORE_ID=your-store-id
+   LEMON_SQUEEZY_VARIANT_ID=your-variant-id
+   LEMON_SQUEEZY_WEBHOOK_SECRET=your-webhook-secret
    ```
 
-3. **Start infrastructure**
-
-   ```bash
-   docker compose up -d db redis clickhouse
-   ```
-
-4. **Run database migrations**
+3. **Run database migrations**
 
    ```bash
    bunx drizzle-kit push
    ```
 
-5. **Generate an initial API key** (optional)
+4. **Generate initial API key** (optional)
 
    ```bash
    bun run init_key
    ```
 
-6. **Generate protocol buffers** (if proto definitions change)
-
+5. **Generate protocol buffers** (if needed)
    ```bash
    bun run gen
    ```
 
 ## Running the Server
 
-**Development** (with auto-reload):
+**Development mode** (with auto-reload):
 
 ```bash
 bun run dev:backend
 ```
 
-**Production**:
+**Production mode**:
 
 ```bash
 bun start
 ```
 
-The server listens on two ports:
-
-- **gRPC** (h2c / HTTP/2 cleartext): `localhost:8069`
-- **HTTP** (Fastify — webhooks, API routes, health check): `localhost:8070`
-
-## gRPC Services
-
-| Service          | RPC                | Description                                         |
-| ---------------- | ------------------ | --------------------------------------------------- |
-| AuthService      | CreateAPIKey       | Create a new API key                                |
-| EventService     | RegisterEvent      | Register a single usage event                       |
-| EventService     | StreamEvents       | Client-streaming batch event registration           |
-| PaymentService   | CreateCheckoutLink | Generate a Dodo Payments checkout link              |
-| QueryService     | QueryEvents        | Query events with filters, aggregation, group-by    |
-| DataQueryService | Query              | Query internal tables (users, sessions, tags, etc.) |
-
-## HTTP Endpoints
-
-| Method   | Path                                | Purpose                    |
-| -------- | ----------------------------------- | -------------------------- |
-| GET      | `/`                                 | Health check               |
-| GET      | `/checkout/:sessionId`              | Checkout redirect          |
-| POST     | `/webhooks/payment/createdCheckout` | Dodo Payments webhook      |
-| GET/POST | `/api/v1/tags`                      | Manage pricing tags        |
-| GET/POST | `/api/v1/expressions`               | Manage pricing expressions |
-| POST     | `/api/v1/internals/onboarding`      | Onboarding endpoint        |
-
-## Storage Adapters
-
-Scrawn supports two storage backends via an abstract `StorageAdapter` interface:
-
-- **PostgreSQL** (default) — full relational schema via Drizzle ORM
-- **ClickHouse** — columnar analytics DB with `ReplacingMergeTree` for event deduplication
-
-Set `STORAGE_ADAPTER` in `src/config/identifiers.ts` to switch. Only one adapter operates at a time.
+The server will start on `http://localhost:8070`
 
 ## TLS Configuration (gRPC)
 
-By default, the gRPC server runs without TLS. In production, put the backend behind a TLS-terminating proxy or enable TLS directly:
+By default, the gRPC server runs without TLS. In production, put the backend behind a TLS-terminating proxy or enable TLS directly.
+
+To enable gRPC TLS, set:
 
 ```env
 GRPC_TLS_ENABLED=true
 GRPC_TLS_CERT_PATH="/path/to/server.crt"
 GRPC_TLS_KEY_PATH="/path/to/server.key"
+# Optional
 GRPC_TLS_CA_PATH="/path/to/ca.pem"
 ```
 
-## Testing
+## Endpoints
 
-Integration and black-box tests are set up with Vitest, using an isolated test environment.
-
-1. **Configure test environment variables**
-
-   ```bash
-   cp .env.example .env.test
-   ```
-
-   Edit `.env.test` and ensure the `DATABASE_URL`, `REDIS_URL`, and `CLICKHOUSE_URL` point to test instances (separate ports/databases from development).
-
-2. **Start test infrastructure**
-
-   ```bash
-   docker compose -f docker-compose.test.yml up -d
-   ```
-
-   This runs PostgreSQL, Redis, and ClickHouse on non-overlapping ports (see the compose file).
-
-3. **Prepare test database**
-
-   ```bash
-   DATABASE_URL=postgresql://postgres:postgres@localhost:5433/scrawn_test bunx drizzle-kit push
-   ```
-
-4. **Run tests**
-
-   ```bash
-   bun run test
-   ```
-
-The test suite starts the gRPC and Fastify servers on separate ports (`18069` / `18070`) so they don't conflict with a running dev server.
+- **Connect / gRPC-Web / gRPC (h2c / HTTP/2 cleartext)**: `http://localhost:8069` (raw gRPC)
+- **Webhook**: `http://localhost:8070/webhooks/lemonsqueezy/createdCheckout`
 
 ## Documentation
 
-For complete gRPC API documentation, endpoint details, and integration guides, visit the [Scrawn Docs](https://scrawn.vercel.app/docs).
+For complete gRPC API documentation, endpoint details, and integration guides, check [API references.](https://scrawn.vercel.app/docs/api-reference).
