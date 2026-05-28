@@ -31,7 +31,7 @@ function publicKeyToPrefixed(publicKeyPem: string): string {
   return `whpk_${base64Key}`;
 }
 
-export function prefixedToPublicKeyPem(prefixedKey: string): string {
+function prefixedToPublicKeyPem(prefixedKey: string): string {
   const base64Key = prefixedKey.replace("whpk_", "");
   return `-----BEGIN PUBLIC KEY-----\n${base64Key}\n-----END PUBLIC KEY-----`;
 }
