@@ -162,7 +162,9 @@ export async function handleDodoWebhook(
         data: {
           paymentId: payment_id,
           checkoutSessionId: checkout_session_id,
+          userId: session.userId,
           mode: session.mode,
+          createdAt: session.createdAt,
         },
       });
     }
@@ -202,9 +204,12 @@ export async function handleDodoWebhook(
         data: {
           paymentId: payment_id,
           checkoutSessionId: checkout_session_id,
+          userId,
           amount: totalAmount,
           currency: "usd",
           mode,
+          billed_upto,
+          createdAt: session.createdAt,
         },
       });
     }
