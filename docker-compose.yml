@@ -56,9 +56,6 @@ services:
       CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
       NODE_ENV: production
       HMAC_SECRET: ${HMAC_SECRET}
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   dashboard:
     image: scrawndotdev/dashboard:latest
