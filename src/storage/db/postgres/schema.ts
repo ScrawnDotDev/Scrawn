@@ -250,6 +250,12 @@ export const metadataTable = pgTable("metadata", {
     withTimezone: true,
     mode: "string",
   }),
+  dodo_live_api_key: text("dodo_live_api_key"),
+  dodo_test_api_key: text("dodo_test_api_key"),
+  dodo_product_id: text("dodo_product_id").notNull().default(""),
+  dodo_webhook_secret: text("dodo_webhook_secret"),
+  currency: text("currency").notNull().default("usd"),
+  redirect_url: text("redirect_url").notNull().default("http://localhost:3000"),
 });
 
 export const expressionsTable = pgTable("expressions", {
