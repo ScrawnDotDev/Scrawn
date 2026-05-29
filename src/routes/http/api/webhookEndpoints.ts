@@ -15,6 +15,7 @@ import {
   upsertWebhookEndpoint,
   deleteWebhookEndpoint,
 } from "../../../storage/db/postgres/helpers/webhookEndpoints.ts";
+import { invalidateWebhookEndpointCache } from "../../../interceptors/auth.ts";
 import { forwardWebhook } from "../forwardWebhook.ts";
 import { DateTime } from "luxon";
 
@@ -96,6 +97,8 @@ export async function handleCreateWebhookEndpoint(
       keyPair.privateKeyPem,
       keyPair.publicKeyPrefixed
     );
+
+    invalidateWebhookEndpointCache(auth.apiKeyId);
 
     builder.setSuccess(200);
     reply.code(200);
@@ -196,6 +199,8 @@ export async function handleDeleteWebhookEndpoint(
       reply.code(404);
       return { error: "No webhook endpoint found for this API key" };
     }
+
+    invalidateWebhookEndpointCache(auth.apiKeyId);
 
     builder.setSuccess(200);
     reply.code(200);

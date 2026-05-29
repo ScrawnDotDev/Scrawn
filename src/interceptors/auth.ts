@@ -46,6 +46,15 @@ const webhookEndpointCache = Cache.getStore<string, boolean>(
   }
 );
 
+/**
+ * Invalidate the cached webhook endpoint existence for an API key.
+ * Must be called after upserting or deleting a webhook endpoint so
+ * the auth interceptor re-queries the database on the next request.
+ */
+export function invalidateWebhookEndpointCache(apiKeyId: string): void {
+  webhookEndpointCache.delete(apiKeyId);
+}
+
 interface GrpcCallContext {
   [wideEventContextKey]: WideEventBuilder | null;
   [apiKeyContextKey]: AuthContext | undefined;
