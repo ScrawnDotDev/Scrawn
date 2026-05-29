@@ -257,3 +257,76 @@ export const expressionsTable = pgTable("expressions", {
   key: text("key").notNull().unique(),
   expr: text("expr").notNull(),
 });
+
+export const webhookEndpointsTable = pgTable(
+  "webhook_endpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    apiKeyId: uuid("api_key_id")
+      .references(() => apiKeysTable.id)
+      .notNull(),
+    url: text("url").notNull(),
+    privateKey: text("private_key").notNull(),
+    publicKey: text("public_key").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp("deleted_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
+  },
+  (table) => ({
+    uniqueApiKey: uniqueIndex("unique_webhook_api_key").on(table.apiKeyId),
+  })
+);
+
+export const webhookEndpointsRelation = relations(
+  webhookEndpointsTable,
+  ({ one }) => ({
+    apiKey: one(apiKeysTable, {
+      fields: [webhookEndpointsTable.apiKeyId],
+      references: [apiKeysTable.id],
+    }),
+  })
+);
+
+export const webhookDeliveriesTable = pgTable("webhook_deliveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  endpointId: uuid("endpoint_id")
+    .references(() => webhookEndpointsTable.id)
+    .notNull(),
+  eventId: text("event_id").notNull(),
+  eventType: text("event_type").notNull(),
+  resource: text("resource").notNull(),
+  action: text("action").notNull(),
+  status: text("status", { enum: ["delivered", "failed"] }).notNull(),
+  requestBody: jsonb("request_body").$type<Record<string, unknown>>(),
+  responseStatus: integer("response_status"),
+  error: text("error"),
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+    mode: "string",
+  })
+    .defaultNow()
+    .notNull(),
+});
+
+export const webhookDeliveriesRelation = relations(
+  webhookDeliveriesTable,
+  ({ one }) => ({
+    endpoint: one(webhookEndpointsTable, {
+      fields: [webhookDeliveriesTable.endpointId],
+      references: [webhookEndpointsTable.id],
+    }),
+  })
+);

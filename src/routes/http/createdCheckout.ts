@@ -10,6 +10,7 @@ import {
 import { updateUserBilledTimestamp } from "../../storage/db/postgres/helpers/users";
 import { getPostgresDB } from "../../storage/db/postgres/db";
 import { executeInTransaction } from "../../storage/adapter/postgres/handlers/addEventUtils";
+import { forwardWebhook } from "./forwardWebhook.ts";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -154,6 +155,24 @@ export async function handleDodoWebhook(
       }
 
       builder.setSuccess(200);
+      forwardWebhook(session.apiKeyId, {
+        eventType: "payment.failed",
+        resource: "payment",
+        action: "failed",
+        data: {
+          paymentId: payment_id,
+          checkoutSessionId: checkout_session_id,
+          userId: session.userId,
+          mode: session.mode,
+          createdAt: session.createdAt,
+        },
+        rawData: {
+          business_id: webhookPayload.business_id,
+          data: webhookPayload.data,
+          timestamp: webhookPayload.timestamp,
+          type: webhookPayload.type,
+        },
+      });
     }
 
     if (webhookPayload.type === "payment.succeeded") {
@@ -182,6 +201,28 @@ export async function handleDodoWebhook(
       builder.setUser(userId);
       builder.setPaymentContext({ creditAmount });
       builder.setSuccess(200);
+
+      forwardWebhook(apiKeyId, {
+        eventType: "payment.succeeded",
+        resource: "payment",
+        action: "succeeded",
+        data: {
+          paymentId: payment_id,
+          checkoutSessionId: checkout_session_id,
+          userId,
+          amount: creditAmount,
+          currency: "usd",
+          mode,
+          billed_upto,
+          createdAt: session.createdAt,
+        },
+        rawData: {
+          business_id: webhookPayload.business_id,
+          data: webhookPayload.data,
+          timestamp: webhookPayload.timestamp,
+          type: webhookPayload.type,
+        },
+      });
     }
 
     return okResponse("Webhook processed successfully");

@@ -15,8 +15,11 @@ import { apiKeyContextKey, type AuthContext } from "../context/auth";
 import { AuthError } from "../errors/auth";
 import { apiKeyCache } from "../utils/apiKeyCache";
 import { getPostgresDB } from "../storage/db/postgres/db";
-import { apiKeysTable } from "../storage/db/postgres/schema";
-import { eq } from "drizzle-orm";
+import {
+  apiKeysTable,
+  webhookEndpointsTable,
+} from "../storage/db/postgres/schema";
+import { eq, and, isNull } from "drizzle-orm";
 import { hashAPIKey } from "../utils/hashAPIKey";
 import { DateTime } from "luxon";
 import {
@@ -25,8 +28,32 @@ import {
   isValidApiKeyFormat,
 } from "../utils/keyFormat";
 import type { ApiKeyRole } from "../utils/keyFormat";
+import { Cache } from "../utils/cacheStore";
 
 const no_auth: string[] = [];
+
+const WEBHOOK_REQUIRED_PATHS = [
+  "/event.v1.EventService/RegisterEvent",
+  "/event.v1.EventService/StreamEvents",
+  "/payment.v1.PaymentService/CreateCheckoutLink",
+];
+
+const webhookEndpointCache = Cache.getStore<string, boolean>(
+  "webhook-endpoints",
+  {
+    max: 1000,
+    ttlMs: 60 * 1000,
+  }
+);
+
+/**
+ * Invalidate the cached webhook endpoint existence for an API key.
+ * Must be called after upserting or deleting a webhook endpoint so
+ * the auth interceptor re-queries the database on the next request.
+ */
+export function invalidateWebhookEndpointCache(apiKeyId: string): void {
+  webhookEndpointCache.delete(apiKeyId);
+}
 
 interface GrpcCallContext {
   [wideEventContextKey]: WideEventBuilder | null;
@@ -57,6 +84,27 @@ export type GrpcFlexibleHandler = (
   call: any,
   callback?: sendUnaryData<unknown>
 ) => void | Promise<void>;
+
+async function checkWebhookEndpoint(apiKeyId: string): Promise<boolean> {
+  const cached = webhookEndpointCache.get(apiKeyId);
+  if (cached !== undefined) return cached;
+
+  const db = getPostgresDB();
+  const [endpoint] = await db
+    .select({ id: webhookEndpointsTable.id })
+    .from(webhookEndpointsTable)
+    .where(
+      and(
+        eq(webhookEndpointsTable.apiKeyId, apiKeyId),
+        isNull(webhookEndpointsTable.deletedAt)
+      )
+    )
+    .limit(1);
+
+  const exists = !!endpoint;
+  webhookEndpointCache.set(apiKeyId, exists);
+  return exists;
+}
 
 /**
  * Auth interceptor for gRPC — validates API key, extracts role, sets context.
@@ -103,6 +151,9 @@ export function authInterceptor<Req, Res>(
     const mode = getModeForRole(role);
     const apiKeyHash = hashAPIKey(apiKey);
 
+    const needsWebhook =
+      role !== "dashboard" && WEBHOOK_REQUIRED_PATHS.includes(fullPath);
+
     const cached = apiKeyCache.get(apiKeyHash);
     if (cached) {
       if (cached.role !== role) {
@@ -118,6 +169,24 @@ export function authInterceptor<Req, Res>(
         mode: cached.mode,
       };
       wideEventBuilder?.setAuth(cached.id, true);
+
+      if (needsWebhook) {
+        checkWebhookEndpoint(cached.id)
+          .then((hasEndpoint) => {
+            if (!hasEndpoint) {
+              return callback?.(
+                AuthError.permissionDenied(
+                  "A webhook endpoint must be configured before using this API key. " +
+                    "Register one via POST /api/v1/internals/webhook-endpoint"
+                )
+              );
+            }
+            return handler(call, callback);
+          })
+          .catch((error) => callback?.(error));
+        return;
+      }
+
       return handler(call, callback);
     }
 
@@ -161,6 +230,22 @@ export function authInterceptor<Req, Res>(
           mode: recordMode,
         };
         wideEventBuilder?.setAuth(apiKeyRecord.id, false);
+
+        if (needsWebhook) {
+          return checkWebhookEndpoint(apiKeyRecord.id)
+            .then((hasEndpoint) => {
+              if (!hasEndpoint) {
+                return callback?.(
+                  AuthError.permissionDenied(
+                    "A webhook endpoint must be configured before using this API key. " +
+                      "Register one via POST /api/v1/internals/webhook-endpoint"
+                  )
+                );
+              }
+              return handler(call, callback);
+            })
+            .catch((error) => callback?.(error));
+        }
 
         return handler(call, callback);
       })
