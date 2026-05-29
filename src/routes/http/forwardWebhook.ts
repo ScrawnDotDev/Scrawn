@@ -34,6 +34,7 @@ export interface WebhookForwardEvent {
   resource: string;
   action: string;
   data: Record<string, unknown>;
+  rawData?: Record<string, unknown>;
 }
 
 export async function forwardWebhook(
@@ -50,11 +51,15 @@ export async function forwardWebhook(
   const now = DateTime.utc();
   const timestamp = Math.floor(now.toSeconds());
 
-  const body = JSON.stringify({
+  const bodyObj: Record<string, unknown> = {
     type: event.eventType,
     timestamp: now.toISO(),
     data: event.data,
-  });
+  };
+  if (event.rawData) {
+    bodyObj.raw_data = event.rawData;
+  }
+  const body = JSON.stringify(bodyObj);
 
   const signedPayload = buildSignedPayload(webhookId, timestamp, body);
 

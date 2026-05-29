@@ -166,6 +166,12 @@ export async function handleDodoWebhook(
           mode: session.mode,
           createdAt: session.createdAt,
         },
+        rawData: {
+          business_id: webhookPayload.business_id,
+          data: webhookPayload.data,
+          timestamp: webhookPayload.timestamp,
+          type: webhookPayload.type,
+        },
       });
     }
 
@@ -196,7 +202,6 @@ export async function handleDodoWebhook(
       builder.setPaymentContext({ creditAmount });
       builder.setSuccess(200);
 
-      const totalAmount = Math.round(webhookPayload.data.total_amount);
       forwardWebhook(apiKeyId, {
         eventType: "payment.succeeded",
         resource: "payment",
@@ -205,11 +210,17 @@ export async function handleDodoWebhook(
           paymentId: payment_id,
           checkoutSessionId: checkout_session_id,
           userId,
-          amount: totalAmount,
+          amount: creditAmount,
           currency: "usd",
           mode,
           billed_upto,
           createdAt: session.createdAt,
+        },
+        rawData: {
+          business_id: webhookPayload.business_id,
+          data: webhookPayload.data,
+          timestamp: webhookPayload.timestamp,
+          type: webhookPayload.type,
         },
       });
     }
