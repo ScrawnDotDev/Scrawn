@@ -51,7 +51,7 @@ export async function upsertMetadata(
         .from(metadataTable)
         .limit(1);
 
-      const setValues: Record<string, unknown> = {};
+      const setValues: Partial<typeof metadataTable.$inferInsert> = {};
       if (input.payment_cron !== undefined)
         setValues.payment_cron = input.payment_cron;
       if (input.payment_webhook !== undefined)
@@ -78,10 +78,10 @@ export async function upsertMetadata(
         return;
       }
 
-      const insertValues: Record<string, unknown> = {
+      const insertValues: typeof metadataTable.$inferInsert = {
         payment_cron: input.payment_cron ?? [],
         ...setValues,
-      };
+      } as typeof metadataTable.$inferInsert;
       await txn.insert(metadataTable).values(insertValues);
     } catch (e) {
       throw StorageError.insertFailed(

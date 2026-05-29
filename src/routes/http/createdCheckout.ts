@@ -74,7 +74,7 @@ export async function handleDodoWebhook(
   builder: WideEventBuilder
 ): Promise<WebhookResponse> {
   try {
-    const client = getDodoClient();
+    const client = await getDodoClient();
     const headers = buildWebhookHeaders(signature, timestamp, webhookId);
     const webhookPayload = unwrapWebhookPayload(client, rawBody, headers);
 

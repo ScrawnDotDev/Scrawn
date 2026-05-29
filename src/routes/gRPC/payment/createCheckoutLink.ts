@@ -61,7 +61,7 @@ export async function createCheckoutLink(
 
     const mode = auth.mode;
 
-    const config = getPaymentProviderConfig();
+    const config = await getPaymentProviderConfig();
     const validatedData = validateRequest(req);
     wideEventBuilder?.setUser(validatedData.userId);
 

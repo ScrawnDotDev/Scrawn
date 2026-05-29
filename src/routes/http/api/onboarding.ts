@@ -8,7 +8,11 @@ import {
   generateRequestId,
 } from "../../../context/requestContext.ts";
 import { logger } from "../../../errors/logger.ts";
-import { upsertMetadata } from "../../../storage/db/postgres/helpers/metadata.ts";
+import {
+  upsertMetadata,
+  getMetadata,
+} from "../../../storage/db/postgres/helpers/metadata.ts";
+import { clearClients } from "../../gRPC/payment/paymentProvider.ts";
 
 export async function handleOnboarding(
   request: FastifyRequest,
@@ -32,7 +36,15 @@ export async function handleOnboarding(
     await upsertMetadata({
       payment_cron: validated.crons,
       payment_webhook: webhookUrl,
+      dodo_live_api_key: validated.dodoLiveApiKey ?? undefined,
+      dodo_test_api_key: validated.dodoTestApiKey ?? undefined,
+      dodo_product_id: validated.dodoProductId,
+      dodo_webhook_secret: validated.dodoWebhookSecret ?? undefined,
+      currency: validated.currency,
+      redirect_url: validated.redirectUrl,
     });
+
+    clearClients();
 
     await reloadScheduler();
 
@@ -66,6 +78,59 @@ export async function handleOnboarding(
     });
     reply.code(500);
     return { crons: [] };
+  } finally {
+    logger.emit(builder.build());
+  }
+}
+
+function maskApiKey(key: string | null | undefined): string | null {
+  if (!key) return null;
+  if (key.length <= 8) return "****";
+  return key.slice(0, 4) + "****" + key.slice(-4);
+}
+
+export async function handleGetConfig(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<Record<string, unknown>> {
+  const builder = createWideEventBuilder(
+    generateRequestId(),
+    request.method,
+    request.url
+  );
+
+  try {
+    const metadata = await getMetadata();
+
+    if (!metadata) {
+      builder.setSuccess(200);
+      reply.code(200);
+      return { configured: false };
+    }
+
+    builder.setSuccess(200);
+    reply.code(200);
+    return {
+      configured: true,
+      payment_cron: metadata.payment_cron,
+      payment_webhook: metadata.payment_webhook,
+      dodo_live_api_key: maskApiKey(metadata.dodo_live_api_key),
+      dodo_test_api_key: maskApiKey(metadata.dodo_test_api_key),
+      dodo_product_id: metadata.dodo_product_id,
+      dodo_webhook_secret: maskApiKey(metadata.dodo_webhook_secret),
+      currency: metadata.currency,
+      redirect_url: metadata.redirect_url,
+    };
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { context: "get config handler" },
+    });
+    builder.setError(500, {
+      type: "InternalError",
+      message: "Failed to read config",
+    });
+    reply.code(500);
+    return { error: "Internal server error" };
   } finally {
     logger.emit(builder.build());
   }

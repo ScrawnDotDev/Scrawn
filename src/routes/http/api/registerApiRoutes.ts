@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { handleOnboarding } from "./onboarding.ts";
+import { handleOnboarding, handleGetConfig } from "./onboarding.ts";
 import { handleListTags } from "./tags.ts";
 import { handleListExpressions } from "./expressions.ts";
 import {
@@ -66,6 +66,13 @@ export async function registerApiRoutes(
     "/api/v1/internals/webhook-endpoint/send-test",
     async (request: FastifyRequest, reply: FastifyReply) => {
       return handleSendTestWebhook(request, reply);
+    }
+  );
+
+  server.get(
+    "/api/v1/internals/config",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      return handleGetConfig(request, reply);
     }
   );
 }
