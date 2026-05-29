@@ -1,3 +1,6 @@
+# Spin up commands based on STORAGE_ADAPTER in src/config/identifiers.ts:
+#   postgres (default): docker compose up
+#   clickhouse:         docker compose --profile clickhouse up
 services:
   db:
     image: postgres:15
@@ -17,6 +20,8 @@ services:
       retries: 5
 
   clickhouse:
+    profiles:
+      - clickhouse
     image: clickhouse/clickhouse-server:latest
     restart: always
     ports:
@@ -33,6 +38,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  server:
+    image: scrawndotdev/scrawn:latest
+    restart: unless-stopped
+    ports:
+      - "8070:8070"
+      - "8069:8069"
+    depends_on:
+      db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/scrawn
+      CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
+      NODE_ENV: production
+    volumes:
+      - .:/app
+      - /app/node_modules
 
 volumes:
   pgdata:

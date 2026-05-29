@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8070 8069
 
-CMD ["sh", "-c", "for i in 1 2 3 4 5; do bunx drizzle-kit push --force && break; sleep 3; done && bun run migrate:clickhouse && bun run src/server.ts"]
+CMD ["bun", "run", "src/server.ts"]
