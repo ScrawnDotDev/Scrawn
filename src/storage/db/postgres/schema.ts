@@ -240,6 +240,10 @@ export const tagsTable = pgTable("tags", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
   amount: integer("amount").notNull(),
+  deletedAt: timestamp("deleted_at", {
+    withTimezone: true,
+    mode: "string",
+  }),
 });
 
 export const metadataTable = pgTable("metadata", {
@@ -254,8 +258,12 @@ export const metadataTable = pgTable("metadata", {
 
 export const expressionsTable = pgTable("expressions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  key: text("key").notNull().unique(),
+  key: text("key").notNull(),
   expr: text("expr").notNull(),
+  deletedAt: timestamp("deleted_at", {
+    withTimezone: true,
+    mode: "string",
+  }),
 });
 
 export const webhookEndpointsTable = pgTable(
