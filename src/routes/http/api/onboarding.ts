@@ -8,6 +8,8 @@ import {
   generateRequestId,
 } from "../../../context/requestContext.ts";
 import { logger } from "../../../errors/logger.ts";
+import { AuthError } from "../../../errors/auth.ts";
+import { authenticateHttpApiKey } from "../../../utils/authenticateHttpApiKey.ts";
 import {
   upsertMetadata,
   getMetadata,
@@ -85,7 +87,7 @@ export async function handleOnboarding(
 
 function maskApiKey(key: string | null | undefined): string | null {
   if (!key) return null;
-  if (key.length <= 8) return "****";
+  if (key.length <= 16) return "****";
   return key.slice(0, 4) + "****" + key.slice(-4);
 }
 
@@ -100,6 +102,9 @@ export async function handleGetConfig(
   );
 
   try {
+    const authHeader = request.headers.authorization;
+    await authenticateHttpApiKey(authHeader);
+
     const metadata = await getMetadata();
 
     if (!metadata) {
@@ -125,6 +130,16 @@ export async function handleGetConfig(
     Sentry.captureException(error, {
       extra: { context: "get config handler" },
     });
+
+    if (error instanceof AuthError) {
+      builder.setError(401, {
+        type: error.type,
+        message: error.message,
+      });
+      reply.code(401);
+      return { error: error.message };
+    }
+
     builder.setError(500, {
       type: "InternalError",
       message: "Failed to read config",
