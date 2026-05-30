@@ -47,7 +47,12 @@ export type StorageAdapterType =
 
 /**
  * STORAGE ADAPTER CONFIGURATION
- * Change the key here to switch storage backend.
+ * Driven by the STORAGE_ADAPTER environment variable.
  * Options: 'postgres' | 'clickhouse'
+ * Defaults to 'postgres' if not set.
  */
-export const STORAGE_ADAPTER: StorageAdapterType = STORAGE_ADAPTERS.postgres;
+const rawAdapter = process.env.STORAGE_ADAPTER ?? "postgres";
+export const STORAGE_ADAPTER: StorageAdapterType =
+  rawAdapter === "clickhouse"
+    ? STORAGE_ADAPTERS.clickhouse
+    : STORAGE_ADAPTERS.postgres;

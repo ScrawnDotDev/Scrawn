@@ -106,7 +106,7 @@ let onboardingScheduler: OnboardingScheduler | undefined;
 
 async function main(): Promise<void> {
   const tlsOptions = loadGrpcTlsOptions();
-  startRawGrpcServer(GRPC_PORT, tlsOptions);
+  await startRawGrpcServer(GRPC_PORT, tlsOptions);
   await startFastifyServer(PORT, GRPC_PORT);
 
   if (!tlsOptions) {
