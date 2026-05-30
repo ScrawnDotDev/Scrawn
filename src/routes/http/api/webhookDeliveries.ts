@@ -9,7 +9,11 @@ import { logger } from "../../../errors/logger.ts";
 import { AuthError } from "../../../errors/auth.ts";
 import { authenticateHttpApiKey } from "../../../utils/authenticateHttpApiKey.ts";
 import { getPostgresDB } from "../../../storage/db/postgres/db";
-import { webhookDeliveriesTable } from "../../../storage/db/postgres/schema";
+import {
+  webhookDeliveriesTable,
+  webhookEndpointsTable,
+  apiKeysTable,
+} from "../../../storage/db/postgres/schema";
 import { eq, desc } from "drizzle-orm";
 
 const listDeliveriesQuerySchema = z.object({
@@ -40,8 +44,30 @@ export async function handleListDeliveries(
     }
 
     const rows = await db
-      .select()
+      .select({
+        id: webhookDeliveriesTable.id,
+        eventId: webhookDeliveriesTable.eventId,
+        eventType: webhookDeliveriesTable.eventType,
+        resource: webhookDeliveriesTable.resource,
+        action: webhookDeliveriesTable.action,
+        status: webhookDeliveriesTable.status,
+        requestBody: webhookDeliveriesTable.requestBody,
+        responseStatus: webhookDeliveriesTable.responseStatus,
+        error: webhookDeliveriesTable.error,
+        createdAt: webhookDeliveriesTable.createdAt,
+        endpointUrl: webhookEndpointsTable.url,
+        apiKeyName: apiKeysTable.name,
+        apiKeyRole: apiKeysTable.role,
+      })
       .from(webhookDeliveriesTable)
+      .leftJoin(
+        webhookEndpointsTable,
+        eq(webhookDeliveriesTable.endpointId, webhookEndpointsTable.id)
+      )
+      .leftJoin(
+        apiKeysTable,
+        eq(webhookEndpointsTable.apiKeyId, apiKeysTable.id)
+      )
       .where(conditions)
       .orderBy(desc(webhookDeliveriesTable.createdAt))
       .limit(query.limit)
