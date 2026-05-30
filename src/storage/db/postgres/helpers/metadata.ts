@@ -77,7 +77,8 @@ export async function upsertMetadata(
       const [existingMetadata] = await txn
         .select({ id: metadataTable.id })
         .from(metadataTable)
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       const setValues: Partial<typeof metadataTable.$inferInsert> = {};
       if (input.payment_cron !== undefined)

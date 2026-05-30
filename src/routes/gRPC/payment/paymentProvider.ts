@@ -55,7 +55,7 @@ export { clearClients };
 
 export interface PaymentProviderConfig {
   productId: string;
-  returnUrl: string;
+  returnUrl: string | null;
 }
 
 export interface CheckoutParams {
@@ -73,7 +73,7 @@ export async function getPaymentProviderConfig(): Promise<PaymentProviderConfig>
   const metadata = await getMetadata();
 
   const productId = metadata?.dodo_product_id;
-  const returnUrl = metadata?.redirect_url ?? "";
+  const returnUrl = metadata?.redirect_url ?? null;
 
   if (!productId) {
     throw PaymentError.missingProductId();
@@ -101,7 +101,7 @@ export async function createProviderCheckout(
       user_id: params.userId,
       api_key_id: params.apiKeyId,
     },
-    return_url: config.returnUrl,
+    ...(config.returnUrl ? { return_url: config.returnUrl } : {}),
   });
 
   if (!session.checkout_url) {

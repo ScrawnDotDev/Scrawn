@@ -56,5 +56,5 @@ export const onboardingCronSchema = z.object({
     .min(1, "Dodo webhook secret is required")
     .optional(),
   currency: z.string().min(1, "Currency is required").optional(),
-  redirectUrl: z.string().url("Redirect URL must be a valid URL").optional(),
+  redirectUrl: z.url("Redirect URL must be a valid URL").optional(),
 });

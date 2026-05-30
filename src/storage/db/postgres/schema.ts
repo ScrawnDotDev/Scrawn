@@ -255,7 +255,7 @@ export const metadataTable = pgTable("metadata", {
   dodo_product_id: text("dodo_product_id").notNull().default(""),
   dodo_webhook_secret: text("dodo_webhook_secret"),
   currency: text("currency").notNull().default("usd"),
-  redirect_url: text("redirect_url").notNull().default("http://localhost:3000"),
+  redirect_url: text("redirect_url"),
 });
 
 export const expressionsTable = pgTable("expressions", {
