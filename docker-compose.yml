@@ -49,8 +49,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      clickhouse:
-        condition: service_healthy
+      # clickhouse:
+      #   condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/scrawn
       CLICKHOUSE_URL: http://default:clickhouse@clickhouse:8123/scrawn
