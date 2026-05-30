@@ -23,6 +23,10 @@ const createTagSchema = z.object({
     .nonnegative("Amount must be non-negative"),
 });
 
+const tagParamsSchema = z.object({
+  key: z.string().min(1, "Tag key is required"),
+});
+
 interface ListTagsResponse {
   tags: string[];
 }
@@ -135,7 +139,7 @@ export async function handleDeleteTag(
     const authHeader = request.headers.authorization;
     await authenticateHttpApiKey(authHeader);
 
-    const params = request.params as { key: string };
+    const params = tagParamsSchema.parse(request.params);
     const deleted = await deleteTag(params.key);
 
     if (!deleted) {

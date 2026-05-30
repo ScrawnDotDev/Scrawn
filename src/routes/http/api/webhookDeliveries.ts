@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import * as Sentry from "@sentry/bun";
+import { ZodError } from "zod";
 import { z } from "zod";
 import {
   createWideEventBuilder,
@@ -14,7 +15,7 @@ import {
   webhookEndpointsTable,
   apiKeysTable,
 } from "../../../storage/db/postgres/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 
 const listDeliveriesQuerySchema = z.object({
   apiKeyId: z.string().uuid("Invalid API key ID").optional(),
@@ -40,7 +41,16 @@ export async function handleListDeliveries(
 
     let conditions = undefined;
     if (query.apiKeyId) {
-      conditions = eq(webhookDeliveriesTable.endpointId, query.apiKeyId);
+      const endpoints = await db
+        .select({ id: webhookEndpointsTable.id })
+        .from(webhookEndpointsTable)
+        .where(eq(webhookEndpointsTable.apiKeyId, query.apiKeyId));
+      const ids = endpoints.map((e) => e.id);
+      if (ids.length > 0) {
+        conditions = inArray(webhookDeliveriesTable.endpointId, ids);
+      } else {
+        conditions = eq(webhookDeliveriesTable.endpointId, "");
+      }
     }
 
     const rows = await db
@@ -85,6 +95,15 @@ export async function handleListDeliveries(
       builder.setError(401, { type: error.type, message: error.message });
       reply.code(401);
       return { error: error.message };
+    }
+
+    if (error instanceof ZodError) {
+      const issues = error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; ");
+      builder.setError(400, { type: "ValidationError", message: issues });
+      reply.code(400);
+      return { error: issues };
     }
 
     const err = error instanceof Error ? error : new Error(String(error));
