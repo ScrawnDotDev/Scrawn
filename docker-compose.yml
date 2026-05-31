@@ -1,6 +1,8 @@
-# Spin up commands based on STORAGE_ADAPTER in src/config/identifiers.ts:
-#   postgres (default): docker compose up
-#   clickhouse:         docker compose --profile clickhouse up
+# Usage:
+#   docker compose up                                    # db only
+#   docker compose --profile clickhouse up               # db + clickhouse
+#   docker compose --profile production up               # db + server + dashboard
+#   docker compose --profile production --profile clickhouse up  # all services
 services:
   db:
     image: postgres:15
@@ -12,7 +14,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./data/pgdata:/var/lib/postgresql/data
       - ./scrawn.init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -33,7 +35,7 @@ services:
       CLICKHOUSE_PASSWORD: clickhouse
       CLICKHOUSE_DB: scrawn
     volumes:
-      - chdata:/var/lib/clickhouse
+      - ./data/chdata:/var/lib/clickhouse
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
       interval: 5s
@@ -41,6 +43,8 @@ services:
       retries: 5
 
   server:
+    profiles:
+      - production
     image: scrawndotdev/scrawn:latest
     restart: unless-stopped
     ports:
@@ -58,6 +62,8 @@ services:
       HMAC_SECRET: ${HMAC_SECRET}
 
   dashboard:
+    profiles:
+      - production
     image: scrawndotdev/dashboard:latest
     restart: unless-stopped
     ports:
@@ -72,6 +78,4 @@ services:
       SCRAWN_BASE_URL: http://server:8069
       SCRAWN_KEY: ${SCRAWN_KEY}
 
-volumes:
-  pgdata:
-  chdata:
+
