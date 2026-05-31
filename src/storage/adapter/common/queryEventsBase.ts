@@ -3,25 +3,35 @@ import type {
   QueryFilter,
 } from "../../../interface/storage/Storage";
 
-export type EventTypeLabel = "BASIC_USAGE" | "AI_TOKEN_USAGE";
+export type EventTypeLabel = "BASIC_USAGE" | "AI_TOKEN_USAGE" | "PAYMENT";
 
-export type EventTableName = "basic_usage_events" | "ai_token_usage_events";
+export type EventTableName =
+  | "basic_usage_events"
+  | "ai_token_usage_events"
+  | "payment_events";
 
 const EVENT_TYPE_TO_TABLE: Record<EventTypeLabel, EventTableName> = {
   BASIC_USAGE: "basic_usage_events",
   AI_TOKEN_USAGE: "ai_token_usage_events",
+  PAYMENT: "payment_events",
 };
 
 export const TABLE_TO_EVENT_TYPE: Record<EventTableName, EventTypeLabel> = {
   basic_usage_events: "BASIC_USAGE",
   ai_token_usage_events: "AI_TOKEN_USAGE",
+  payment_events: "PAYMENT",
 };
 
-const ALL_EVENT_TYPES: EventTypeLabel[] = ["BASIC_USAGE", "AI_TOKEN_USAGE"];
+const ALL_EVENT_TYPES: EventTypeLabel[] = [
+  "BASIC_USAGE",
+  "AI_TOKEN_USAGE",
+  "PAYMENT",
+];
 
 const ALL_TABLES: EventTableName[] = [
   "basic_usage_events",
   "ai_token_usage_events",
+  "payment_events",
 ];
 
 export const OPERATOR_SQL: Record<string, string> = {

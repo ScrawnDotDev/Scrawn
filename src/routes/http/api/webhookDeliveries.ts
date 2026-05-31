@@ -15,10 +15,13 @@ import {
   webhookEndpointsTable,
   apiKeysTable,
 } from "../../../storage/db/postgres/schema";
-import { eq, desc, inArray } from "drizzle-orm";
+import { and, eq, desc, inArray, sql } from "drizzle-orm";
 
 const listDeliveriesQuerySchema = z.object({
   apiKeyId: z.string().uuid("Invalid API key ID").optional(),
+  eventType: z.string().optional(),
+  status: z.string().optional(),
+  role: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -49,8 +52,32 @@ export async function handleListDeliveries(
       if (ids.length > 0) {
         conditions = inArray(webhookDeliveriesTable.endpointId, ids);
       } else {
-        conditions = eq(webhookDeliveriesTable.endpointId, "");
+        conditions = eq(
+          webhookDeliveriesTable.id,
+          "00000000-0000-0000-0000-000000000000"
+        );
       }
+    }
+
+    if (query.eventType) {
+      conditions = conditions
+        ? and(conditions, eq(webhookDeliveriesTable.eventType, query.eventType))
+        : eq(webhookDeliveriesTable.eventType, query.eventType);
+    }
+
+    if (query.status) {
+      conditions = conditions
+        ? and(
+            conditions,
+            sql`${webhookDeliveriesTable.status} = ${query.status}`
+          )
+        : sql`${webhookDeliveriesTable.status} = ${query.status}`;
+    }
+
+    if (query.role) {
+      conditions = conditions
+        ? and(conditions, sql`${apiKeysTable.role} = ${query.role}`)
+        : sql`${apiKeysTable.role} = ${query.role}`;
     }
 
     const rows = await db

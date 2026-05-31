@@ -22,7 +22,9 @@ interface PGFieldDef {
   aggExpr?: string;
 }
 
-type PGFieldRegistry = Record<EventTableName, Record<string, PGFieldDef>>;
+type PGFieldRegistry = Partial<
+  Record<EventTableName, Record<string, PGFieldDef>>
+>;
 
 const PG_FIELDS: PGFieldRegistry = {
   basic_usage_events: {
@@ -36,6 +38,7 @@ const PG_FIELDS: PGFieldRegistry = {
       whereCol: "idempotency_key",
       whereCast: "",
     },
+    mode: { select: "mode", whereCol: "mode", whereCast: "" },
     eventType: { select: "'BASIC_USAGE'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {
@@ -81,6 +84,7 @@ const PG_FIELDS: PGFieldRegistry = {
       whereCol: "idempotency_key",
       whereCast: "",
     },
+    mode: { select: "mode", whereCol: "mode", whereCast: "" },
     eventType: { select: "'AI_TOKEN_USAGE'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {
@@ -148,9 +152,47 @@ const PG_FIELDS: PGFieldRegistry = {
     provider: { select: "provider", whereCol: "provider", whereCast: "" },
     metadata: { select: "metadata::text", whereCol: null, whereCast: "" },
   },
+  payment_events: {
+    eventId: { select: null, whereCol: null, whereCast: "" },
+    idempotencyKey: { select: null, whereCol: null, whereCast: "" },
+    mode: { select: "mode", whereCol: "mode", whereCast: "" },
+    eventType: { select: "'PAYMENT'", whereCol: null, whereCast: "" },
+    userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
+    apiKeyId: {
+      select: "api_key_id::text",
+      whereCol: "api_key_id",
+      whereCast: "",
+    },
+    reportedTimestamp: {
+      select: "reported_timestamp::text",
+      whereCol: "reported_timestamp",
+      whereCast: "::timestamptz",
+    },
+    ingestedTimestamp: {
+      select: "ingested_timestamp::text",
+      whereCol: "ingested_timestamp",
+      whereCast: "::timestamptz",
+    },
+    basicUsageType: { select: null, whereCol: null, whereCast: "" },
+    debitAmount: { select: null, whereCol: null, whereCast: "" },
+    model: { select: null, whereCol: null, whereCast: "" },
+    inputTokens: { select: null, whereCol: null, whereCast: "" },
+    outputTokens: { select: null, whereCol: null, whereCast: "" },
+    inputDebitAmount: { select: null, whereCol: null, whereCast: "" },
+    outputDebitAmount: { select: null, whereCol: null, whereCast: "" },
+    inputCacheTokens: { select: null, whereCol: null, whereCast: "" },
+    inputCacheDebitAmount: { select: null, whereCol: null, whereCast: "" },
+    creditAmount: {
+      select: "credit_amount::text",
+      whereCol: "credit_amount",
+      whereCast: "::bigint",
+    },
+    provider: { select: null, whereCol: null, whereCast: "" },
+    metadata: { select: null, whereCol: null, whereCast: "" },
+  },
 };
 
-const OUTPUT_FIELDS = Object.keys(PG_FIELDS.basic_usage_events);
+const OUTPUT_FIELDS = Object.keys(PG_FIELDS.basic_usage_events!);
 
 function buildConditionParts(
   group: QueryFilterGroup,
