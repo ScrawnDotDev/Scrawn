@@ -8,8 +8,16 @@ export type NormalizedBasicUsageEvent = {
   debitAmount: number;
 };
 
+export type NormalizedAPIKey = {
+  id: string;
+  name: string;
+  role: string;
+  revoked: boolean;
+};
+
 export interface TestDBAdapter {
   findBasicUsageEvent(
     eventId: string
   ): Promise<NormalizedBasicUsageEvent | undefined>;
+  findAPIKey(apiKeyId: string): Promise<NormalizedAPIKey | undefined>;
 }

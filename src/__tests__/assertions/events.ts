@@ -21,3 +21,18 @@ export async function verifyBasicUsageEventStored(expected: {
   expect(row!.type).toBe(expected.type);
   expect(row!.debitAmount).toBe(expected.debitAmount);
 }
+
+export async function verifyApiKeyCreated(expected: {
+  name: string;
+  role: string;
+  revoked: boolean;
+  id: string;
+}) {
+  const db = await testDB;
+  const row = await db.findAPIKey(expected.id);
+
+  expect(row).toBeDefined();
+  expect(row!.name).toBe(expected.name);
+  expect(row!.role).toBe(expected.role);
+  expect(row!.revoked).toBe(expected.revoked);
+}

@@ -1,5 +1,9 @@
 import { getClickHouseDB } from "../../storage/db/clickhouse";
-import type { TestDBAdapter, NormalizedBasicUsageEvent } from "./types";
+import type {
+  TestDBAdapter,
+  NormalizedBasicUsageEvent,
+  NormalizedAPIKey,
+} from "./types";
 
 type ClickHouseBasicUsageRow = {
   event_id: string;
@@ -34,5 +38,10 @@ export class ClickHouseTestDB implements TestDBAdapter {
       type: row.type,
       debitAmount: row.debit_amount,
     };
+  }
+
+  async findAPIKey(apiKeyId: string): Promise<NormalizedAPIKey | undefined> {
+    const { PostgresTestDB } = await import("./postgres");
+    return new PostgresTestDB().findAPIKey(apiKeyId);
   }
 }
