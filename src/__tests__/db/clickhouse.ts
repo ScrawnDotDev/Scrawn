@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
 import { getClickHouseDB } from "../../storage/db/clickhouse";
+import { getPostgresDB } from "../../storage/db/postgres/db";
+import { apiKeysTable } from "../../storage/db/postgres/schema";
 import type {
   TestDBAdapter,
   NormalizedBasicUsageEvent,
@@ -41,7 +44,20 @@ export class ClickHouseTestDB implements TestDBAdapter {
   }
 
   async findAPIKey(apiKeyId: string): Promise<NormalizedAPIKey | undefined> {
-    const { PostgresTestDB } = await import("./postgres");
-    return new PostgresTestDB().findAPIKey(apiKeyId);
+    const db = getPostgresDB();
+    const [row] = await db
+      .select()
+      .from(apiKeysTable)
+      .where(eq(apiKeysTable.id, apiKeyId))
+      .limit(1);
+
+    if (!row) return undefined;
+
+    return {
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      revoked: row.revoked,
+    };
   }
 }

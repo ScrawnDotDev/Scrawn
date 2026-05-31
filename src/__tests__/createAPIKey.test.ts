@@ -75,11 +75,11 @@ describe("AuthService", () => {
       const res = await createAPIKey(
         authClient,
         { name: "my-test-key", expiresIn: 3600 },
-        dashboardMetadata(dashKey)
+        dashboardMetadata(dashKey, "test")
       );
 
       expect(res.apiKeyId).toBeTruthy();
-      expect(res.apiKey).toMatch(/^scrn_(test|live|dash)_/);
+      expect(res.apiKey).toMatch(/^scrn_test_/);
       expect(res.name).toBe("my-test-key");
       expect(res.createdAt).toBeTruthy();
       expect(res.expiresAt).toBeTruthy();
@@ -87,7 +87,7 @@ describe("AuthService", () => {
       await verifyApiKeyCreated({
         id: res.apiKeyId,
         name: "my-test-key",
-        role: "production",
+        role: "test",
         revoked: false,
       });
     });
