@@ -24,6 +24,7 @@ export const QUERY_FIELD_NAMES = [
   "provider",
   "metadata",
   "idempotencyKey",
+  "mode",
 ] as const;
 
 export type QueryFieldName = (typeof QUERY_FIELD_NAMES)[number];

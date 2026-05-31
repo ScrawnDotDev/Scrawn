@@ -36,6 +36,7 @@ const PG_FIELDS: PGFieldRegistry = {
       whereCol: "idempotency_key",
       whereCast: "",
     },
+    mode: { select: "mode", whereCol: "mode", whereCast: "" },
     eventType: { select: "'BASIC_USAGE'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {
@@ -81,6 +82,7 @@ const PG_FIELDS: PGFieldRegistry = {
       whereCol: "idempotency_key",
       whereCast: "",
     },
+    mode: { select: "mode", whereCol: "mode", whereCast: "" },
     eventType: { select: "'AI_TOKEN_USAGE'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {
@@ -151,6 +153,7 @@ const PG_FIELDS: PGFieldRegistry = {
   payment_events: {
     eventId: { select: null, whereCol: null, whereCast: "" },
     idempotencyKey: { select: null, whereCol: null, whereCast: "" },
+    mode: { select: "mode", whereCol: "mode", whereCast: "" },
     eventType: { select: "'PAYMENT'", whereCol: null, whereCast: "" },
     userId: { select: "user_id::text", whereCol: "user_id", whereCast: "" },
     apiKeyId: {

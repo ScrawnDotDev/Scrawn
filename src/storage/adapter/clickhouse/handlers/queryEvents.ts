@@ -29,6 +29,7 @@ const CH_FIELDS: Record<EventTableName, Record<ChFieldKey, ChFieldDef>> = {
   basic_usage_events: {
     eventId: { select: "event_id", where: "event_id" },
     idempotencyKey: { select: "idempotency_key", where: "idempotency_key" },
+    mode: { select: "mode", where: "mode" },
     eventType: { select: "'BASIC_USAGE'", where: null },
     userId: { select: "user_id", where: "user_id" },
     apiKeyId: { select: "api_key_id", where: "api_key_id" },
@@ -56,6 +57,7 @@ const CH_FIELDS: Record<EventTableName, Record<ChFieldKey, ChFieldDef>> = {
   ai_token_usage_events: {
     eventId: { select: "event_id", where: "event_id" },
     idempotencyKey: { select: "idempotency_key", where: "idempotency_key" },
+    mode: { select: "mode", where: "mode" },
     eventType: { select: "'AI_TOKEN_USAGE'", where: null },
     userId: { select: "user_id", where: "user_id" },
     apiKeyId: { select: "api_key_id", where: "api_key_id" },
