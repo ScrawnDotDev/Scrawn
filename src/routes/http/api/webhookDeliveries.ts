@@ -51,7 +51,10 @@ export async function handleListDeliveries(
       if (ids.length > 0) {
         conditions = inArray(webhookDeliveriesTable.endpointId, ids);
       } else {
-        conditions = eq(webhookDeliveriesTable.endpointId, "");
+        conditions = eq(
+          webhookDeliveriesTable.id,
+          "00000000-0000-0000-0000-000000000000"
+        );
       }
     }
 
