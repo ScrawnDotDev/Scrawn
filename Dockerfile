@@ -1,3 +1,4 @@
+FROM envoyproxy/envoy:tools-dev-86dd82f76a61e38a2de7b411c9da755cd9f67f4c AS envoy-bin
 FROM oven/bun:1
 
 WORKDIR /app
@@ -7,6 +8,12 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-EXPOSE 8070 8069
+COPY --from=envoy-bin /usr/local/bin/envoy /usr/local/bin/envoy
 
-CMD ["sh", "-c", "for i in 1 2 3 4 5; do bunx drizzle-kit push --force && break; sleep 3; done && bun run src/server.ts"]
+COPY envoy/envoy.yaml /etc/envoy/envoy.yaml
+COPY envoy/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 8060
+
+ENTRYPOINT ["/entrypoint.sh"]

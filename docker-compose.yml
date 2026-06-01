@@ -1,7 +1,7 @@
 # Usage:
 #   docker compose up                                    # db only
 #   docker compose --profile clickhouse up               # db + clickhouse
-#   docker compose --profile production up               # db + server + dashboard
+#   docker compose --profile production up               # db + server (with envoy) + dashboard
 #   docker compose --profile production --profile clickhouse up  # all services
 services:
   db:
@@ -48,8 +48,7 @@ services:
     image: scrawndotdev/scrawn:latest
     restart: unless-stopped
     ports:
-      - "8070:8070"
-      - "8069:8069"
+      - "8060:8060"
     depends_on:
       db:
         condition: service_healthy
