@@ -14,6 +14,7 @@
     "test:ui": "vitest --ui",
     "start": "bun run src/server.ts",
     "init_key": "bun run src/utils/generateInitialAPIKey.ts",
+    "db:create_dashboard": "bun run src/utils/createDashboardDB.ts",
     "format": "bunx prettier --write .",
     "typecheck": "bunx tsgo",
     "migrate:clickhouse": "bun run src/storage/adapter/clickhouse/migrate.ts",
