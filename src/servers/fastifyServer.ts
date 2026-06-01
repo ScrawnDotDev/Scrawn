@@ -33,7 +33,7 @@ export async function startFastifyServer(
   await registerWebhookRoutes(server);
   await registerApiRoutes(server);
 
-  await server.listen({ host: "localhost", port });
+  await server.listen({ host: "0.0.0.0", port });
 
   logger.lifecycle("Server started", {
     httpPort: port,

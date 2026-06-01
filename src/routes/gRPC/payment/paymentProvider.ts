@@ -56,6 +56,7 @@ export { clearClients };
 export interface PaymentProviderConfig {
   productId: string;
   returnUrl: string | null;
+  currency: string;
 }
 
 export interface CheckoutParams {
@@ -72,6 +73,10 @@ export interface CheckoutResult {
 export async function getPaymentProviderConfig(): Promise<PaymentProviderConfig> {
   const metadata = await getMetadata();
 
+  if (!metadata) {
+    throw PaymentError.missingMetadata();
+  }
+
   const productId = metadata?.dodo_product_id;
   const returnUrl = metadata?.redirect_url ?? null;
 
@@ -79,7 +84,7 @@ export async function getPaymentProviderConfig(): Promise<PaymentProviderConfig>
     throw PaymentError.missingProductId();
   }
 
-  return { productId, returnUrl };
+  return { productId, returnUrl, currency: metadata.currency };
 }
 
 export async function createProviderCheckout(
@@ -102,6 +107,8 @@ export async function createProviderCheckout(
       api_key_id: params.apiKeyId,
     },
     ...(config.returnUrl ? { return_url: config.returnUrl } : {}),
+    billing_currency:
+      config.currency.toUpperCase() as import("dodopayments/resources/misc").Currency,
   });
 
   if (!session.checkout_url) {

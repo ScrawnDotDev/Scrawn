@@ -4,6 +4,7 @@ enum PaymentErrorType {
   VALIDATION_FAILED = "VALIDATION_FAILED",
   MISSING_API_KEY = "MISSING_API_KEY",
   MISSING_PRODUCT_ID = "MISSING_PRODUCT_ID",
+  MISSING_METADATA = "MISSING_METADATA",
   INVALID_CHECKOUT_RESPONSE = "INVALID_CHECKOUT_RESPONSE",
   PRICE_CALCULATION_FAILED = "PRICE_CALCULATION_FAILED",
 }
@@ -53,6 +54,15 @@ export class PaymentError extends Error {
     return new PaymentError({
       type: PaymentErrorType.MISSING_PRODUCT_ID,
       message: "Dodo product ID is not configured",
+      code: Status.FAILED_PRECONDITION,
+      originalError,
+    });
+  }
+
+  static missingMetadata(originalError?: Error): PaymentError {
+    return new PaymentError({
+      type: PaymentErrorType.MISSING_METADATA,
+      message: "Payment provider metadata is not configured",
       code: Status.FAILED_PRECONDITION,
       originalError,
     });
