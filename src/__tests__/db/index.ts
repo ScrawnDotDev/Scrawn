@@ -2,6 +2,7 @@ import type { TestDBAdapter } from "./types";
 import { sql } from "drizzle-orm";
 import { getPostgresDB } from "../../storage/db/postgres/db";
 import { getClickHouseDB } from "../../storage/db/clickhouse";
+import { Cache } from "../../utils/cacheStore";
 
 export type { TestDBAdapter, NormalizedBasicUsageEvent } from "./types";
 
@@ -17,6 +18,8 @@ async function resolveAdapter(): Promise<TestDBAdapter> {
 export const testDB: Promise<TestDBAdapter> = resolveAdapter();
 
 export async function clearDatabase() {
+  Cache.getStore("api-keys").clear();
+  Cache.getStore("webhook-endpoints").clear();
   const db = getPostgresDB();
   await db.execute(sql`
     TRUNCATE TABLE

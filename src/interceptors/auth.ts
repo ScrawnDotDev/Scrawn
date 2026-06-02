@@ -202,7 +202,7 @@ export function authInterceptor<Req, Res>(
 
         if (
           DateTime.utc() >
-          DateTime.fromISO(apiKeyRecord.expiresAt, { zone: "utc" })
+          DateTime.fromSQL(apiKeyRecord.expiresAt, { zone: "utc" })
         ) {
           return callback?.(AuthError.expiredAPIKey());
         }

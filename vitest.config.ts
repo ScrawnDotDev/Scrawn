@@ -18,5 +18,6 @@ export default defineConfig({
     },
     include: ["**/*.test.ts", "**/*.spec.ts"],
     exclude: ["node_modules", "dist", ".idea", ".git", ".cache"],
+    fileParallelism: false,
   },
 });
