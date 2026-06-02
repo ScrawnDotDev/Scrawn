@@ -74,7 +74,8 @@ services:
       DATABASE_URL: postgres://postgres:postgres@db:5432/dashboard
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: http://localhost:3000
-      SCRAWN_BASE_URL: http://server:8069
+      SCRAWN_BASE_URL: http://server:8060
+      SCRAWN_HTTP_URL: http://server:8060
       SCRAWN_KEY: ${SCRAWN_KEY}
 
 
