@@ -21,10 +21,10 @@ export async function registerWebhookRoutes(
   server: ReturnType<(typeof import("fastify"))["fastify"]>
 ): Promise<void> {
   server.post(
-    "/webhooks/payment/createdCheckout",
+    "/webhooks/payment/createdCheckout/:projectId",
     { config: { rawBody: true } },
     async (
-      request: FastifyRequest & {
+      request: FastifyRequest<{ Params: { projectId: string } }> & {
         rawBody?: string;
       },
       reply: FastifyReply
@@ -36,6 +36,16 @@ export async function registerWebhookRoutes(
       );
 
       try {
+        const projectId = request.params.projectId;
+        if (!projectId) {
+          builder.setError(400, {
+            type: "ValidationError",
+            message: "Missing 'projectId' path parameter.",
+          });
+          reply.code(400);
+          return { error: "Missing projectId path parameter" };
+        }
+
         const mode = (request.query as Record<string, string>)?.mode;
         if (mode !== "production" && mode !== "test") {
           builder.setError(400, {
@@ -72,6 +82,7 @@ export async function registerWebhookRoutes(
           timestamp,
           webhookId,
           mode,
+          projectId,
           builder
         );
 

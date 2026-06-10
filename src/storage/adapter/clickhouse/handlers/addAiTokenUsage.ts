@@ -139,6 +139,7 @@ function buildAiTokenInsertRows(
       idempotency_key: aggEvent.idempotencyKey,
       user_id: aggEvent.userId,
       api_key_id: auth.apiKeyId,
+      project_id: auth.projectId,
       mode: auth.mode,
       reported_timestamp: aggEvent.reported_timestamp,
       ingested_timestamp: now,

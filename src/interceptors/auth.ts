@@ -18,6 +18,7 @@ import { getPostgresDB } from "../storage/db/postgres/db";
 import {
   apiKeysTable,
   webhookEndpointsTable,
+  projectsTable,
 } from "../storage/db/postgres/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { hashAPIKey } from "../utils/hashAPIKey";
@@ -46,6 +47,11 @@ const webhookEndpointCache = Cache.getStore<string, boolean>(
   }
 );
 
+const projectExistsCache = Cache.getStore<string, boolean>("projects", {
+  max: 500,
+  ttlMs: 5 * 60 * 1000,
+});
+
 /**
  * Invalidate the cached webhook endpoint existence for an API key.
  * Must be called after upserting or deleting a webhook endpoint so
@@ -53,6 +59,22 @@ const webhookEndpointCache = Cache.getStore<string, boolean>(
  */
 export function invalidateWebhookEndpointCache(apiKeyId: string): void {
   webhookEndpointCache.delete(apiKeyId);
+}
+
+async function checkProjectExists(projectId: string): Promise<boolean> {
+  const cached = projectExistsCache.get(projectId);
+  if (cached !== undefined) return cached;
+
+  const db = getPostgresDB();
+  const [row] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId))
+    .limit(1);
+
+  const exists = !!row;
+  projectExistsCache.set(projectId, exists);
+  return exists;
 }
 
 interface GrpcCallContext {
@@ -107,7 +129,7 @@ async function checkWebhookEndpoint(apiKeyId: string): Promise<boolean> {
 }
 
 /**
- * Auth interceptor for gRPC — validates API key, extracts role, sets context.
+ * Auth interceptor for gRPC — validates API key, extracts role, reads project ID, sets context.
  */
 export function authInterceptor<Req, Res>(
   methodPath: string,
@@ -148,11 +170,69 @@ export function authInterceptor<Req, Res>(
       return callback?.(AuthError.invalidAPIKey("Invalid API key format"));
     }
 
+    const projectId = call.metadata.get("x-project-id")?.[0] as
+      | string
+      | undefined;
+
+    if (!projectId) {
+      return callback?.(
+        AuthError.permissionDenied(
+          "Missing required 'x-project-id' metadata header"
+        )
+      );
+    }
+
     const mode = getModeForRole(role);
     const apiKeyHash = hashAPIKey(apiKey);
 
     const needsWebhook =
       role !== "dashboard" && WEBHOOK_REQUIRED_PATHS.includes(fullPath);
+
+    const resolveWithProject = (
+      apiKeyId: string,
+      apiKeyRole: ApiKeyRole,
+      apiKeyMode: "production" | "test" | null
+    ) =>
+      checkProjectExists(projectId)
+        .then((exists) => {
+          if (!exists) {
+            return callback?.(
+              AuthError.permissionDenied(`Project '${projectId}' not found`)
+            );
+          }
+
+          call[apiKeyContextKey] = {
+            apiKeyId,
+            role: apiKeyRole,
+            mode: apiKeyMode,
+            projectId,
+          };
+          wideEventBuilder?.setAuth(apiKeyId, true);
+
+          if (needsWebhook) {
+            return checkWebhookEndpoint(apiKeyId)
+              .then((hasEndpoint) => {
+                if (!hasEndpoint) {
+                  return callback?.(
+                    AuthError.permissionDenied(
+                      "A webhook endpoint must be configured before using this API key. " +
+                        "Register one via POST /api/v1/internals/webhook-endpoint"
+                    )
+                  );
+                }
+                return handler(call, callback);
+              })
+              .catch((error) => callback?.(error));
+          }
+
+          return handler(call, callback);
+        })
+        .catch((error) =>
+          callback?.({
+            code: grpcStatus.UNAVAILABLE,
+            details: error instanceof Error ? error.message : String(error),
+          })
+        );
 
     const cached = apiKeyCache.get(apiKeyHash);
     if (cached) {
@@ -163,30 +243,7 @@ export function authInterceptor<Req, Res>(
           )
         );
       }
-      call[apiKeyContextKey] = {
-        apiKeyId: cached.id,
-        role: cached.role,
-        mode: cached.mode,
-      };
-      wideEventBuilder?.setAuth(cached.id, true);
-
-      if (needsWebhook) {
-        return checkWebhookEndpoint(cached.id)
-          .then((hasEndpoint) => {
-            if (!hasEndpoint) {
-              return callback?.(
-                AuthError.permissionDenied(
-                  "A webhook endpoint must be configured before using this API key. " +
-                    "Register one via POST /api/v1/internals/webhook-endpoint"
-                )
-              );
-            }
-            return handler(call, callback);
-          })
-          .catch((error) => callback?.(error));
-      }
-
-      return handler(call, callback);
+      return resolveWithProject(cached.id, cached.role, cached.mode);
     }
 
     return lookupApiKey(apiKeyHash)
@@ -223,35 +280,11 @@ export function authInterceptor<Req, Res>(
           expiresAt: apiKeyRecord.expiresAt,
         });
 
-        call[apiKeyContextKey] = {
-          apiKeyId: apiKeyRecord.id,
-          role: apiKeyRecord.role as ApiKeyRole,
-          mode: recordMode,
-        };
-        wideEventBuilder?.setAuth(apiKeyRecord.id, false);
-
-        if (needsWebhook) {
-          return checkWebhookEndpoint(apiKeyRecord.id)
-            .then((hasEndpoint) => {
-              if (!hasEndpoint) {
-                return callback?.(
-                  AuthError.permissionDenied(
-                    "A webhook endpoint must be configured before using this API key. " +
-                      "Register one via POST /api/v1/internals/webhook-endpoint"
-                  )
-                );
-              }
-              return handler(call, callback);
-            })
-            .catch((error) => {
-              return callback?.({
-                code: grpcStatus.UNAVAILABLE,
-                details: error instanceof Error ? error.message : String(error),
-              });
-            });
-        }
-
-        return handler(call, callback);
+        return resolveWithProject(
+          apiKeyRecord.id,
+          apiKeyRecord.role as ApiKeyRole,
+          recordMode
+        );
       })
       .catch((error) => {
         return callback?.({

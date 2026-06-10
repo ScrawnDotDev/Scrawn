@@ -123,6 +123,7 @@ function buildAiTokenInsertValues(
     ingestedTimestamp: DateTime.utc().toString(),
     userId: aggEvent.userId,
     apiKeyId: auth.apiKeyId,
+    projectId: auth.projectId,
     mode: auth.mode as "production" | "test",
     model: aggEvent.model,
     provider: aggEvent.provider,

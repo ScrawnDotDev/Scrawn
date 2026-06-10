@@ -41,6 +41,7 @@ export async function handleAddBasicUsage(
           idempotency_key: event_data.idempotencyKey,
           user_id: event_data.userId,
           api_key_id: auth.apiKeyId,
+          project_id: auth.projectId,
           mode: auth.mode,
           reported_timestamp: reportedTimestamp,
           ingested_timestamp: toClickHouseDateTime(DateTime.utc()),

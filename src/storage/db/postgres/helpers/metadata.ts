@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { executeInTransaction } from "../../../adapter/postgres/handlers/addEventUtils";
 
 export type UpsertMetadataInput = {
+  projectId: string;
   dodo_live_api_key?: string;
   dodo_test_api_key?: string;
   dodo_live_product_id?: string;
@@ -25,6 +26,7 @@ export async function upsertMetadata(
       const [existingMetadata] = await txn
         .select({ id: metadataTable.id })
         .from(metadataTable)
+        .where(eq(metadataTable.projectId, input.projectId))
         .limit(1)
         .for("update");
 
@@ -56,6 +58,7 @@ export async function upsertMetadata(
       }
 
       const insertValues: typeof metadataTable.$inferInsert = {
+        projectId: input.projectId,
         ...setValues,
       } as typeof metadataTable.$inferInsert;
       await txn.insert(metadataTable).values(insertValues);
@@ -68,10 +71,14 @@ export async function upsertMetadata(
   });
 }
 
-export async function getMetadata(): Promise<
-  typeof metadataTable.$inferSelect | undefined
-> {
+export async function getMetadata(
+  projectId: string
+): Promise<typeof metadataTable.$inferSelect | undefined> {
   const db = getPostgresDB();
-  const [metadata] = await db.select().from(metadataTable).limit(1);
+  const [metadata] = await db
+    .select()
+    .from(metadataTable)
+    .where(eq(metadataTable.projectId, projectId))
+    .limit(1);
   return metadata;
 }

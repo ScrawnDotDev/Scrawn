@@ -14,6 +14,25 @@ import { USER_ID_CONFIG } from "../../../config/identifiers";
 import { DateTime } from "luxon";
 import { type Metrics } from "../../../zod/metrics";
 
+export const projectsTable = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+    mode: "string",
+  })
+    .defaultNow()
+    .notNull(),
+});
+
+export const projectsRelation = relations(projectsTable, ({ many }) => ({
+  sessions: many(sessionsTable),
+  basicUsageEvents: many(basicUsageEventsTable),
+  aiTokenUsageEvents: many(aiTokenUsageEventsTable),
+  paymentEvents: many(paymentEventsTable),
+  metadata: many(metadataTable),
+}));
+
 export const usersTable = pgTable("users", {
   id: USER_ID_CONFIG.dbType("id").primaryKey(),
   last_billed_timestamp: timestamp("last_billed_timestamp", {
@@ -49,6 +68,9 @@ export const sessionsTable = pgTable(
     apiKeyId: uuid("api_key_id")
       .references(() => apiKeysTable.id)
       .notNull(),
+    projectId: uuid("project_id")
+      .references(() => projectsTable.id)
+      .notNull(),
     billed_upto: timestamp("billed_upto", {
       withTimezone: true,
       mode: "string",
@@ -77,6 +99,10 @@ export const sessionRelations = relations(sessionsTable, ({ one, many }) => ({
   apiKey: one(apiKeysTable, {
     fields: [sessionsTable.apiKeyId],
     references: [apiKeysTable.id],
+  }),
+  project: one(projectsTable, {
+    fields: [sessionsTable.projectId],
+    references: [projectsTable.id],
   }),
   paymentEvents: many(paymentEventsTable),
 }));
@@ -140,6 +166,9 @@ export const basicUsageEventsTable = pgTable("basic_usage_events", {
   apiKeyId: uuid("api_key_id")
     .references(() => apiKeysTable.id)
     .notNull(),
+  projectId: uuid("project_id")
+    .references(() => projectsTable.id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] }).notNull(),
   type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
   debitAmount: bigint("debit_amount", { mode: "number" }).notNull(),
@@ -156,6 +185,10 @@ export const basicUsageEventsRelation = relations(
     apiKey: one(apiKeysTable, {
       fields: [basicUsageEventsTable.apiKeyId],
       references: [apiKeysTable.id],
+    }),
+    project: one(projectsTable, {
+      fields: [basicUsageEventsTable.projectId],
+      references: [projectsTable.id],
     }),
   })
 );
@@ -178,6 +211,9 @@ export const paymentEventsTable = pgTable("payment_events", {
   apiKeyId: uuid("api_key_id")
     .references(() => apiKeysTable.id)
     .notNull(),
+  projectId: uuid("project_id")
+    .references(() => projectsTable.id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] }).notNull(),
   creditAmount: bigint("credit_amount", { mode: "number" }).notNull(),
   proxyId: uuid("proxy_id")
@@ -195,6 +231,10 @@ export const paymentEventsRelation = relations(
     apiKey: one(apiKeysTable, {
       fields: [paymentEventsTable.apiKeyId],
       references: [apiKeysTable.id],
+    }),
+    project: one(projectsTable, {
+      fields: [paymentEventsTable.projectId],
+      references: [projectsTable.id],
     }),
     session: one(sessionsTable, {
       fields: [paymentEventsTable.proxyId],
@@ -223,6 +263,9 @@ export const aiTokenUsageEventsTable = pgTable("ai_token_usage_events", {
   apiKeyId: uuid("api_key_id")
     .references(() => apiKeysTable.id)
     .notNull(),
+  projectId: uuid("project_id")
+    .references(() => projectsTable.id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] }).notNull(),
   model: text("model").notNull(),
   provider: text("provider").notNull(),
@@ -241,6 +284,10 @@ export const aiTokenUsageEventsRelation = relations(
       fields: [aiTokenUsageEventsTable.apiKeyId],
       references: [apiKeysTable.id],
     }),
+    project: one(projectsTable, {
+      fields: [aiTokenUsageEventsTable.projectId],
+      references: [projectsTable.id],
+    }),
   })
 );
 
@@ -254,21 +301,37 @@ export const tagsTable = pgTable("tags", {
   }),
 });
 
-export const metadataTable = pgTable("metadata", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  last_run_at: timestamp("last_run_at", {
-    withTimezone: true,
-    mode: "string",
+export const metadataTable = pgTable(
+  "metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .references(() => projectsTable.id)
+      .notNull(),
+    last_run_at: timestamp("last_run_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
+    dodo_live_api_key: text("dodo_live_api_key").notNull(),
+    dodo_test_api_key: text("dodo_test_api_key").notNull(),
+    dodo_live_product_id: text("dodo_live_product_id").notNull(),
+    dodo_test_product_id: text("dodo_test_product_id").notNull(),
+    dodo_live_webhook_secret: text("dodo_live_webhook_secret").notNull(),
+    dodo_test_webhook_secret: text("dodo_test_webhook_secret").notNull(),
+    currency: text("currency").notNull().default("usd"),
+    redirect_url: text("redirect_url").notNull(),
+  },
+  (table) => ({
+    uniqueProject: uniqueIndex("unique_metadata_project").on(table.projectId),
+  })
+);
+
+export const metadataRelation = relations(metadataTable, ({ one }) => ({
+  project: one(projectsTable, {
+    fields: [metadataTable.projectId],
+    references: [projectsTable.id],
   }),
-  dodo_live_api_key: text("dodo_live_api_key").notNull(),
-  dodo_test_api_key: text("dodo_test_api_key").notNull(),
-  dodo_live_product_id: text("dodo_live_product_id").notNull(),
-  dodo_test_product_id: text("dodo_test_product_id").notNull(),
-  dodo_live_webhook_secret: text("dodo_live_webhook_secret").notNull(),
-  dodo_test_webhook_secret: text("dodo_test_webhook_secret").notNull(),
-  currency: text("currency").notNull().default("usd"),
-  redirect_url: text("redirect_url").notNull(),
-});
+}));
 
 export const expressionsTable = pgTable("expressions", {
   id: uuid("id").primaryKey().defaultRandom(),

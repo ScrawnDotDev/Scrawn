@@ -72,11 +72,13 @@ export async function handleDodoWebhook(
   timestamp: string | undefined,
   webhookId: string | undefined,
   mode: "production" | "test",
+  projectId: string,
   builder: WideEventBuilder
 ): Promise<WebhookResponse> {
   try {
     const client = await getDodoClient(
-      mode === "production" ? "production" : "test"
+      mode === "production" ? "production" : "test",
+      projectId
     );
     const headers = buildWebhookHeaders(signature, timestamp, webhookId);
     const webhookPayload = unwrapWebhookPayload(client, rawBody, headers);
@@ -197,6 +199,7 @@ export async function handleDodoWebhook(
           apiKeyId,
           mode,
           session.proxy_link_id,
+          session.projectId,
           txn
         );
       });

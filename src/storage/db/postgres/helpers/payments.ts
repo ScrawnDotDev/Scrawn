@@ -10,6 +10,7 @@ export async function handleAddPayment(
   apiKeyId: string,
   mode: "test" | "production",
   proxyId: string,
+  projectId: string,
   txn?: PgTransaction<any, any, any>
 ): Promise<{ id: string }> {
   if (
@@ -36,6 +37,7 @@ export async function handleAddPayment(
         mode,
         creditAmount,
         proxyId,
+        projectId,
       })
       .returning({ id: paymentEventsTable.id });
 

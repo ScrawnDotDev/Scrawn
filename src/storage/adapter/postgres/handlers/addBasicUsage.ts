@@ -44,6 +44,7 @@ export async function handleAddBasicUsage(
             ingestedTimestamp: DateTime.utc().toString(),
             userId: event_data.userId,
             apiKeyId: auth.apiKeyId,
+            projectId: auth.projectId,
             mode: auth.mode as "production" | "test",
             type: event_data.data.basicUsageType,
             debitAmount: event_data.data.debitAmount,

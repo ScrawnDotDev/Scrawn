@@ -44,7 +44,12 @@ export async function authenticateHttpApiKey(
         `Key prefix ${role} doesn't match stored role ${cached.role}`
       );
     }
-    return { apiKeyId: cached.id, role: cached.role, mode: cached.mode };
+    return {
+      apiKeyId: cached.id,
+      role: cached.role,
+      mode: cached.mode,
+      projectId: "",
+    };
   }
 
   const apiKeyRecord = await findApiKeyByHash(apiKeyHash);
@@ -79,5 +84,5 @@ export async function authenticateHttpApiKey(
     expiresAt: apiKeyRecord.expiresAt,
   });
 
-  return { apiKeyId: apiKeyRecord.id, role: recordRole, mode };
+  return { apiKeyId: apiKeyRecord.id, role: recordRole, mode, projectId: "" };
 }

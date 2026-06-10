@@ -71,6 +71,7 @@ export async function runClickHousePriceQuery(
     }
 
     params.mode = auth.mode;
+    params.projectId = auth.projectId;
 
     const rs = await chClient.query({
       query,
