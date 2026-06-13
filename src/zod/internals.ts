@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+const currencyMap = {
+  usd: "USD",
+  eur: "EUR",
+  gbp: "GBP",
+  inr: "INR",
+  jpy: "JPY",
+} as const;
+
 export interface FilterGroupOutput<C> {
   logical: "AND" | "OR";
   conditions: C[];
@@ -35,8 +43,8 @@ export function createFilterGroupSchema<C extends z.ZodTypeAny>(
 export const onboardingSchema = z.object({
   dodoLiveApiKey: z.string().min(1, "Dodo live API key is required"),
   dodoTestApiKey: z.string().min(1, "Dodo test API key is required"),
-  dodoLiveProductId: z.string().min(1, "Dodo live product ID is required"),
-  dodoTestProductId: z.string().min(1, "Dodo test product ID is required"),
-  currency: z.string().min(1, "Currency is required"),
+  currency: z
+    .enum(["usd", "eur", "gbp", "inr", "jpy"])
+    .transform((c) => currencyMap[c]),
   redirectUrl: z.url("Redirect URL must be a valid URL"),
 });

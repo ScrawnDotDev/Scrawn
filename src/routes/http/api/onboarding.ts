@@ -55,30 +55,63 @@ export async function handleOnboarding(
 
     let liveSecret: string;
     let testSecret: string;
+    let liveProductId: string;
+    let testProductId: string;
     try {
-      const liveWebhook = await liveClient.webhooks.create({
-        url: `${appUrl}/webhooks/payment/createdCheckout?mode=production`,
-        description: "Scrawn live payment webhook",
-        filter_types: ["payment.succeeded", "payment.failed"],
-      });
+      const [liveWebhook, testWebhook, liveProduct, testProduct] =
+        await Promise.all([
+          liveClient.webhooks.create({
+            url: `${appUrl}/webhooks/payment/createdCheckout?mode=production`,
+            description: "Scrawn live payment webhook",
+            filter_types: ["payment.succeeded", "payment.failed"],
+          }),
+          testClient.webhooks.create({
+            url: `${appUrl}/webhooks/payment/createdCheckout?mode=test`,
+            description: "Scrawn test payment webhook",
+            filter_types: ["payment.succeeded", "payment.failed"],
+          }),
+          liveClient.products.create({
+            name: "Scrawn Billing",
+            price: {
+              type: "one_time_price",
+              currency: validated.currency,
+              price: 0,
+              pay_what_you_want: true,
+              purchasing_power_parity: false,
+              discount: 0,
+            },
+            tax_category: "saas",
+          }),
+          testClient.products.create({
+            name: "Scrawn Billing",
+            price: {
+              type: "one_time_price",
+              currency: validated.currency,
+              price: 0,
+              pay_what_you_want: true,
+              purchasing_power_parity: false,
+              discount: 0,
+            },
+            tax_category: "saas",
+          }),
+        ]);
+
       liveSecret = (await liveClient.webhooks.retrieveSecret(liveWebhook.id))
         .secret;
-
-      const testWebhook = await testClient.webhooks.create({
-        url: `${appUrl}/webhooks/payment/createdCheckout?mode=test`,
-        description: "Scrawn test payment webhook",
-        filter_types: ["payment.succeeded", "payment.failed"],
-      });
       testSecret = (await testClient.webhooks.retrieveSecret(testWebhook.id))
         .secret;
+      liveProductId = liveProduct.product_id;
+      testProductId = testProduct.product_id;
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       Sentry.captureException(error, {
-        extra: { context: "dodo webhook registration during onboarding" },
+        extra: {
+          context: "dodo webhook/product registration during onboarding",
+        },
       });
       builder.setError(400, {
         type: "DodoApiError",
-        message: `Failed to register webhook with Dodo: ${errMsg}`,
+        message: `Failed to configure Dodo resources: ${errMsg}`,
       });
       reply.code(400);
       return {};
@@ -87,8 +120,8 @@ export async function handleOnboarding(
     await upsertMetadata({
       dodo_live_api_key: encrypt(validated.dodoLiveApiKey),
       dodo_test_api_key: encrypt(validated.dodoTestApiKey),
-      dodo_live_product_id: validated.dodoLiveProductId,
-      dodo_test_product_id: validated.dodoTestProductId,
+      dodo_live_product_id: liveProductId,
+      dodo_test_product_id: testProductId,
       dodo_live_webhook_secret: encrypt(liveSecret),
       dodo_test_webhook_secret: encrypt(testSecret),
       currency: validated.currency,
