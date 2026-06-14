@@ -86,12 +86,12 @@ export async function handleCreateTag(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
     const body = await request.body;
     const validated = createTagSchema.parse(body);
 
-    await createTag(validated.key, validated.amount);
+    await createTag(validated.key, validated.amount, project_id);
 
     builder.setSuccess(200);
     reply.code(200);

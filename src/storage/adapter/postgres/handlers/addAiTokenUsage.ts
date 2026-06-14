@@ -141,6 +141,7 @@ function buildAiTokenInsertValues(
       },
     } satisfies Metrics),
     metadata: aggEvent.metadata ?? {},
+    project_id: auth.project_id,
   }));
 }
 
@@ -166,7 +167,7 @@ export async function handleAddAiTokenUsage(
     `storing ${events.length} AI_TOKEN_USAGE event(s)`,
     async (txn) => {
       if (firstEvent) {
-        await ensureUserExists(firstEvent.userId, txn);
+        await ensureUserExists(firstEvent.userId, auth.project_id, txn);
       }
 
       try {

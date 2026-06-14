@@ -44,7 +44,8 @@ export async function findExpressionByKey(key: string): Promise<string | null> {
 
 export async function createExpression(
   key: string,
-  expr: string
+  expr: string,
+  project_id: string
 ): Promise<void> {
   const db = getPostgresDB();
 
@@ -65,7 +66,7 @@ export async function createExpression(
       return;
     }
 
-    await db.insert(expressionsTable).values({ key, expr });
+    await db.insert(expressionsTable).values({ key, expr, project_id });
   } catch (e) {
     throw StorageError.insertFailed(
       `Failed to upsert expression '${key}'`,

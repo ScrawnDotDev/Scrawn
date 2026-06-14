@@ -3,56 +3,62 @@ import { PaymentError } from "../../../errors/payment";
 import { getMetadata } from "../../../storage/db/postgres/helpers/metadata";
 import { decrypt } from "../../../utils/encryptMetadata.ts";
 
-let liveClient: DodoPayments | null = null;
-let testClient: DodoPayments | null = null;
+const liveClients = new Map<string, DodoPayments>();
+const testClients = new Map<string, DodoPayments>();
 
-function clearClients(): void {
-  liveClient = null;
-  testClient = null;
+function clearClients(project_id?: string): void {
+  if (project_id) {
+    liveClients.delete(project_id);
+    testClients.delete(project_id);
+  } else {
+    liveClients.clear();
+    testClients.clear();
+  }
 }
 
 export async function getDodoClient(
-  mode?: "test" | "production"
+  mode: "test" | "production",
+  project_id: string
 ): Promise<DodoPayments> {
-  if (!mode) {
-    mode = process.env.NODE_ENV === "production" ? "production" : "test";
-  }
-
   if (mode === "production") {
-    if (liveClient) return liveClient;
+    const cached = liveClients.get(project_id);
+    if (cached) return cached;
 
-    const metadata = await getMetadata();
+    const metadata = await getMetadata(project_id);
     const apiKey = metadata?.dodo_live_api_key;
     if (!apiKey) {
       throw PaymentError.missingApiKey();
     }
 
-    liveClient = new DodoPayments({
+    const client = new DodoPayments({
       bearerToken: decrypt(apiKey),
       environment: "live_mode",
       webhookKey: metadata?.dodo_live_webhook_secret
         ? decrypt(metadata.dodo_live_webhook_secret)
         : undefined,
     });
-    return liveClient;
+    liveClients.set(project_id, client);
+    return client;
   }
 
-  if (testClient) return testClient;
+  const cached = testClients.get(project_id);
+  if (cached) return cached;
 
-  const metadata = await getMetadata();
+  const metadata = await getMetadata(project_id);
   const apiKey = metadata?.dodo_test_api_key;
   if (!apiKey) {
     throw PaymentError.missingApiKey();
   }
 
-  testClient = new DodoPayments({
+  const client = new DodoPayments({
     bearerToken: decrypt(apiKey),
     environment: "test_mode",
     webhookKey: metadata?.dodo_test_webhook_secret
       ? decrypt(metadata.dodo_test_webhook_secret)
       : undefined,
   });
-  return testClient;
+  testClients.set(project_id, client);
+  return client;
 }
 
 // Re-export for callers who need to invalidate cached clients after onboarding updates
@@ -76,13 +82,10 @@ export interface CheckoutResult {
 }
 
 export async function getPaymentProviderConfig(
-  mode: "test" | "production"
+  mode: "test" | "production",
+  project_id: string
 ): Promise<PaymentProviderConfig> {
-  if (!mode) {
-    mode = process.env.NODE_ENV === "production" ? "production" : "test";
-  }
-
-  const metadata = await getMetadata();
+  const metadata = await getMetadata(project_id);
 
   if (!metadata) {
     throw PaymentError.missingMetadata();
@@ -104,9 +107,10 @@ export async function getPaymentProviderConfig(
 export async function createProviderCheckout(
   config: PaymentProviderConfig,
   params: CheckoutParams,
-  mode: "test" | "production"
+  mode: "test" | "production",
+  project_id: string
 ): Promise<CheckoutResult> {
-  const client = await getDodoClient(mode);
+  const client = await getDodoClient(mode, project_id);
 
   const session = await client.checkoutSessions.create({
     product_cart: [

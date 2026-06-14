@@ -166,7 +166,7 @@ export async function handleAddAiTokenUsage(
 
   const firstEvent = events[0];
   if (firstEvent) {
-    await ensureUserExists(firstEvent.userId);
+    await ensureUserExists(firstEvent.userId, auth.project_id);
   }
 
   const aggregatedEvents = aggregateAiTokenEvents(events);

@@ -36,7 +36,8 @@ export async function upsertWebhookEndpoint(
   apiKeyId: string,
   url: string,
   privateKey: string,
-  publicKey: string
+  publicKey: string,
+  project_id: string
 ): Promise<WebhookEndpoint> {
   const db = getPostgresDB();
 
@@ -52,6 +53,7 @@ export async function upsertWebhookEndpoint(
         publicKey,
         createdAt: now,
         updatedAt: now,
+        project_id,
       })
       .onConflictDoUpdate({
         target: webhookEndpointsTable.apiKeyId,

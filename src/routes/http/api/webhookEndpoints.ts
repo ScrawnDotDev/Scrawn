@@ -133,7 +133,8 @@ export async function handleCreateWebhookEndpoint(
       targetApiKeyId,
       validated.url,
       keyPair.privateKeyPem,
-      keyPair.publicKeyPrefixed
+      keyPair.publicKeyPrefixed,
+      auth.project_id
     );
 
     invalidateWebhookEndpointCache(targetApiKeyId);

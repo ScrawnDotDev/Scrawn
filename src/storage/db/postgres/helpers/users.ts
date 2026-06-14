@@ -36,6 +36,7 @@ export async function userExists(userId: string): Promise<boolean> {
 
 export async function ensureUserExists(
   userId: string,
+  project_id: string,
   txn?: PgTransaction<any, any, any>
 ): Promise<void> {
   const db = txn ?? getPostgresDB();
@@ -43,7 +44,7 @@ export async function ensureUserExists(
   try {
     await db
       .insert(usersTable)
-      .values({ id: userId })
+      .values({ id: userId, project_id: project_id })
       .onConflictDoNothing({ target: usersTable.id });
   } catch (e) {
     if (

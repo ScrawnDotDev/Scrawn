@@ -84,7 +84,7 @@ export async function handleCreateExpression(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
     const body = await request.body;
     const validated = createExpressionSchema.parse(body);
@@ -92,7 +92,7 @@ export async function handleCreateExpression(
     validateExprSyntax(validated.expr);
     await resolveExprRefsInExpression(validated.expr);
 
-    await createExpression(validated.key, validated.expr);
+    await createExpression(validated.key, validated.expr, project_id);
 
     builder.setSuccess(200);
     reply.code(200);

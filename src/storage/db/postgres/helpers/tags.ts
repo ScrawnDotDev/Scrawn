@@ -22,7 +22,11 @@ export async function listTags(): Promise<{ key: string; amount: number }[]> {
   }
 }
 
-export async function createTag(key: string, amount: number): Promise<void> {
+export async function createTag(
+  key: string,
+  amount: number,
+  project_id: string
+): Promise<void> {
   const db = getPostgresDB();
 
   try {
@@ -41,7 +45,7 @@ export async function createTag(key: string, amount: number): Promise<void> {
       return;
     }
 
-    await db.insert(tagsTable).values({ key, amount });
+    await db.insert(tagsTable).values({ key, amount, project_id });
     tagCache.delete(key);
   } catch (e) {
     throw StorageError.insertFailed(

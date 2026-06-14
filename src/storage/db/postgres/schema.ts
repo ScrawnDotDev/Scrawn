@@ -23,16 +23,23 @@ export const usersTable = pgTable("users", {
     .default(DateTime.utc(1).toString())
     .notNull(),
   payment_provider_user_id: text("payment_provider_user_id"),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] })
     .notNull()
     .default("production"),
 });
 
-export const usersRelation = relations(usersTable, ({ many }) => ({
+export const usersRelation = relations(usersTable, ({ many, one }) => ({
   sessions: many(sessionsTable),
   basicUsageEvents: many(basicUsageEventsTable),
   paymentEvents: many(paymentEventsTable),
   aiTokenUsageEvents: many(aiTokenUsageEventsTable),
+  project_id: one(projectTable, {
+    fields: [usersTable.project_id],
+    references: [projectTable.project_id],
+  }),
 }));
 
 export const sessionsTable = pgTable(
@@ -60,6 +67,9 @@ export const sessionsTable = pgTable(
     })
       .defaultNow()
       .notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
     mode: text("mode", { enum: ["test", "production"] })
       .notNull()
       .default("production"),
@@ -79,6 +89,10 @@ export const sessionRelations = relations(sessionsTable, ({ one, many }) => ({
     references: [apiKeysTable.id],
   }),
   paymentEvents: many(paymentEventsTable),
+  project_id: one(projectTable, {
+    fields: [sessionsTable.project_id],
+    references: [projectTable.project_id],
+  }),
 }));
 
 export const apiKeysTable = pgTable(
@@ -100,6 +114,9 @@ export const apiKeysTable = pgTable(
       withTimezone: true,
       mode: "string",
     }).notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
     revoked: boolean("revoked").default(false).notNull(),
     revokedAt: timestamp("revoked_at", {
       withTimezone: true,
@@ -113,11 +130,15 @@ export const apiKeysTable = pgTable(
   })
 );
 
-export const apiKeysRelation = relations(apiKeysTable, ({ many }) => ({
+export const apiKeysRelation = relations(apiKeysTable, ({ many, one }) => ({
   sessions: many(sessionsTable),
   basicUsageEvents: many(basicUsageEventsTable),
   paymentEvents: many(paymentEventsTable),
   aiTokenUsageEvents: many(aiTokenUsageEventsTable),
+  project_id: one(projectTable, {
+    fields: [apiKeysTable.project_id],
+    references: [projectTable.project_id],
+  }),
 }));
 
 export const basicUsageEventsTable = pgTable("basic_usage_events", {
@@ -140,6 +161,9 @@ export const basicUsageEventsTable = pgTable("basic_usage_events", {
   apiKeyId: uuid("api_key_id")
     .references(() => apiKeysTable.id)
     .notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] }).notNull(),
   type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
   debitAmount: bigint("debit_amount", { mode: "number" }).notNull(),
@@ -156,6 +180,10 @@ export const basicUsageEventsRelation = relations(
     apiKey: one(apiKeysTable, {
       fields: [basicUsageEventsTable.apiKeyId],
       references: [apiKeysTable.id],
+    }),
+    project_id: one(projectTable, {
+      fields: [basicUsageEventsTable.project_id],
+      references: [projectTable.project_id],
     }),
   })
 );
@@ -178,6 +206,9 @@ export const paymentEventsTable = pgTable("payment_events", {
   apiKeyId: uuid("api_key_id")
     .references(() => apiKeysTable.id)
     .notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] }).notNull(),
   creditAmount: bigint("credit_amount", { mode: "number" }).notNull(),
   proxyId: uuid("proxy_id")
@@ -199,6 +230,10 @@ export const paymentEventsRelation = relations(
     session: one(sessionsTable, {
       fields: [paymentEventsTable.proxyId],
       references: [sessionsTable.proxy_link_id],
+    }),
+    project_id: one(projectTable, {
+      fields: [paymentEventsTable.project_id],
+      references: [projectTable.project_id],
     }),
   })
 );
@@ -223,6 +258,9 @@ export const aiTokenUsageEventsTable = pgTable("ai_token_usage_events", {
   apiKeyId: uuid("api_key_id")
     .references(() => apiKeysTable.id)
     .notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   mode: text("mode", { enum: ["test", "production"] }).notNull(),
   model: text("model").notNull(),
   provider: text("provider").notNull(),
@@ -241,6 +279,10 @@ export const aiTokenUsageEventsRelation = relations(
       fields: [aiTokenUsageEventsTable.apiKeyId],
       references: [apiKeysTable.id],
     }),
+    project_id: one(projectTable, {
+      fields: [aiTokenUsageEventsTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
 
@@ -252,6 +294,9 @@ export const tagsTable = pgTable("tags", {
     withTimezone: true,
     mode: "string",
   }),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
 });
 
 export const metadataTable = pgTable("metadata", {
@@ -267,6 +312,9 @@ export const metadataTable = pgTable("metadata", {
   dodo_live_webhook_secret: text("dodo_live_webhook_secret").notNull(),
   dodo_test_webhook_secret: text("dodo_test_webhook_secret").notNull(),
   currency: text("currency").notNull().default("usd"),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   redirect_url: text("redirect_url").notNull(),
 });
 
@@ -274,6 +322,9 @@ export const expressionsTable = pgTable("expressions", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
   expr: text("expr").notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   deletedAt: timestamp("deleted_at", {
     withTimezone: true,
     mode: "string",
@@ -290,6 +341,9 @@ export const webhookEndpointsTable = pgTable(
     url: text("url").notNull(),
     privateKey: text("private_key").notNull(),
     publicKey: text("public_key").notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -319,6 +373,10 @@ export const webhookEndpointsRelation = relations(
       fields: [webhookEndpointsTable.apiKeyId],
       references: [apiKeysTable.id],
     }),
+    project_id: one(projectTable, {
+      fields: [webhookEndpointsTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
 
@@ -341,6 +399,9 @@ export const webhookDeliveriesTable = pgTable("webhook_deliveries", {
   })
     .defaultNow()
     .notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
 });
 
 export const webhookDeliveriesRelation = relations(
@@ -350,5 +411,20 @@ export const webhookDeliveriesRelation = relations(
       fields: [webhookDeliveriesTable.endpointId],
       references: [webhookEndpointsTable.id],
     }),
+    project_id: one(projectTable, {
+      fields: [webhookDeliveriesTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
+
+export const projectTable = pgTable("projects", {
+  project_id: uuid("project_id").primaryKey().defaultRandom(),
+  product_id: text("product_id").notNull(),
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+    mode: "string",
+  })
+    .defaultNow()
+    .notNull(),
+});

@@ -15,7 +15,7 @@ import { getPostgresDB } from "../storage/db/postgres/db";
 import { webhookEndpointsTable } from "../storage/db/postgres/schema";
 import { DateTime } from "luxon";
 import { clearDatabase } from "./db";
-import { insertKey } from "./fixtures/apiKey";
+import { insertKey, TEST_PROJECT_ID } from "./fixtures/apiKey";
 
 async function insertWebhookEndpoint(apiKeyId: string): Promise<void> {
   const db = getPostgresDB();
@@ -24,6 +24,7 @@ async function insertWebhookEndpoint(apiKeyId: string): Promise<void> {
     url: "https://example.com/webhook",
     privateKey: "test-private-key",
     publicKey: "test-public-key",
+    project_id: TEST_PROJECT_ID,
   });
 }
 

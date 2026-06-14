@@ -33,7 +33,8 @@ export async function updateSessionStatus(
 export async function checkIfExistingCheckoutLink(
   txn: PgTransaction<any, any, any>,
   userId: UserId,
-  mode: "test" | "production"
+  mode: "test" | "production",
+  project_id: string
 ): Promise<string | undefined> {
   try {
     if (!txn) {
@@ -48,6 +49,7 @@ export async function checkIfExistingCheckoutLink(
           eq(sessionsTable.userId, userId),
           eq(sessionsTable.processed, "pending"),
           eq(sessionsTable.mode, mode),
+          eq(sessionsTable.project_id, project_id),
           sql`${sessionsTable.createdAt} > ${DateTime.utc().minus({ hours: 24 }).toISO()}`
         )
       )
@@ -74,6 +76,7 @@ export async function handleAddSession(
   apiKeyId: string,
   mode: "test" | "production",
   checkoutUrl: string,
+  project_id: string,
   txn?: PgTransaction<any, any, any>
 ): Promise<{ id: string }> {
   const connectionObject = txn ?? getPostgresDB();
@@ -97,6 +100,7 @@ export async function handleAddSession(
         apiKeyId: apiKeyId,
         mode: mode,
         checkoutUrl: checkoutUrl,
+        project_id: project_id,
       })
       .returning({ proxy_link_id: sessionsTable.proxy_link_id });
 
