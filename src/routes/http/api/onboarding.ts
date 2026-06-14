@@ -17,6 +17,8 @@ import {
 import { clearClients } from "../../gRPC/payment/paymentProvider.ts";
 import { encrypt, decrypt } from "../../../utils/encryptMetadata.ts";
 import { createProject } from "../../../storage/db/postgres/helpers/projects.ts";
+import { executeInTransaction } from "../../../storage/adapter/postgres/handlers/addEventUtils.ts";
+import { getPostgresDB } from "../../../storage/db/postgres/db.ts";
 
 export async function handleOnboarding(
   request: FastifyRequest,
@@ -85,18 +87,29 @@ export async function handleOnboarding(
       return {};
     }
 
-    await createProject(project_id, validated.dodoLiveProductId);
-    await upsertMetadata({
-      dodo_live_api_key: encrypt(validated.dodoLiveApiKey),
-      dodo_test_api_key: encrypt(validated.dodoTestApiKey),
-      dodo_live_product_id: validated.dodoLiveProductId,
-      dodo_test_product_id: validated.dodoTestProductId,
-      dodo_live_webhook_secret: encrypt(liveSecret),
-      dodo_test_webhook_secret: encrypt(testSecret),
-      currency: validated.currency,
-      redirect_url: validated.redirectUrl,
-      project_id,
-    });
+    const db = getPostgresDB();
+
+    await executeInTransaction(
+      db,
+      "update db with project and metadata",
+      async (txn) => {
+        await createProject(project_id, validated.dodoLiveProductId, txn);
+        await upsertMetadata(
+          {
+            dodo_live_api_key: encrypt(validated.dodoLiveApiKey),
+            dodo_test_api_key: encrypt(validated.dodoTestApiKey),
+            dodo_live_product_id: validated.dodoLiveProductId,
+            dodo_test_product_id: validated.dodoTestProductId,
+            dodo_live_webhook_secret: encrypt(liveSecret),
+            dodo_test_webhook_secret: encrypt(testSecret),
+            currency: validated.currency,
+            redirect_url: validated.redirectUrl,
+            project_id,
+          },
+          txn
+        );
+      }
+    );
 
     clearClients(project_id);
 

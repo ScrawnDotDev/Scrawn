@@ -1,13 +1,17 @@
 import { eq } from "drizzle-orm";
+import type { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
 import { getPostgresDB } from "../db";
 import { projectTable } from "./../schema";
 import { StorageError } from "../../../../errors/storage";
 
+export type DbClient = PgDatabase<any, any, any> | PgTransaction<any, any, any>;
+
 export async function createProject(
   project_id: string,
-  product_id: string
+  product_id: string,
+  tx?: DbClient
 ): Promise<void> {
-  const db = getPostgresDB();
+  const db = tx ?? getPostgresDB();
 
   try {
     const existing = await db

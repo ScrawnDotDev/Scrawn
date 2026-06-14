@@ -1,8 +1,11 @@
+import type { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
 import { getPostgresDB } from "../db";
 import { metadataTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq } from "drizzle-orm";
 import { executeInTransaction } from "../../../adapter/postgres/handlers/addEventUtils";
+
+export type DbClient = PgDatabase<any, any, any> | PgTransaction<any, any, any>;
 
 export type UpsertMetadataInput = {
   dodo_live_api_key?: string;
@@ -17,11 +20,12 @@ export type UpsertMetadataInput = {
 };
 
 export async function upsertMetadata(
-  input: UpsertMetadataInput
+  input: UpsertMetadataInput,
+  tx?: DbClient
 ): Promise<void> {
-  const db = getPostgresDB();
+  const db = tx ?? getPostgresDB();
 
-  await executeInTransaction(db, "upsert metadata", async (txn) => {
+  const run = async (txn: DbClient) => {
     try {
       const [existingMetadata] = await txn
         .select({ id: metadataTable.id })
@@ -68,7 +72,13 @@ export async function upsertMetadata(
         e instanceof Error ? e : new Error(String(e))
       );
     }
-  });
+  };
+
+  if (tx) {
+    await run(tx);
+  } else {
+    await executeInTransaction(db, "upsert metadata", run);
+  }
 }
 
 export async function getMetadata(
