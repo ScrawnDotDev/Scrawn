@@ -62,6 +62,7 @@ export async function handleCreateApiKey(
       key: apiKeyHash,
       role: validated.role,
       expiresAt: expiresAt.toISO(),
+      project_id: auth.project_id,
     });
 
     const keyPair = generateWebhookKeyPair();
@@ -69,7 +70,8 @@ export async function handleCreateApiKey(
       keyRecord.id,
       validated.webhookUrl,
       keyPair.privateKeyPem,
-      keyPair.publicKeyPrefixed
+      keyPair.publicKeyPrefixed,
+      auth.project_id
     );
     invalidateWebhookEndpointCache(keyRecord.id);
 

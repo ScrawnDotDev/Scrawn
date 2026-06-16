@@ -7,6 +7,7 @@ interface CachedAPIKey {
   role: ApiKeyRole;
   mode: "production" | "test" | null;
   expiresAt: string;
+  project_id: string;
 }
 
 const store = Cache.getStore<string, CachedAPIKey>("api-keys", {

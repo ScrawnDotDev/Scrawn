@@ -1,8 +1,11 @@
+import type { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
 import { getPostgresDB } from "../db";
 import { metadataTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
 import { eq } from "drizzle-orm";
 import { executeInTransaction } from "../../../adapter/postgres/handlers/addEventUtils";
+
+export type DbClient = PgDatabase<any, any, any> | PgTransaction<any, any, any>;
 
 export type UpsertMetadataInput = {
   dodo_live_api_key?: string;
@@ -13,18 +16,21 @@ export type UpsertMetadataInput = {
   dodo_test_webhook_secret?: string;
   currency?: string;
   redirect_url?: string;
+  project_id: string;
 };
 
 export async function upsertMetadata(
-  input: UpsertMetadataInput
+  input: UpsertMetadataInput,
+  tx?: DbClient
 ): Promise<void> {
-  const db = getPostgresDB();
+  const db = tx ?? getPostgresDB();
 
-  await executeInTransaction(db, "upsert metadata", async (txn) => {
+  const run = async (txn: DbClient) => {
     try {
       const [existingMetadata] = await txn
         .select({ id: metadataTable.id })
         .from(metadataTable)
+        .where(eq(metadataTable.project_id, input.project_id))
         .limit(1)
         .for("update");
 
@@ -57,6 +63,7 @@ export async function upsertMetadata(
 
       const insertValues: typeof metadataTable.$inferInsert = {
         ...setValues,
+        project_id: input.project_id,
       } as typeof metadataTable.$inferInsert;
       await txn.insert(metadataTable).values(insertValues);
     } catch (e) {
@@ -65,13 +72,23 @@ export async function upsertMetadata(
         e instanceof Error ? e : new Error(String(e))
       );
     }
-  });
+  };
+
+  if (tx) {
+    await run(tx);
+  } else {
+    await executeInTransaction(db, "upsert metadata", run);
+  }
 }
 
-export async function getMetadata(): Promise<
-  typeof metadataTable.$inferSelect | undefined
-> {
+export async function getMetadata(
+  project_id: string
+): Promise<typeof metadataTable.$inferSelect | undefined> {
   const db = getPostgresDB();
-  const [metadata] = await db.select().from(metadataTable).limit(1);
+  const [metadata] = await db
+    .select()
+    .from(metadataTable)
+    .where(eq(metadataTable.project_id, project_id))
+    .limit(1);
   return metadata;
 }

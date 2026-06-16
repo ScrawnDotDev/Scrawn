@@ -9,6 +9,7 @@ type CreateApiKeyInput = {
   key: string;
   role: string;
   expiresAt: string;
+  project_id: string;
 };
 
 export async function createApiKey(
@@ -37,6 +38,7 @@ export async function createApiKey(
         key: input.key,
         role: input.role as "dashboard" | "production" | "test",
         expiresAt: input.expiresAt,
+        project_id: input.project_id,
       })
       .returning({ id: apiKeysTable.id });
 
@@ -74,6 +76,7 @@ type ApiKeyRecord = {
   role: string;
   expiresAt: string;
   revoked: boolean;
+  project_id: string;
 };
 
 export async function getApiKeyRoleById(
@@ -109,6 +112,7 @@ export async function findApiKeyByHash(
         role: apiKeysTable.role,
         expiresAt: apiKeysTable.expiresAt,
         revoked: apiKeysTable.revoked,
+        project_id: apiKeysTable.project_id,
       })
       .from(apiKeysTable)
       .where(eq(apiKeysTable.key, apiKeyHash))

@@ -72,11 +72,13 @@ export async function handleDodoWebhook(
   timestamp: string | undefined,
   webhookId: string | undefined,
   mode: "production" | "test",
+  project_id: string,
   builder: WideEventBuilder
 ): Promise<WebhookResponse> {
   try {
     const client = await getDodoClient(
-      mode === "production" ? "production" : "test"
+      mode === "production" ? "production" : "test",
+      project_id
     );
     const headers = buildWebhookHeaders(signature, timestamp, webhookId);
     const webhookPayload = unwrapWebhookPayload(client, rawBody, headers);
@@ -180,7 +182,7 @@ export async function handleDodoWebhook(
 
     if (webhookPayload.type === "payment.succeeded") {
       const creditAmount = Math.round(webhookPayload.data.total_amount);
-      const { userId, billed_upto, apiKeyId, mode } = session;
+      const { userId, billed_upto, apiKeyId, mode, project_id } = session;
       let claimed: boolean = false;
 
       await executeInTransaction(db, "process checkout", async (txn) => {
@@ -190,13 +192,14 @@ export async function handleDodoWebhook(
           txn
         );
         if (!claimed) return;
-        await updateUserBilledTimestamp(userId, billed_upto, txn);
+        await updateUserBilledTimestamp(userId, project_id, billed_upto, txn);
         await handleAddPayment(
           userId,
           creditAmount,
           apiKeyId,
           mode,
           session.proxy_link_id,
+          project_id,
           txn
         );
       });

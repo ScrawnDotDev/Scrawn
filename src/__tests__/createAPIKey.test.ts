@@ -14,7 +14,11 @@ import {
   registerEvent,
 } from "./fixtures/grpc";
 import { verifyApiKeyCreated } from "./assertions/events";
-import { createTestApiKey } from "./fixtures/apiKey";
+import {
+  createTestApiKey,
+  ensureTestProject,
+  TEST_PROJECT_ID,
+} from "./fixtures/apiKey";
 import { getPostgresDB } from "../storage/db/postgres/db";
 import { hashAPIKey } from "../utils/hashAPIKey";
 import {
@@ -35,6 +39,7 @@ async function createDashboardApiKey(): Promise<{
   rawKey: string;
   id: string;
 }> {
+  await ensureTestProject();
   const db = getPostgresDB();
   const rawKey = `scrn_dash_${crypto.randomUUID().replace(/-/g, "").slice(0, 32)}`;
   const [key] = await db
@@ -44,6 +49,7 @@ async function createDashboardApiKey(): Promise<{
       key: hashAPIKey(rawKey),
       role: "dashboard",
       expiresAt: DateTime.utc().plus({ years: 1 }).toISO(),
+      project_id: TEST_PROJECT_ID,
     })
     .returning({ id: apiKeysTable.id });
   return { rawKey, id: key!.id };
@@ -153,6 +159,7 @@ describe("AuthService", () => {
         url: "https://example.com/webhook",
         privateKey: "test-private-key",
         publicKey: "test-public-key",
+        project_id: TEST_PROJECT_ID,
       });
 
       const userId = crypto.randomUUID();

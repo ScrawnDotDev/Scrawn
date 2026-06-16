@@ -71,9 +71,16 @@ export async function forwardWebhook(
     Sentry.captureException(error, {
       extra: { context: "webhook signing failed", error: errorMsg },
     });
-    await recordDelivery(endpoint.id, webhookId, event, "failed", {
-      error: errorMsg,
-    });
+    await recordDelivery(
+      endpoint.id,
+      webhookId,
+      event,
+      "failed",
+      {
+        error: errorMsg,
+      },
+      endpoint.project_id
+    );
     return;
   }
 
@@ -124,7 +131,8 @@ export async function forwardWebhook(
     {
       responseStatus,
       error: errorMessage,
-    }
+    },
+    endpoint.project_id
   );
 }
 
@@ -136,7 +144,8 @@ async function recordDelivery(
   details: {
     responseStatus?: number | null;
     error?: string | null;
-  }
+  },
+  project_id: string
 ): Promise<void> {
   try {
     const db = getPostgresDB();
@@ -150,6 +159,7 @@ async function recordDelivery(
       requestBody: (event.data ?? {}) as Record<string, unknown>,
       responseStatus: details.responseStatus ?? 0,
       error: details.error ?? "",
+      project_id,
     });
   } catch (error) {
     Sentry.captureException(error, {

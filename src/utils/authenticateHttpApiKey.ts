@@ -44,7 +44,12 @@ export async function authenticateHttpApiKey(
         `Key prefix ${role} doesn't match stored role ${cached.role}`
       );
     }
-    return { apiKeyId: cached.id, role: cached.role, mode: cached.mode };
+    return {
+      apiKeyId: cached.id,
+      role: cached.role,
+      mode: cached.mode,
+      project_id: cached.project_id,
+    };
   }
 
   const apiKeyRecord = await findApiKeyByHash(apiKeyHash);
@@ -69,6 +74,10 @@ export async function authenticateHttpApiKey(
     );
   }
 
+  if (!apiKeyRecord.project_id || apiKeyRecord.project_id === "") {
+    throw AuthError.projectNotFound();
+  }
+
   const recordRole = apiKeyRecord.role as ApiKeyRole;
   const mode = getModeForRole(recordRole);
 
@@ -77,7 +86,13 @@ export async function authenticateHttpApiKey(
     role: recordRole,
     mode,
     expiresAt: apiKeyRecord.expiresAt,
+    project_id: apiKeyRecord.project_id,
   });
 
-  return { apiKeyId: apiKeyRecord.id, role: recordRole, mode };
+  return {
+    apiKeyId: apiKeyRecord.id,
+    role: recordRole,
+    mode,
+    project_id: apiKeyRecord.project_id,
+  };
 }

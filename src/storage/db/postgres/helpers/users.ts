@@ -1,11 +1,12 @@
 import { getPostgresDB } from "../db";
 import { usersTable } from "../schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { StorageError } from "../../../../errors/storage";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 
 export async function updateUserBilledTimestamp(
   userId: string,
+  project_id: string,
   billedUpto: string,
   txn?: PgTransaction<any, any, any>
 ): Promise<void> {
@@ -15,7 +16,9 @@ export async function updateUserBilledTimestamp(
     await db
       .update(usersTable)
       .set({ last_billed_timestamp: billedUpto })
-      .where(eq(usersTable.id, userId));
+      .where(
+        and(eq(usersTable.id, userId), eq(usersTable.project_id, project_id))
+      );
   } catch (e) {
     throw StorageError.queryFailed(
       "Failed to update user billed timestamp",
@@ -36,6 +39,7 @@ export async function userExists(userId: string): Promise<boolean> {
 
 export async function ensureUserExists(
   userId: string,
+  project_id: string,
   txn?: PgTransaction<any, any, any>
 ): Promise<void> {
   const db = txn ?? getPostgresDB();
@@ -43,8 +47,8 @@ export async function ensureUserExists(
   try {
     await db
       .insert(usersTable)
-      .values({ id: userId })
-      .onConflictDoNothing({ target: usersTable.id });
+      .values({ id: userId, project_id: project_id })
+      .onConflictDoNothing({ target: [usersTable.id, usersTable.project_id] });
   } catch (e) {
     if (
       e instanceof Error &&

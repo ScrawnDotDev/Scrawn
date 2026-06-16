@@ -8,6 +8,7 @@ enum AuthErrorType {
   REVOKED_API_KEY = "REVOKED_API_KEY",
   ROLE_MISMATCH = "ROLE_MISMATCH",
   PERMISSION_DENIED = "PERMISSION_DENIED",
+  PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND",
 }
 
 export interface AuthErrorContext {
@@ -67,6 +68,14 @@ export class AuthError extends Error {
       type: AuthErrorType.REVOKED_API_KEY,
       message: "API key has been revoked",
       code: Status.UNAUTHENTICATED,
+    });
+  }
+
+  static projectNotFound(): AuthError {
+    return new AuthError({
+      type: AuthErrorType.PROJECT_NOT_FOUND,
+      message: "Project not found",
+      code: Status.NOT_FOUND,
     });
   }
 

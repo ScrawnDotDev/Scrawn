@@ -37,7 +37,12 @@ export async function handlePriceRequest(
 
     let result;
     try {
-      const baseCondition = sql`${priceTable.reportedTimestamp} > ${usersTable.last_billed_timestamp} AND ${priceTable.userId} = ${userId} AND ${priceTable.mode} = ${auth.mode}`;
+      const baseCondition = and(
+        sql`${priceTable.reportedTimestamp} > ${usersTable.last_billed_timestamp}`,
+        eq(priceTable.userId, userId),
+        eq(priceTable.mode, auth.mode as "test" | "production"),
+        eq(priceTable.project_id, auth.project_id)
+      );
       const whereClause = beforeTimestamp
         ? and(
             baseCondition,

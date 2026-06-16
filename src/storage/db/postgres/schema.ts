@@ -9,30 +9,45 @@ import {
   boolean,
   jsonb,
   uniqueIndex,
+  primaryKey,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { USER_ID_CONFIG } from "../../../config/identifiers";
 import { DateTime } from "luxon";
 import { type Metrics } from "../../../zod/metrics";
 
-export const usersTable = pgTable("users", {
-  id: USER_ID_CONFIG.dbType("id").primaryKey(),
-  last_billed_timestamp: timestamp("last_billed_timestamp", {
-    withTimezone: true,
-    mode: "string",
+export const usersTable = pgTable(
+  "users",
+  {
+    id: USER_ID_CONFIG.dbType("id").notNull(),
+    last_billed_timestamp: timestamp("last_billed_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .default(DateTime.utc(1).toString())
+      .notNull(),
+    payment_provider_user_id: text("payment_provider_user_id"),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
+    mode: text("mode", { enum: ["test", "production"] })
+      .notNull()
+      .default("production"),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id, table.project_id] }),
   })
-    .default(DateTime.utc(1).toString())
-    .notNull(),
-  payment_provider_user_id: text("payment_provider_user_id"),
-  mode: text("mode", { enum: ["test", "production"] })
-    .notNull()
-    .default("production"),
-});
+);
 
-export const usersRelation = relations(usersTable, ({ many }) => ({
+export const usersRelation = relations(usersTable, ({ many, one }) => ({
   sessions: many(sessionsTable),
   basicUsageEvents: many(basicUsageEventsTable),
   paymentEvents: many(paymentEventsTable),
   aiTokenUsageEvents: many(aiTokenUsageEventsTable),
+  project_id: one(projectTable, {
+    fields: [usersTable.project_id],
+    references: [projectTable.project_id],
+  }),
 }));
 
 export const sessionsTable = pgTable(
@@ -43,9 +58,7 @@ export const sessionsTable = pgTable(
     processed: text("processed", { enum: ["pending", "failed", "succeeded"] })
       .default("pending")
       .notNull(),
-    userId: USER_ID_CONFIG.dbType("user_id")
-      .references(() => usersTable.id)
-      .notNull(),
+    userId: USER_ID_CONFIG.dbType("user_id").notNull(),
     apiKeyId: uuid("api_key_id")
       .references(() => apiKeysTable.id)
       .notNull(),
@@ -60,25 +73,36 @@ export const sessionsTable = pgTable(
     })
       .defaultNow()
       .notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
     mode: text("mode", { enum: ["test", "production"] })
       .notNull()
       .default("production"),
   },
   (table) => ({
     uniqueSessionId: uniqueIndex("unique_session_id").on(table.sessionId),
+    userFk: foreignKey({
+      columns: [table.userId, table.project_id],
+      foreignColumns: [usersTable.id, usersTable.project_id],
+    }),
   })
 );
 
 export const sessionRelations = relations(sessionsTable, ({ one, many }) => ({
   user: one(usersTable, {
-    fields: [sessionsTable.userId],
-    references: [usersTable.id],
+    fields: [sessionsTable.userId, sessionsTable.project_id],
+    references: [usersTable.id, usersTable.project_id],
   }),
   apiKey: one(apiKeysTable, {
     fields: [sessionsTable.apiKeyId],
     references: [apiKeysTable.id],
   }),
   paymentEvents: many(paymentEventsTable),
+  project_id: one(projectTable, {
+    fields: [sessionsTable.project_id],
+    references: [projectTable.project_id],
+  }),
 }));
 
 export const apiKeysTable = pgTable(
@@ -100,6 +124,9 @@ export const apiKeysTable = pgTable(
       withTimezone: true,
       mode: "string",
     }).notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
     revoked: boolean("revoked").default(false).notNull(),
     revokedAt: timestamp("revoked_at", {
       withTimezone: true,
@@ -113,133 +140,178 @@ export const apiKeysTable = pgTable(
   })
 );
 
-export const apiKeysRelation = relations(apiKeysTable, ({ many }) => ({
+export const apiKeysRelation = relations(apiKeysTable, ({ many, one }) => ({
   sessions: many(sessionsTable),
   basicUsageEvents: many(basicUsageEventsTable),
   paymentEvents: many(paymentEventsTable),
   aiTokenUsageEvents: many(aiTokenUsageEventsTable),
+  project_id: one(projectTable, {
+    fields: [apiKeysTable.project_id],
+    references: [projectTable.project_id],
+  }),
 }));
 
-export const basicUsageEventsTable = pgTable("basic_usage_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  eventId: uuid("event_id").notNull(),
-  idempotencyKey: text("idempotency_key").notNull().unique(),
-  reportedTimestamp: timestamp("reported_timestamp", {
-    withTimezone: true,
-    mode: "string",
-  }).notNull(),
-  ingestedTimestamp: timestamp("ingested_timestamp", {
-    withTimezone: true,
-    mode: "string",
+export const basicUsageEventsTable = pgTable(
+  "basic_usage_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull().unique(),
+    reportedTimestamp: timestamp("reported_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    }).notNull(),
+    ingestedTimestamp: timestamp("ingested_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    userId: USER_ID_CONFIG.dbType("user_id").notNull(),
+    apiKeyId: uuid("api_key_id")
+      .references(() => apiKeysTable.id)
+      .notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
+    mode: text("mode", { enum: ["test", "production"] }).notNull(),
+    type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
+    debitAmount: bigint("debit_amount", { mode: "number" }).notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  },
+  (table) => ({
+    userFk: foreignKey({
+      columns: [table.userId, table.project_id],
+      foreignColumns: [usersTable.id, usersTable.project_id],
+    }),
   })
-    .defaultNow()
-    .notNull(),
-  userId: USER_ID_CONFIG.dbType("user_id")
-    .references(() => usersTable.id)
-    .notNull(),
-  apiKeyId: uuid("api_key_id")
-    .references(() => apiKeysTable.id)
-    .notNull(),
-  mode: text("mode", { enum: ["test", "production"] }).notNull(),
-  type: text("type", { enum: ["RAW", "MIDDLEWARE_CALL"] }).notNull(),
-  debitAmount: bigint("debit_amount", { mode: "number" }).notNull(),
-  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
-});
+);
 
 export const basicUsageEventsRelation = relations(
   basicUsageEventsTable,
   ({ one }) => ({
     user: one(usersTable, {
-      fields: [basicUsageEventsTable.userId],
-      references: [usersTable.id],
+      fields: [basicUsageEventsTable.userId, basicUsageEventsTable.project_id],
+      references: [usersTable.id, usersTable.project_id],
     }),
     apiKey: one(apiKeysTable, {
       fields: [basicUsageEventsTable.apiKeyId],
       references: [apiKeysTable.id],
     }),
+    project_id: one(projectTable, {
+      fields: [basicUsageEventsTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
 
-export const paymentEventsTable = pgTable("payment_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  reportedTimestamp: timestamp("reported_timestamp", {
-    withTimezone: true,
-    mode: "string",
-  }).notNull(),
-  ingestedTimestamp: timestamp("ingested_timestamp", {
-    withTimezone: true,
-    mode: "string",
+export const paymentEventsTable = pgTable(
+  "payment_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reportedTimestamp: timestamp("reported_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    }).notNull(),
+    ingestedTimestamp: timestamp("ingested_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    userId: USER_ID_CONFIG.dbType("user_id").notNull(),
+    apiKeyId: uuid("api_key_id")
+      .references(() => apiKeysTable.id)
+      .notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
+    mode: text("mode", { enum: ["test", "production"] }).notNull(),
+    creditAmount: bigint("credit_amount", { mode: "number" }).notNull(),
+    proxyId: uuid("proxy_id")
+      .references(() => sessionsTable.proxy_link_id)
+      .notNull(),
+  },
+  (table) => ({
+    userFk: foreignKey({
+      columns: [table.userId, table.project_id],
+      foreignColumns: [usersTable.id, usersTable.project_id],
+    }),
   })
-    .defaultNow()
-    .notNull(),
-  userId: USER_ID_CONFIG.dbType("user_id")
-    .references(() => usersTable.id)
-    .notNull(),
-  apiKeyId: uuid("api_key_id")
-    .references(() => apiKeysTable.id)
-    .notNull(),
-  mode: text("mode", { enum: ["test", "production"] }).notNull(),
-  creditAmount: bigint("credit_amount", { mode: "number" }).notNull(),
-  proxyId: uuid("proxy_id")
-    .references(() => sessionsTable.proxy_link_id)
-    .notNull(),
-});
+);
 
 export const paymentEventsRelation = relations(
   paymentEventsTable,
   ({ one }) => ({
     user: one(usersTable, {
-      fields: [paymentEventsTable.userId],
-      references: [usersTable.id],
-    }),
-    apiKey: one(apiKeysTable, {
-      fields: [paymentEventsTable.apiKeyId],
-      references: [apiKeysTable.id],
+      fields: [paymentEventsTable.userId, paymentEventsTable.project_id],
+      references: [usersTable.id, usersTable.project_id],
     }),
     session: one(sessionsTable, {
       fields: [paymentEventsTable.proxyId],
       references: [sessionsTable.proxy_link_id],
     }),
+    project_id: one(projectTable, {
+      fields: [paymentEventsTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
 
-export const aiTokenUsageEventsTable = pgTable("ai_token_usage_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  eventId: uuid("event_id").notNull(),
-  idempotencyKey: text("idempotency_key").notNull().unique(),
-  reportedTimestamp: timestamp("reported_timestamp", {
-    withTimezone: true,
-    mode: "string",
-  }).notNull(),
-  ingestedTimestamp: timestamp("ingested_timestamp", {
-    withTimezone: true,
-    mode: "string",
+export const aiTokenUsageEventsTable = pgTable(
+  "ai_token_usage_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull().unique(),
+    reportedTimestamp: timestamp("reported_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    }).notNull(),
+    ingestedTimestamp: timestamp("ingested_timestamp", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    userId: USER_ID_CONFIG.dbType("user_id").notNull(),
+    apiKeyId: uuid("api_key_id")
+      .references(() => apiKeysTable.id)
+      .notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
+    mode: text("mode", { enum: ["test", "production"] }).notNull(),
+    model: text("model").notNull(),
+    provider: text("provider").notNull(),
+    metrics: jsonb("metrics").$type<Metrics>().notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  },
+  (table) => ({
+    userFk: foreignKey({
+      columns: [table.userId, table.project_id],
+      foreignColumns: [usersTable.id, usersTable.project_id],
+    }),
   })
-    .defaultNow()
-    .notNull(),
-  userId: USER_ID_CONFIG.dbType("user_id")
-    .references(() => usersTable.id)
-    .notNull(),
-  apiKeyId: uuid("api_key_id")
-    .references(() => apiKeysTable.id)
-    .notNull(),
-  mode: text("mode", { enum: ["test", "production"] }).notNull(),
-  model: text("model").notNull(),
-  provider: text("provider").notNull(),
-  metrics: jsonb("metrics").$type<Metrics>().notNull(),
-  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
-});
+);
 
 export const aiTokenUsageEventsRelation = relations(
   aiTokenUsageEventsTable,
   ({ one }) => ({
     user: one(usersTable, {
-      fields: [aiTokenUsageEventsTable.userId],
-      references: [usersTable.id],
+      fields: [
+        aiTokenUsageEventsTable.userId,
+        aiTokenUsageEventsTable.project_id,
+      ],
+      references: [usersTable.id, usersTable.project_id],
     }),
     apiKey: one(apiKeysTable, {
       fields: [aiTokenUsageEventsTable.apiKeyId],
       references: [apiKeysTable.id],
+    }),
+    project_id: one(projectTable, {
+      fields: [aiTokenUsageEventsTable.project_id],
+      references: [projectTable.project_id],
     }),
   })
 );
@@ -252,6 +324,9 @@ export const tagsTable = pgTable("tags", {
     withTimezone: true,
     mode: "string",
   }),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
 });
 
 export const metadataTable = pgTable("metadata", {
@@ -267,6 +342,9 @@ export const metadataTable = pgTable("metadata", {
   dodo_live_webhook_secret: text("dodo_live_webhook_secret").notNull(),
   dodo_test_webhook_secret: text("dodo_test_webhook_secret").notNull(),
   currency: text("currency").notNull().default("usd"),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   redirect_url: text("redirect_url").notNull(),
 });
 
@@ -274,6 +352,9 @@ export const expressionsTable = pgTable("expressions", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: text("key").notNull(),
   expr: text("expr").notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
   deletedAt: timestamp("deleted_at", {
     withTimezone: true,
     mode: "string",
@@ -290,6 +371,9 @@ export const webhookEndpointsTable = pgTable(
     url: text("url").notNull(),
     privateKey: text("private_key").notNull(),
     publicKey: text("public_key").notNull(),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -319,6 +403,10 @@ export const webhookEndpointsRelation = relations(
       fields: [webhookEndpointsTable.apiKeyId],
       references: [apiKeysTable.id],
     }),
+    project_id: one(projectTable, {
+      fields: [webhookEndpointsTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
 
@@ -341,6 +429,9 @@ export const webhookDeliveriesTable = pgTable("webhook_deliveries", {
   })
     .defaultNow()
     .notNull(),
+  project_id: uuid("project_id")
+    .references(() => projectTable.project_id)
+    .notNull(),
 });
 
 export const webhookDeliveriesRelation = relations(
@@ -350,5 +441,20 @@ export const webhookDeliveriesRelation = relations(
       fields: [webhookDeliveriesTable.endpointId],
       references: [webhookEndpointsTable.id],
     }),
+    project_id: one(projectTable, {
+      fields: [webhookDeliveriesTable.project_id],
+      references: [projectTable.project_id],
+    }),
   })
 );
+
+export const projectTable = pgTable("projects", {
+  project_id: uuid("project_id").primaryKey().defaultRandom(),
+  product_id: text("product_id").notNull(),
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+    mode: "string",
+  })
+    .defaultNow()
+    .notNull(),
+});

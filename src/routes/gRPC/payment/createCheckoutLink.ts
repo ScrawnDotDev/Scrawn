@@ -63,8 +63,9 @@ export async function createCheckoutLink(
     }
 
     const mode = auth.mode;
+    const project_id = auth.project_id;
 
-    const config = await getPaymentProviderConfig(mode);
+    const config = await getPaymentProviderConfig(mode, project_id);
     const validatedData = validateRequest(req);
     wideEventBuilder?.setUser(validatedData.userId);
 
@@ -85,14 +86,15 @@ export async function createCheckoutLink(
       validatedData.userId,
       auth.apiKeyId,
       beforeTimestamp,
-      mode
+      mode,
+      project_id
     );
 
     const checkoutLink = await executeInTransaction(
       db,
       "create checkout link",
       async (txn) => {
-        await ensureUserExists(validatedData.userId, txn);
+        await ensureUserExists(validatedData.userId, project_id, txn);
 
         await txn
           .select({ id: usersTable.id })
@@ -103,7 +105,8 @@ export async function createCheckoutLink(
         const existingId = await checkIfExistingCheckoutLink(
           txn,
           validatedData.userId,
-          mode
+          mode,
+          project_id
         );
 
         if (existingId) {
@@ -118,6 +121,7 @@ export async function createCheckoutLink(
           auth.apiKeyId,
           mode,
           checkoutResult.checkoutUrl,
+          project_id,
           txn
         );
         wideEventBuilder?.setPaymentContext({ sessionId: sessionResult.id });
@@ -169,7 +173,8 @@ async function createCheckoutSession(
   userId: string,
   apiKeyId: string,
   beforeTimestamp: DateTime,
-  mode: "test" | "production"
+  mode: "test" | "production",
+  project_id: string
 ): Promise<CheckoutResult> {
   const params: CheckoutParams = {
     customPrice,
@@ -177,7 +182,12 @@ async function createCheckoutSession(
     apiKeyId,
   };
 
-  const checkoutResult = await createProviderCheckout(config, params, mode);
+  const checkoutResult = await createProviderCheckout(
+    config,
+    params,
+    mode,
+    project_id
+  );
 
   if (
     !checkoutResult.checkoutUrl ||

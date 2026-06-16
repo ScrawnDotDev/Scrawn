@@ -45,9 +45,9 @@ export async function handleListExpressions(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
-    const expressions = await listExpressions();
+    const expressions = await listExpressions(project_id);
 
     builder.setSuccess(200).addContext({ expressionCount: expressions.length });
     reply.code(200);
@@ -84,15 +84,15 @@ export async function handleCreateExpression(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
     const body = await request.body;
     const validated = createExpressionSchema.parse(body);
 
     validateExprSyntax(validated.expr);
-    await resolveExprRefsInExpression(validated.expr);
+    await resolveExprRefsInExpression(validated.expr, new Set(), project_id);
 
-    await createExpression(validated.key, validated.expr);
+    await createExpression(validated.key, validated.expr, project_id);
 
     builder.setSuccess(200);
     reply.code(200);
@@ -147,10 +147,10 @@ export async function handleDeleteExpression(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
     const params = request.params as { key: string };
-    const deleted = await deleteExpression(params.key);
+    const deleted = await deleteExpression(params.key, project_id);
 
     if (!deleted) {
       builder.setError(404, {

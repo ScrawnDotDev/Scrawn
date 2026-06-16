@@ -167,6 +167,7 @@ export function authInterceptor<Req, Res>(
         apiKeyId: cached.id,
         role: cached.role,
         mode: cached.mode,
+        project_id: cached.project_id,
       };
       wideEventBuilder?.setAuth(cached.id, true);
 
@@ -214,6 +215,10 @@ export function authInterceptor<Req, Res>(
           );
         }
 
+        if (!apiKeyRecord.project_id || apiKeyRecord.project_id === "") {
+          return callback?.(AuthError.projectNotFound());
+        }
+
         const recordMode = getModeForRole(apiKeyRecord.role as ApiKeyRole);
 
         apiKeyCache.set(apiKeyHash, {
@@ -221,12 +226,14 @@ export function authInterceptor<Req, Res>(
           role: apiKeyRecord.role as ApiKeyRole,
           mode: recordMode,
           expiresAt: apiKeyRecord.expiresAt,
+          project_id: apiKeyRecord.project_id,
         });
 
         call[apiKeyContextKey] = {
           apiKeyId: apiKeyRecord.id,
           role: apiKeyRecord.role as ApiKeyRole,
           mode: recordMode,
+          project_id: apiKeyRecord.project_id,
         };
         wideEventBuilder?.setAuth(apiKeyRecord.id, false);
 
@@ -270,6 +277,7 @@ async function lookupApiKey(apiKeyHash: string) {
       role: apiKeysTable.role,
       expiresAt: apiKeysTable.expiresAt,
       revoked: apiKeysTable.revoked,
+      project_id: apiKeysTable.project_id,
     })
     .from(apiKeysTable)
     .where(eq(apiKeysTable.key, apiKeyHash))

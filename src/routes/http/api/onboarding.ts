@@ -8,7 +8,7 @@ import {
   generateRequestId,
 } from "../../../context/requestContext.ts";
 import { logger } from "../../../errors/logger.ts";
-import { AuthError } from "../../../errors/auth";
+import { AuthError } from "../../../errors/auth.ts";
 import { authenticateHttpApiKey } from "../../../utils/authenticateHttpApiKey.ts";
 import {
   upsertMetadata,
@@ -16,6 +16,9 @@ import {
 } from "../../../storage/db/postgres/helpers/metadata.ts";
 import { clearClients } from "../../gRPC/payment/paymentProvider.ts";
 import { encrypt, decrypt } from "../../../utils/encryptMetadata.ts";
+import { createProject } from "../../../storage/db/postgres/helpers/projects.ts";
+import { executeInTransaction } from "../../../storage/adapter/postgres/handlers/addEventUtils.ts";
+import { getPostgresDB } from "../../../storage/db/postgres/db.ts";
 
 export async function handleOnboarding(
   request: FastifyRequest,
@@ -29,7 +32,7 @@ export async function handleOnboarding(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
     const body = await request.body;
     const validated = onboardingSchema.parse(body);
@@ -57,7 +60,7 @@ export async function handleOnboarding(
     let testSecret: string;
     try {
       const liveWebhook = await liveClient.webhooks.create({
-        url: `${appUrl}/webhooks/payment/createdCheckout?mode=production`,
+        url: `${appUrl}/webhooks/payment/createdCheckout?mode=production&project_id=${project_id}`,
         description: "Scrawn live payment webhook",
         filter_types: ["payment.succeeded", "payment.failed"],
       });
@@ -65,7 +68,7 @@ export async function handleOnboarding(
         .secret;
 
       const testWebhook = await testClient.webhooks.create({
-        url: `${appUrl}/webhooks/payment/createdCheckout?mode=test`,
+        url: `${appUrl}/webhooks/payment/createdCheckout?mode=test&project_id=${project_id}`,
         description: "Scrawn test payment webhook",
         filter_types: ["payment.succeeded", "payment.failed"],
       });
@@ -84,18 +87,31 @@ export async function handleOnboarding(
       return {};
     }
 
-    await upsertMetadata({
-      dodo_live_api_key: encrypt(validated.dodoLiveApiKey),
-      dodo_test_api_key: encrypt(validated.dodoTestApiKey),
-      dodo_live_product_id: validated.dodoLiveProductId,
-      dodo_test_product_id: validated.dodoTestProductId,
-      dodo_live_webhook_secret: encrypt(liveSecret),
-      dodo_test_webhook_secret: encrypt(testSecret),
-      currency: validated.currency,
-      redirect_url: validated.redirectUrl,
-    });
+    const db = getPostgresDB();
 
-    clearClients();
+    await executeInTransaction(
+      db,
+      "update db with project and metadata",
+      async (txn) => {
+        await createProject(project_id, validated.dodoLiveProductId, txn);
+        await upsertMetadata(
+          {
+            dodo_live_api_key: encrypt(validated.dodoLiveApiKey),
+            dodo_test_api_key: encrypt(validated.dodoTestApiKey),
+            dodo_live_product_id: validated.dodoLiveProductId,
+            dodo_test_product_id: validated.dodoTestProductId,
+            dodo_live_webhook_secret: encrypt(liveSecret),
+            dodo_test_webhook_secret: encrypt(testSecret),
+            currency: validated.currency,
+            redirect_url: validated.redirectUrl,
+            project_id,
+          },
+          txn
+        );
+      }
+    );
+
+    clearClients(project_id);
 
     builder.setSuccess(200);
 
@@ -157,9 +173,9 @@ export async function handleGetConfig(
 
   try {
     const authHeader = request.headers.authorization;
-    await authenticateHttpApiKey(authHeader);
+    const { project_id } = await authenticateHttpApiKey(authHeader);
 
-    const metadata = await getMetadata();
+    const metadata = await getMetadata(project_id);
 
     if (!metadata) {
       builder.setSuccess(200);
@@ -183,6 +199,7 @@ export async function handleGetConfig(
       ),
       currency: metadata.currency,
       redirect_url: metadata.redirect_url,
+      project_id: metadata.project_id,
     };
   } catch (error) {
     Sentry.captureException(error, {
