@@ -135,7 +135,7 @@ export const apiKeysTable = pgTable(
   },
   (table) => ({
     uniqueActiveName: uniqueIndex("unique_active_name")
-      .on(table.name)
+      .on(table.project_id, table.name)
       .where(sql`${table.revoked} = false`),
   })
 );

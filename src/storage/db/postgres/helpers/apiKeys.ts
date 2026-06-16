@@ -79,14 +79,15 @@ type ApiKeyRecord = {
   project_id: string;
 };
 
-export async function getApiKeyRoleById(
-  id: string
-): Promise<{ role: "dashboard" | "production" | "test" } | null> {
+export async function getApiKeyRoleById(id: string): Promise<{
+  role: "dashboard" | "production" | "test";
+  project_id: string;
+} | null> {
   const db = getPostgresDB();
 
   try {
     const [record] = await db
-      .select({ role: apiKeysTable.role })
+      .select({ role: apiKeysTable.role, project_id: apiKeysTable.project_id })
       .from(apiKeysTable)
       .where(eq(apiKeysTable.id, id))
       .limit(1);

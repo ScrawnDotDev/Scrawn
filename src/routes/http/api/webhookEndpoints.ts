@@ -106,6 +106,15 @@ export async function handleCreateWebhookEndpoint(
       return { error: "Target API key not found" };
     }
 
+    if (targetKey.project_id !== auth.project_id) {
+      builder.setError(403, {
+        type: "PermissionDenied",
+        message: "Target API key does not belong to this project",
+      });
+      reply.code(403);
+      return { error: "Target API key does not belong to this project" };
+    }
+
     if (targetKey.role === "dashboard") {
       builder.setError(400, {
         type: "ValidationError",
@@ -298,6 +307,15 @@ export async function handleSendTestWebhook(
       });
       reply.code(404);
       return { error: "API key not found" };
+    }
+
+    if (targetKey.project_id !== auth.project_id) {
+      builder.setError(403, {
+        type: "PermissionDenied",
+        message: "Target API key does not belong to this project",
+      });
+      reply.code(403);
+      return { error: "Target API key does not belong to this project" };
     }
 
     if (targetKey.role !== "test") {
