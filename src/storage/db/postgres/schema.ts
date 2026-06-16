@@ -247,6 +247,10 @@ export const paymentEventsRelation = relations(
       fields: [paymentEventsTable.userId, paymentEventsTable.project_id],
       references: [usersTable.id, usersTable.project_id],
     }),
+    apiKey: one(apiKeysTable, {
+      fields: [paymentEventsTable.apiKeyId],
+      references: [apiKeysTable.id],
+    }),
     session: one(sessionsTable, {
       fields: [paymentEventsTable.proxyId],
       references: [sessionsTable.proxy_link_id],
@@ -329,24 +333,32 @@ export const tagsTable = pgTable("tags", {
     .notNull(),
 });
 
-export const metadataTable = pgTable("metadata", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  last_run_at: timestamp("last_run_at", {
-    withTimezone: true,
-    mode: "string",
-  }),
-  dodo_live_api_key: text("dodo_live_api_key").notNull(),
-  dodo_test_api_key: text("dodo_test_api_key").notNull(),
-  dodo_live_product_id: text("dodo_live_product_id").notNull(),
-  dodo_test_product_id: text("dodo_test_product_id").notNull(),
-  dodo_live_webhook_secret: text("dodo_live_webhook_secret").notNull(),
-  dodo_test_webhook_secret: text("dodo_test_webhook_secret").notNull(),
-  currency: text("currency").notNull().default("usd"),
-  project_id: uuid("project_id")
-    .references(() => projectTable.project_id)
-    .notNull(),
-  redirect_url: text("redirect_url").notNull(),
-});
+export const metadataTable = pgTable(
+  "metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    last_run_at: timestamp("last_run_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
+    dodo_live_api_key: text("dodo_live_api_key").notNull(),
+    dodo_test_api_key: text("dodo_test_api_key").notNull(),
+    dodo_live_product_id: text("dodo_live_product_id").notNull(),
+    dodo_test_product_id: text("dodo_test_product_id").notNull(),
+    dodo_live_webhook_secret: text("dodo_live_webhook_secret").notNull(),
+    dodo_test_webhook_secret: text("dodo_test_webhook_secret").notNull(),
+    currency: text("currency").notNull().default("usd"),
+    project_id: uuid("project_id")
+      .references(() => projectTable.project_id)
+      .notNull(),
+    redirect_url: text("redirect_url").notNull(),
+  },
+  (table) => ({
+    projectIdUnique: uniqueIndex("metadata_project_id_unique").on(
+      table.project_id
+    ),
+  })
+);
 
 export const expressionsTable = pgTable("expressions", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -12,7 +12,7 @@ export type TransactionFn<T> = (
   txn: PgTransaction<any, any, any>
 ) => Promise<T>;
 
-function getPostgresErrorCode(e: unknown): string | null {
+export function getPostgresErrorCode(e: unknown): string | null {
   if (e && typeof e === "object" && "code" in e) {
     const code = (e as { code: unknown }).code;
     if (typeof code === "string") return code;

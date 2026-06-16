@@ -2,7 +2,7 @@ import type { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
 import { getPostgresDB } from "../db";
 import { metadataTable } from "../schema";
 import { StorageError } from "../../../../errors/storage";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { executeInTransaction } from "../../../adapter/postgres/handlers/addEventUtils";
 
 export type DbClient = PgDatabase<any, any, any> | PgTransaction<any, any, any>;
@@ -19,6 +19,18 @@ export type UpsertMetadataInput = {
   project_id: string;
 };
 
+function requireField<T>(value: T | undefined, name: string): T {
+  if (value === undefined) {
+    throw StorageError.insertFailed(
+      `Missing required field '${name}' for metadata insert`,
+      new Error(
+        `Field '${name}' was not provided but is required for a new metadata row`
+      )
+    );
+  }
+  return value;
+}
+
 export async function upsertMetadata(
   input: UpsertMetadataInput,
   tx?: DbClient
@@ -27,13 +39,6 @@ export async function upsertMetadata(
 
   const run = async (txn: DbClient) => {
     try {
-      const [existingMetadata] = await txn
-        .select({ id: metadataTable.id })
-        .from(metadataTable)
-        .where(eq(metadataTable.project_id, input.project_id))
-        .limit(1)
-        .for("update");
-
       const setValues: Partial<typeof metadataTable.$inferInsert> = {};
       if (input.dodo_live_api_key !== undefined)
         setValues.dodo_live_api_key = input.dodo_live_api_key;
@@ -51,21 +56,43 @@ export async function upsertMetadata(
       if (input.redirect_url !== undefined)
         setValues.redirect_url = input.redirect_url;
 
-      if (existingMetadata) {
-        if (Object.keys(setValues).length > 0) {
-          await txn
-            .update(metadataTable)
-            .set(setValues)
-            .where(eq(metadataTable.id, existingMetadata.id));
-        }
-        return;
-      }
+      if (Object.keys(setValues).length === 0) return;
 
-      const insertValues: typeof metadataTable.$inferInsert = {
-        ...setValues,
-        project_id: input.project_id,
-      } as typeof metadataTable.$inferInsert;
-      await txn.insert(metadataTable).values(insertValues);
+      await txn
+        .insert(metadataTable)
+        .values({
+          project_id: input.project_id,
+          dodo_live_api_key: requireField(
+            input.dodo_live_api_key,
+            "dodo_live_api_key"
+          ),
+          dodo_test_api_key: requireField(
+            input.dodo_test_api_key,
+            "dodo_test_api_key"
+          ),
+          dodo_live_product_id: requireField(
+            input.dodo_live_product_id,
+            "dodo_live_product_id"
+          ),
+          dodo_test_product_id: requireField(
+            input.dodo_test_product_id,
+            "dodo_test_product_id"
+          ),
+          dodo_live_webhook_secret: requireField(
+            input.dodo_live_webhook_secret,
+            "dodo_live_webhook_secret"
+          ),
+          dodo_test_webhook_secret: requireField(
+            input.dodo_test_webhook_secret,
+            "dodo_test_webhook_secret"
+          ),
+          redirect_url: requireField(input.redirect_url, "redirect_url"),
+          currency: input.currency,
+        })
+        .onConflictDoUpdate({
+          target: metadataTable.project_id,
+          set: setValues,
+        });
     } catch (e) {
       throw StorageError.insertFailed(
         "Failed to upsert metadata record",
@@ -89,6 +116,7 @@ export async function getMetadata(
     .select()
     .from(metadataTable)
     .where(eq(metadataTable.project_id, project_id))
+    .orderBy(asc(metadataTable.id))
     .limit(1);
   return metadata;
 }
