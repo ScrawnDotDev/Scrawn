@@ -2,10 +2,8 @@ import { getClickHouseDB } from "../../../db/clickhouse";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
-import { DateTime } from "luxon";
-import { toClickHouseDateTime } from "../utils";
+import { toClickHouseDateTime, insertWithIngestionClaim } from "../utils";
 import type { AuthContext } from "../../../../context/auth";
-import { ensureUserExists } from "../../../db/postgres/helpers/users";
 
 type AggregatedEvent = {
   userId: UserId;
@@ -167,29 +165,35 @@ export async function handleAddAiTokenUsage(
 
   const aggregatedEvents = aggregateAiTokenEvents(events);
 
-  const distinctUserIds = Array.from(
-    new Set(aggregatedEvents.map((e) => e.userId))
-  );
-  for (const userId of distinctUserIds) {
-    await ensureUserExists(auth.projectId, userId);
-  }
-
   const firstId = crypto.randomUUID();
-  const now = toClickHouseDateTime(DateTime.utc());
-  const values = buildAiTokenInsertRows(aggregatedEvents, auth, firstId, now);
 
-  try {
-    await client.insert({
-      table: "ai_token_usage_events",
-      values,
-      format: "JSONEachRow",
-    });
-  } catch (e) {
-    throw StorageError.insertFailed(
-      "Failed to insert AI token usage events",
-      e instanceof Error ? e : new Error(String(e))
-    );
-  }
+  await insertWithIngestionClaim(
+    auth,
+    "ai_token_usage_events",
+    aggregatedEvents.map((e) => e.userId),
+    aggregatedEvents.map((e) => e.idempotencyKey),
+    async (ingestedTimestamp) => {
+      const values = buildAiTokenInsertRows(
+        aggregatedEvents,
+        auth,
+        firstId,
+        ingestedTimestamp
+      );
+
+      try {
+        await client.insert({
+          table: "ai_token_usage_events",
+          values,
+          format: "JSONEachRow",
+        });
+      } catch (e) {
+        throw StorageError.insertFailed(
+          "Failed to insert AI token usage events",
+          e instanceof Error ? e : new Error(String(e))
+        );
+      }
+    }
+  );
 
   return { id: firstId };
 }

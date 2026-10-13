@@ -1,10 +1,8 @@
 import { getClickHouseDB } from "../../../db/clickhouse";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
-import { DateTime } from "luxon";
-import { toClickHouseDateTime } from "../utils";
+import { toClickHouseDateTime, insertWithIngestionClaim } from "../utils";
 import type { AuthContext } from "../../../../context/auth";
-import { ensureUserExists } from "../../../db/postgres/helpers/users";
 
 export async function handleAddBasicUsage(
   event_data: SqlRecordOf<"BASIC_USAGE">,
@@ -27,37 +25,43 @@ export async function handleAddBasicUsage(
   }
   const reportedTimestamp = toClickHouseDateTime(event_data.reported_timestamp);
 
-  await ensureUserExists(auth.projectId, event_data.userId);
-
   const id = crypto.randomUUID();
 
-  try {
-    await client.insert({
-      table: "basic_usage_events",
-      values: [
-        {
-          id,
-          project_id: auth.projectId,
-          event_id: event_data.eventId,
-          idempotency_key: event_data.idempotencyKey,
-          user_id: event_data.userId,
-          api_key_id: auth.apiKeyId,
-          mode: auth.mode,
-          reported_timestamp: reportedTimestamp,
-          ingested_timestamp: toClickHouseDateTime(DateTime.utc()),
-          type: event_data.data.basicUsageType,
-          debit_amount: debitAmount,
-          metadata: event_data.data.metadata ?? null,
-        },
-      ],
-      format: "JSONEachRow",
-    });
-  } catch (e) {
-    throw StorageError.insertFailed(
-      `Failed to insert basic usage event for user ${event_data.userId}`,
-      e instanceof Error ? e : new Error(String(e))
-    );
-  }
+  await insertWithIngestionClaim(
+    auth,
+    "basic_usage_events",
+    [event_data.userId],
+    [event_data.idempotencyKey],
+    async (ingestedTimestamp) => {
+      try {
+        await client.insert({
+          table: "basic_usage_events",
+          values: [
+            {
+              id,
+              project_id: auth.projectId,
+              event_id: event_data.eventId,
+              idempotency_key: event_data.idempotencyKey,
+              user_id: event_data.userId,
+              api_key_id: auth.apiKeyId,
+              mode: auth.mode,
+              reported_timestamp: reportedTimestamp,
+              ingested_timestamp: ingestedTimestamp,
+              type: event_data.data.basicUsageType,
+              debit_amount: debitAmount,
+              metadata: event_data.data.metadata ?? null,
+            },
+          ],
+          format: "JSONEachRow",
+        });
+      } catch (e) {
+        throw StorageError.insertFailed(
+          `Failed to insert basic usage event for user ${event_data.userId}`,
+          e instanceof Error ? e : new Error(String(e))
+        );
+      }
+    }
+  );
 
   return { id };
 }

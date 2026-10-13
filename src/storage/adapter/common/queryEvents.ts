@@ -3,6 +3,7 @@ import { StorageError } from "../../../errors/storage";
 import { getTablesForRequest } from "./queryEventsBase";
 import { PostgresQueryDialect } from "./postgresDialect";
 import { ClickHouseQueryDialect } from "./clickHouseDialect";
+import type { QueryScope } from "./sqlDialect";
 import type {
   QueryRequest,
   QueryResponse,
@@ -25,11 +26,13 @@ export async function handleQueryEvents(
     return { rows: [], total: 0 };
   }
 
+  const scope: QueryScope = { projectId: auth.projectId, mode: auth.mode };
+
   try {
     if (request.aggregation) {
-      return await dialect.executeAggregationQuery(request, filtered);
+      return await dialect.executeAggregationQuery(request, filtered, scope);
     }
-    return await dialect.executeListQuery(request, filtered);
+    return await dialect.executeListQuery(request, filtered, scope);
   } catch (e) {
     if (
       e &&

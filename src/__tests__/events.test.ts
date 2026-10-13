@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-const isClickHouse = process.env.STORAGE_ADAPTER === "clickhouse";
 import { Metadata } from "@grpc/grpc-js";
 import {
   EventServiceClient,
@@ -85,7 +84,7 @@ describe("EventService", () => {
       ).rejects.toThrow("Invalid API key");
     });
 
-    it.skipIf(isClickHouse)("rejects duplicate idempotency key", async () => {
+    it("rejects duplicate idempotency key", async () => {
       const payload = makeEventPayload();
 
       await registerEvent(client, payload, grpcMetadata(`Bearer ${rawKey}`));

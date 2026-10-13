@@ -1,6 +1,6 @@
 import { getPostgresDB } from "../db";
 import { usersTable } from "../schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { StorageError } from "../../../../errors/storage";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 
@@ -13,9 +13,12 @@ export async function updateUserBilledTimestamp(
   const db = txn ?? getPostgresDB();
 
   try {
+    // Never move the timestamp backwards when an older session is paid late.
     await db
       .update(usersTable)
-      .set({ last_billed_timestamp: billedUpto })
+      .set({
+        last_billed_timestamp: sql`GREATEST(${usersTable.last_billed_timestamp}, ${billedUpto}::timestamptz)`,
+      })
       .where(
         and(eq(usersTable.projectId, projectId), eq(usersTable.id, userId))
       );

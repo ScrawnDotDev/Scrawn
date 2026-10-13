@@ -20,6 +20,7 @@ import type {
 import type { UserId } from "../../../config/identifiers";
 import type { DateTime } from "luxon";
 import type { AuthContext } from "../../../context/auth";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 
 export class ClickHouseAdapter implements StorageAdapter {
   connectionObject = getClickHouseDB();
@@ -77,14 +78,18 @@ export class ClickHouseAdapter implements StorageAdapter {
     event_type: EventKind,
     beforeTimestamp: DateTime,
     auth: AuthContext,
-    _txn?: unknown
+    txn?: unknown
   ): Promise<number> {
+    // Events live in ClickHouse, but the last-billed lookup reads Postgres
+    // and must run on the caller's transaction (see runClickHousePriceQuery).
+    const tx = txn as PgTransaction<any, any, any> | undefined;
     switch (event_type) {
       case "BASIC_USAGE": {
         return await handlePriceRequestBasicUsage(
           userID,
           beforeTimestamp,
-          auth
+          auth,
+          tx
         );
       }
 
@@ -92,7 +97,8 @@ export class ClickHouseAdapter implements StorageAdapter {
         return await handlePriceRequestAiTokenUsage(
           userID,
           beforeTimestamp,
-          auth
+          auth,
+          tx
         );
       }
 

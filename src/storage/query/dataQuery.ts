@@ -244,7 +244,9 @@ export async function executeDataQuery(
   if (tableDef.fields.projectId) {
     authConditions.push(eq(tableDef.fields.projectId.col, auth.projectId));
   }
-  if (tableDef.fields.mode) {
+  // A null mode (dashboard keys) means "all modes"; filtering on it would
+  // produce `mode = NULL`, which never matches.
+  if (tableDef.fields.mode && auth.mode) {
     authConditions.push(eq(tableDef.fields.mode.col, auth.mode));
   }
   const finalWhere = and(userWhere, ...authConditions);

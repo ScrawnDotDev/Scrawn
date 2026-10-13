@@ -37,13 +37,13 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const HMAC_SECRET = process.env.HMAC_SECRET;
 const CLICKHOUSE_URL = process.env.CLICKHOUSE_URL;
 
-if (STORAGE_ADAPTER === "postgres") {
-  if (!DATABASE_URL) {
-    logger.fatal("DATABASE_URL is not defined in environment variables");
-    throw new Error("DATABASE_URL is not defined in environment variables");
-  }
-  getPostgresDB(DATABASE_URL);
+// Postgres is always required: API keys, projects, users, sessions, tags and
+// expressions live there regardless of which adapter stores events.
+if (!DATABASE_URL) {
+  logger.fatal("DATABASE_URL is not defined in environment variables");
+  throw new Error("DATABASE_URL is not defined in environment variables");
 }
+getPostgresDB(DATABASE_URL);
 
 if (!HMAC_SECRET) {
   logger.fatal("HMAC_SECRET environment variable is not set");

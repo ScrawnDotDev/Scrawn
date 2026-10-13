@@ -3,8 +3,9 @@ import { aiTokenUsageEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
 import type { UserId } from "../../../../config/identifiers";
-import { DateTime } from "luxon";
+import { sql } from "drizzle-orm";
 import { ensureUserExists } from "../../../db/postgres/helpers/users";
+import { lockUsersForIngestion } from "../../../db/postgres/helpers/billing";
 import type { AuthContext } from "../../../../context/auth";
 import {
   validateAndPrepareTimestamp,
@@ -121,7 +122,8 @@ function buildAiTokenInsertValues(
     eventId: aggEvent.eventId,
     idempotencyKey: aggEvent.idempotencyKey,
     reportedTimestamp: aggEvent.reported_timestamp,
-    ingestedTimestamp: DateTime.utc().toString(),
+    // Database clock, read after the user lock (see helpers/billing).
+    ingestedTimestamp: sql`clock_timestamp()`,
     userId: aggEvent.userId,
     apiKeyId: auth.apiKeyId,
     mode: auth.mode as "production" | "test",
@@ -171,6 +173,7 @@ export async function handleAddAiTokenUsage(
       for (const userId of distinctUserIds) {
         await ensureUserExists(auth.projectId, userId, txn);
       }
+      await lockUsersForIngestion(auth.projectId, distinctUserIds, txn);
 
       try {
         const aiTokenUsageValues = buildAiTokenInsertValues(

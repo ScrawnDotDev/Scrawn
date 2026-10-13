@@ -22,6 +22,9 @@ import {
   paymentEventsTable,
   webhookDeliveriesTable,
   webhookEndpointsTable,
+  tagsTable,
+  expressionsTable,
+  eventIdempotencyKeysTable,
 } from "../../../storage/db/postgres/schema";
 import { eq, inArray } from "drizzle-orm";
 import { encrypt, decrypt } from "../../../utils/encryptMetadata.ts";
@@ -360,6 +363,13 @@ export async function handleDeleteProject(
         .delete(sessionsTable)
         .where(eq(sessionsTable.projectId, projectId));
       await txn.delete(usersTable).where(eq(usersTable.projectId, projectId));
+      await txn.delete(tagsTable).where(eq(tagsTable.projectId, projectId));
+      await txn
+        .delete(eventIdempotencyKeysTable)
+        .where(eq(eventIdempotencyKeysTable.projectId, projectId));
+      await txn
+        .delete(expressionsTable)
+        .where(eq(expressionsTable.projectId, projectId));
       const deletedKeys = await txn
         .delete(apiKeysTable)
         .where(eq(apiKeysTable.projectId, projectId))

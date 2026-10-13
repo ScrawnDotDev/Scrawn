@@ -18,17 +18,19 @@ import {
   grpcInsecureCredentials,
   grpcMetadata,
 } from "./fixtures/grpc";
-import { createTestApiKey } from "./fixtures/apiKey";
+import { createTestApiKey, TEST_PROJECT_ID } from "./fixtures/apiKey";
 import { clearDatabase } from "./db";
 import { getPostgresDB } from "../storage/db/postgres/db";
 import {
   projectsTable,
   usersTable,
+  apiKeysTable,
   basicUsageEventsTable,
   aiTokenUsageEventsTable,
 } from "../storage/db/postgres/schema";
 import { DateTime } from "luxon";
 import { getClickHouseDB } from "../storage/db/clickhouse";
+import { hashAPIKey } from "../utils/hashAPIKey";
 
 function queryEvents(
   client: QueryServiceClient,
@@ -70,16 +72,42 @@ interface SeededEvent {
   idempotencyKey: string;
   debitAmount: number;
   type: "BASIC_USAGE" | "AI_TOKEN_USAGE";
+  mode: "test" | "production";
   model?: string;
   provider?: string;
 }
 
 let seededBasic: SeededEvent[] = [];
 let seededAi: SeededEvent[] = [];
+// Dashboard key scoped to PROJECT_ID: sees both modes of that project only.
 let rawKey: string;
+// Test-mode key scoped to PROJECT_ID: sees only test-mode events.
+let testModeKey: string;
+// Event stored under a different project; must never be visible.
+let otherProjectEventId: string;
 
 function toClickHouseDT(dt: DateTime): string {
   return dt.toUTC().toFormat("yyyy-MM-dd HH:mm:ss.SSS");
+}
+
+function randomKeySuffix(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 32);
+}
+
+async function insertProjectKey(
+  role: "dashboard" | "test",
+  prefix: string
+): Promise<string> {
+  const db = getPostgresDB();
+  const key = `${prefix}${randomKeySuffix()}`;
+  await db.insert(apiKeysTable).values({
+    name: `query-events-${role}-${crypto.randomUUID()}`,
+    key: hashAPIKey(key),
+    role,
+    expiresAt: DateTime.utc().plus({ years: 1 }).toISO(),
+    projectId: PROJECT_ID,
+  });
+  return key;
 }
 
 async function seedData() {
@@ -87,7 +115,7 @@ async function seedData() {
 
   await db
     .insert(projectsTable)
-    .values({ id: PROJECT_ID, name: "test-project" });
+    .values({ id: PROJECT_ID, name: "query-events-project" });
 
   await db.insert(usersTable).values([
     { id: USER_1, projectId: PROJECT_ID, mode: "test" },
@@ -162,6 +190,7 @@ async function seedData() {
       idempotencyKey: bu1[0]!.idempotencyKey,
       debitAmount: 100,
       type: "BASIC_USAGE",
+      mode: "test",
     },
     {
       eventId: bu2[0]!.eventId,
@@ -169,6 +198,7 @@ async function seedData() {
       idempotencyKey: bu2[0]!.idempotencyKey,
       debitAmount: 50,
       type: "BASIC_USAGE",
+      mode: "test",
     },
     {
       eventId: bu3[0]!.eventId,
@@ -176,6 +206,7 @@ async function seedData() {
       idempotencyKey: bu3[0]!.idempotencyKey,
       debitAmount: 200,
       type: "BASIC_USAGE",
+      mode: "production",
     },
   ];
 
@@ -240,6 +271,7 @@ async function seedData() {
       idempotencyKey: ai1[0]!.idempotencyKey,
       debitAmount: 30,
       type: "AI_TOKEN_USAGE",
+      mode: "test",
       model: "gpt-4",
       provider: "openai",
     },
@@ -249,6 +281,7 @@ async function seedData() {
       idempotencyKey: ai2[0]!.idempotencyKey,
       debitAmount: 50,
       type: "AI_TOKEN_USAGE",
+      mode: "production",
       model: "claude-3",
       provider: "anthropic",
     },
@@ -265,6 +298,7 @@ async function seedData() {
           event_id: bu1[0]!.eventId,
           idempotency_key: bu1[0]!.idempotencyKey,
           user_id: USER_1,
+          project_id: PROJECT_ID,
           api_key_id: key1.id,
           mode: "test",
           reported_timestamp: insTs,
@@ -277,6 +311,7 @@ async function seedData() {
           event_id: bu2[0]!.eventId,
           idempotency_key: bu2[0]!.idempotencyKey,
           user_id: USER_1,
+          project_id: PROJECT_ID,
           api_key_id: key2.id,
           mode: "test",
           reported_timestamp: insTs,
@@ -289,6 +324,7 @@ async function seedData() {
           event_id: bu3[0]!.eventId,
           idempotency_key: bu3[0]!.idempotencyKey,
           user_id: USER_2,
+          project_id: PROJECT_ID,
           api_key_id: key3.id,
           mode: "production",
           reported_timestamp: insTs,
@@ -308,6 +344,7 @@ async function seedData() {
           event_id: ai1[0]!.eventId,
           idempotency_key: ai1[0]!.idempotencyKey,
           user_id: USER_1,
+          project_id: PROJECT_ID,
           api_key_id: key4.id,
           mode: "test",
           reported_timestamp: insTs,
@@ -329,6 +366,7 @@ async function seedData() {
           event_id: ai2[0]!.eventId,
           idempotency_key: ai2[0]!.idempotencyKey,
           user_id: USER_2,
+          project_id: PROJECT_ID,
           api_key_id: key5.id,
           mode: "production",
           reported_timestamp: insTs,
@@ -356,8 +394,55 @@ async function seedData() {
     });
   }
 
-  const authKey = await createTestApiKey();
-  rawKey = authKey.rawKey;
+  // An event in another project (same user id, same mode) that must stay
+  // invisible to every key scoped to PROJECT_ID.
+  await db
+    .insert(usersTable)
+    .values({ id: USER_1, projectId: TEST_PROJECT_ID, mode: "test" });
+  const [other] = await db
+    .insert(basicUsageEventsTable)
+    .values({
+      eventId: crypto.randomUUID(),
+      projectId: TEST_PROJECT_ID,
+      idempotencyKey: crypto.randomUUID(),
+      reportedTimestamp: ts.toISO(),
+      userId: USER_1,
+      apiKeyId: key1.id,
+      mode: "test",
+      type: "RAW",
+      debitAmount: 999,
+    })
+    .returning({
+      eventId: basicUsageEventsTable.eventId,
+      idempotencyKey: basicUsageEventsTable.idempotencyKey,
+    });
+  otherProjectEventId = other!.eventId;
+
+  if (isClickHouse) {
+    const insTs = toClickHouseDT(ts);
+    await getClickHouseDB().insert({
+      table: "basic_usage_events",
+      values: [
+        {
+          event_id: other!.eventId,
+          idempotency_key: other!.idempotencyKey,
+          user_id: USER_1,
+          project_id: TEST_PROJECT_ID,
+          api_key_id: key1.id,
+          mode: "test",
+          reported_timestamp: insTs,
+          ingested_timestamp: insTs,
+          type: "RAW",
+          debit_amount: 999,
+          metadata: null,
+        },
+      ],
+      format: "JSONEachRow",
+    });
+  }
+
+  rawKey = await insertProjectKey("dashboard", "scrn_dash_");
+  testModeKey = await insertProjectKey("test", "scrn_test_");
 }
 
 function allSeeded(): SeededEvent[] {
@@ -598,8 +683,6 @@ describe("QueryEvents", () => {
     });
 
     it("respects limit", async () => {
-      // NOTE: Known ClickHouse bug — LIMIT clause is correctly generated but
-      // ClickHouse returns all rows regardless. Postgres handles this correctly.
       const where = makeFilterGroup(LogicalOperator.AND, [], []);
       const req = { where, limit: 2, offset: 0 } as QueryEventsRequest;
 
@@ -609,11 +692,7 @@ describe("QueryEvents", () => {
         grpcMetadata(`Bearer ${rawKey}`)
       );
 
-      if (isClickHouse) {
-        expect(res.rows.length).toBe(allSeeded().length);
-      } else {
-        expect(res.rows.length).toBeLessThanOrEqual(2);
-      }
+      expect(res.rows.length).toBeLessThanOrEqual(2);
       expect(res.total).toBe(allSeeded().length);
     });
 
@@ -825,6 +904,83 @@ describe("QueryEvents", () => {
       expect(user2Row).toBeDefined();
       expect(Number(user1Row!.aggValue)).toBe(user1Sum);
       expect(Number(user2Row!.aggValue)).toBe(user2Sum);
+    });
+  });
+
+  describe("tenant isolation", () => {
+    it("never returns events from another project", async () => {
+      const where = makeFilterGroup(LogicalOperator.AND, [
+        makeFilterCondition("userId", Operator.EQ, USER_1),
+      ]);
+      const req = { where, limit: 100, offset: 0 } as QueryEventsRequest;
+
+      const res = await queryEvents(
+        client,
+        req,
+        grpcMetadata(`Bearer ${rawKey}`)
+      );
+
+      const eventIds = res.rows.map((r) => r.eventId);
+      expect(eventIds).not.toContain(otherProjectEventId);
+      expect(res.total).toBe(
+        allSeeded().filter((e) => e.userId === USER_1).length
+      );
+    });
+
+    it("keys from another project cannot see this project's events", async () => {
+      const outsider = await createTestApiKey();
+      const where = makeFilterGroup(LogicalOperator.AND, [], []);
+      const req = { where, limit: 100, offset: 0 } as QueryEventsRequest;
+
+      const res = await queryEvents(
+        client,
+        req,
+        grpcMetadata(`Bearer ${outsider.rawKey}`)
+      );
+
+      const seededIds = new Set(allSeeded().map((e) => e.eventId));
+      for (const row of res.rows) {
+        expect(seededIds.has(row.eventId)).toBe(false);
+      }
+      expect(res.rows.map((r) => r.eventId)).toContain(otherProjectEventId);
+    });
+
+    it("test-mode keys only see test-mode events", async () => {
+      const where = makeFilterGroup(LogicalOperator.AND, [], []);
+      const req = { where, limit: 100, offset: 0 } as QueryEventsRequest;
+
+      const res = await queryEvents(
+        client,
+        req,
+        grpcMetadata(`Bearer ${testModeKey}`)
+      );
+
+      const testEvents = allSeeded().filter((e) => e.mode === "test");
+      expect(res.total).toBe(testEvents.length);
+      expect(res.rows.map((r) => r.eventId).sort()).toEqual(
+        testEvents.map((e) => e.eventId).sort()
+      );
+    });
+
+    it("scopes aggregations to the caller's project and mode", async () => {
+      const where = makeFilterGroup(LogicalOperator.AND, [], []);
+      const req = {
+        where,
+        aggregation: { type: AggregationType.SUM, field: "debitAmount" },
+        limit: 100,
+        offset: 0,
+      } as QueryEventsRequest;
+
+      const res = await queryEvents(
+        client,
+        req,
+        grpcMetadata(`Bearer ${testModeKey}`)
+      );
+
+      const expectedSum = allSeeded()
+        .filter((e) => e.mode === "test")
+        .reduce((s, e) => s + e.debitAmount, 0);
+      expect(Number(res.aggRows[0]!.aggValue)).toBe(expectedSum);
     });
   });
 });

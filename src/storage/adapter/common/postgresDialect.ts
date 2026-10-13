@@ -13,7 +13,7 @@ import type {
   QueryResponse,
   QueryResultRow,
 } from "../../../interface/storage/Storage";
-import type { QueryDialect } from "../common/sqlDialect";
+import type { QueryDialect, QueryScope } from "../common/sqlDialect";
 
 export class PostgresQueryDialect implements QueryDialect {
   filterTables(tables: EventTableName[]): EventTableName[] {
@@ -22,18 +22,15 @@ export class PostgresQueryDialect implements QueryDialect {
 
   async executeListQuery(
     request: QueryRequest,
-    tables: EventTableName[]
+    tables: EventTableName[],
+    scope: QueryScope
   ): Promise<QueryResponse> {
     const db = getPostgresDB();
 
-    const selectExpr = tables.map((t) => this.buildSelectColumns(t));
-    const whereExpr = tables.map((t) =>
-      this.buildWhereClause(request.where, t)
-    );
-
-    const subqueries = tables.map((t, i) => {
-      const base = sql`SELECT ${selectExpr[i]} FROM ${sql.raw(t)}`;
-      return whereExpr[i] ? sql`${base} WHERE ${whereExpr[i]}` : base;
+    const subqueries = tables.map((t) => {
+      const selectExpr = this.buildSelectColumns(t);
+      const whereExpr = this.buildScopedWhereClause(request.where, t, scope);
+      return sql`SELECT ${selectExpr} FROM ${sql.raw(t)} WHERE ${whereExpr}`;
     });
 
     const unionQuery = sql.join(subqueries, sql` UNION ALL `);
@@ -51,14 +48,15 @@ export class PostgresQueryDialect implements QueryDialect {
     const data = result as unknown as Record<string, unknown>[];
     const rows: QueryResultRow[] = data.map(normalizeRow);
 
-    const total = await this.getTotalCount(request, tables);
+    const total = await this.getTotalCount(request, tables, scope);
 
     return { rows, total };
   }
 
   async executeAggregationQuery(
     request: QueryRequest,
-    tables: EventTableName[]
+    tables: EventTableName[],
+    scope: QueryScope
   ): Promise<QueryResponse> {
     const db = getPostgresDB();
     const agg = request.aggregation!;
@@ -103,9 +101,8 @@ export class PostgresQueryDialect implements QueryDialect {
         cols.push(sql`1::bigint as ${sql.raw(`"agg_value"`)}`);
       }
 
-      const whereClause = this.buildWhereClause(request.where, t);
-      const base = sql`SELECT ${sql.join(cols, sql`, `)} FROM ${sql.raw(t)}`;
-      return whereClause ? sql`${base} WHERE ${whereClause}` : base;
+      const whereClause = this.buildScopedWhereClause(request.where, t, scope);
+      return sql`SELECT ${sql.join(cols, sql`, `)} FROM ${sql.raw(t)} WHERE ${whereClause}`;
     });
 
     const unionQuery = sql.join(subqueries, sql` UNION ALL `);
@@ -151,14 +148,14 @@ export class PostgresQueryDialect implements QueryDialect {
 
   async getTotalCount(
     request: QueryRequest,
-    tables: EventTableName[]
+    tables: EventTableName[],
+    scope: QueryScope
   ): Promise<number> {
     const db = getPostgresDB();
 
     const subqueries = tables.map((t) => {
-      const whereClause = this.buildWhereClause(request.where, t);
-      const base = sql`SELECT count(*)::int as cnt FROM ${sql.raw(t)}`;
-      return whereClause ? sql`${base} WHERE ${whereClause}` : base;
+      const whereClause = this.buildScopedWhereClause(request.where, t, scope);
+      return sql`SELECT count(*)::int as cnt FROM ${sql.raw(t)} WHERE ${whereClause}`;
     });
 
     const countQuery = sql`
@@ -226,6 +223,27 @@ export class PostgresQueryDialect implements QueryDialect {
     }
 
     return parts;
+  }
+
+  /**
+   * Combines the caller's filters with the mandatory tenant scope so that a
+   * query can never read rows from another project (or, for production/test
+   * keys, from the other mode).
+   */
+  private buildScopedWhereClause(
+    group: QueryFilterGroup,
+    table: EventTableName,
+    scope: QueryScope
+  ): SQL {
+    const parts: SQL[] = [sql`project_id = ${scope.projectId}::uuid`];
+    if (scope.mode) {
+      parts.push(sql`mode = ${scope.mode}`);
+    }
+    const userWhere = this.buildWhereClause(group, table);
+    if (userWhere) {
+      parts.push(sql`(${userWhere})`);
+    }
+    return sql.join(parts, sql` AND `);
   }
 
   private buildWhereClause(

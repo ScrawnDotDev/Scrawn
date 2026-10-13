@@ -2,18 +2,17 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import {
   basicUsageEventsTable,
   aiTokenUsageEventsTable,
-  usersTable,
 } from "../../../db/postgres/schema";
+import { getLastBilledTimestamp } from "../../../db/postgres/helpers/sessions";
 import { StorageError } from "../../../../errors/storage";
-import { eq, sum, sql, and, type SQL } from "drizzle-orm";
+import { eq, sum, and, lt, gte, type SQL } from "drizzle-orm";
 import type { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { AuthContext } from "../../../../context/auth";
 
 type PriceEventTable =
-  | typeof basicUsageEventsTable
-  | typeof aiTokenUsageEventsTable;
+  typeof basicUsageEventsTable | typeof aiTokenUsageEventsTable;
 
 export async function handlePriceRequest(
   userId: UserId,
@@ -35,30 +34,46 @@ export async function handlePriceRequest(
       throw StorageError.invalidData(`Invalid userId format: ${typeof userId}`);
     }
 
+    if (!auth.mode) {
+      throw StorageError.invalidData(
+        `Cannot price ${eventType} events without a production/test mode`
+      );
+    }
+
+    const beforeIso = beforeTimestamp.toUTC().toISO();
+    if (!beforeIso) {
+      throw StorageError.invalidTimestamp(
+        "beforeTimestamp is not a valid DateTime"
+      );
+    }
+
+    const lastBilled = await getLastBilledTimestamp(
+      auth.projectId,
+      userId,
+      auth.mode,
+      txn
+    );
+
     let result;
     try {
-      const baseCondition = sql`${priceTable.reportedTimestamp} > ${usersTable.last_billed_timestamp} AND ${priceTable.userId} = ${userId} AND ${priceTable.mode} = ${auth.mode} AND ${priceTable.projectId} = ${auth.projectId}`;
-      const whereClause = beforeTimestamp
-        ? and(
-            baseCondition,
-            sql`${priceTable.reportedTimestamp} < ${beforeTimestamp.toISO()}`
-          )
-        : baseCondition;
+      // The billing window is keyed on the server-assigned ingestion time, not
+      // the client-reported time, so every event lands in exactly one window:
+      // [lastBilled, before). Events reported late or with backdated
+      // timestamps are still billed in the next checkout.
+      const whereClause = and(
+        eq(priceTable.projectId, auth.projectId),
+        eq(priceTable.userId, userId),
+        eq(priceTable.mode, auth.mode),
+        lt(priceTable.ingestedTimestamp, beforeIso),
+        lastBilled ? gte(priceTable.ingestedTimestamp, lastBilled) : undefined
+      );
 
       result = await db
         .select({
           price: sum(priceColumn),
         })
         .from(priceTable)
-        .innerJoin(
-          usersTable,
-          and(
-            eq(priceTable.userId, usersTable.id),
-            eq(priceTable.projectId, usersTable.projectId)
-          )
-        )
-        .where(whereClause)
-        .groupBy(priceTable.userId);
+        .where(whereClause);
     } catch (e) {
       throw StorageError.queryFailed(
         `Failed to query ${eventType} events for user ${userId}`,

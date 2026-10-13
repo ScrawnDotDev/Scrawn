@@ -19,12 +19,14 @@ import { clearDatabase } from "./db";
 import { getPostgresDB } from "../storage/db/postgres/db";
 import {
   projectsTable,
+  apiKeysTable,
   usersTable,
   sessionsTable,
   tagsTable,
   expressionsTable,
 } from "../storage/db/postgres/schema";
 import { DateTime } from "luxon";
+import { hashAPIKey } from "../utils/hashAPIKey";
 import type { QueryResponse } from "../gen/data/v1/data";
 
 function queryData(
@@ -69,7 +71,17 @@ async function seedData() {
 
   await db
     .insert(projectsTable)
-    .values({ id: PROJECT_ID, name: "test-project" });
+    .values({ id: PROJECT_ID, name: "data-query-project" });
+
+  // Data queries are dashboard-only and scoped to the key's project.
+  const dashboardKey = `scrn_dash_${crypto.randomUUID().replace(/-/g, "").slice(0, 32)}`;
+  await db.insert(apiKeysTable).values({
+    name: `data-query-dashboard-${crypto.randomUUID()}`,
+    key: hashAPIKey(dashboardKey),
+    role: "dashboard",
+    expiresAt: DateTime.utc().plus({ years: 1 }).toISO(),
+    projectId: PROJECT_ID,
+  });
 
   await db.insert(usersTable).values([
     {
@@ -125,7 +137,7 @@ async function seedData() {
     },
   ]);
 
-  rawKey = key.rawKey;
+  rawKey = dashboardKey;
 }
 
 describe("DataQuery", () => {

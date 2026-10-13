@@ -2,8 +2,9 @@ import { getPostgresDB } from "../../../db/postgres/db";
 import { basicUsageEventsTable } from "../../../db/postgres/schema";
 import { StorageError } from "../../../../errors/storage";
 import { type SqlRecordOf } from "../../../../interface/event/Event";
-import { DateTime } from "luxon";
+import { sql } from "drizzle-orm";
 import { ensureUserExists } from "../../../db/postgres/helpers/users";
+import { lockUsersForIngestion } from "../../../db/postgres/helpers/billing";
 import type { AuthContext } from "../../../../context/auth";
 import {
   validateAndPrepareTimestamp,
@@ -33,6 +34,7 @@ export async function handleAddBasicUsage(
         event_data.userId,
         txn
       );
+      await lockUsersForIngestion(auth.projectId, [event_data.userId], txn);
 
       const reportedTimestamp = await validateAndPrepareTimestamp(
         event_data.reported_timestamp
@@ -46,7 +48,8 @@ export async function handleAddBasicUsage(
             eventId: event_data.eventId,
             idempotencyKey: event_data.idempotencyKey,
             reportedTimestamp,
-            ingestedTimestamp: DateTime.utc().toString(),
+            // Database clock, read after the user lock (see helpers/billing).
+            ingestedTimestamp: sql`clock_timestamp()`,
             userId: event_data.userId,
             apiKeyId: auth.apiKeyId,
             mode: auth.mode as "production" | "test",

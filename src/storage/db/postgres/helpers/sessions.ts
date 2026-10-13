@@ -1,10 +1,49 @@
 import { getPostgresDB } from "../db";
 import { sessionsTable } from "../schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, max } from "drizzle-orm";
 import { StorageError } from "../../../../errors/storage";
 import { DateTime } from "luxon";
 import type { UserId } from "../../../../config/identifiers";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+
+/**
+ * Returns the point up to which a user has already paid in the given mode,
+ * i.e. the latest `billed_upto` among their succeeded checkout sessions.
+ *
+ * Deriving this per mode from sessions (instead of the single
+ * `users.last_billed_timestamp` column) keeps test and production billing
+ * independent, and taking the MAX means paying an older session can never
+ * move the billing window backwards.
+ */
+export async function getLastBilledTimestamp(
+  projectId: string,
+  userId: UserId,
+  mode: "test" | "production",
+  txn?: PgTransaction<any, any, any>
+): Promise<string | null> {
+  const db = txn ?? getPostgresDB();
+
+  try {
+    const [row] = await db
+      .select({ lastBilled: max(sessionsTable.billed_upto) })
+      .from(sessionsTable)
+      .where(
+        and(
+          eq(sessionsTable.projectId, projectId),
+          eq(sessionsTable.userId, userId),
+          eq(sessionsTable.mode, mode),
+          eq(sessionsTable.processed, "succeeded")
+        )
+      );
+
+    return row?.lastBilled ?? null;
+  } catch (e) {
+    throw StorageError.queryFailed(
+      "Failed to look up last billed timestamp",
+      e instanceof Error ? e : new Error(String(e))
+    );
+  }
+}
 
 export async function updateSessionStatus(
   projectId: string,

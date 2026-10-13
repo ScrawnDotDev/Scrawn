@@ -518,6 +518,35 @@ export const webhookDeliveriesRelation = relations(
   })
 );
 
+/**
+ * Idempotency claims for events stored in ClickHouse, which has no unique
+ * constraints. A key is claimed in the same Postgres transaction that inserts
+ * the ClickHouse row, so concurrent retries cannot both be accepted.
+ */
+export const eventIdempotencyKeysTable = pgTable(
+  "event_idempotency_keys",
+  {
+    projectId: uuid("project_id")
+      .references(() => projectsTable.id)
+      .notNull(),
+    eventTable: text("event_table", {
+      enum: ["basic_usage_events", "ai_token_usage_events"],
+    }).notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.projectId, table.eventTable, table.idempotencyKey],
+    }),
+  })
+);
+
 export const projectsRelation = relations(projectsTable, ({ many }) => ({
   users: many(usersTable),
   sessions: many(sessionsTable),

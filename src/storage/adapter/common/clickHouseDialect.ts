@@ -14,7 +14,7 @@ import type {
   QueryResponse,
   QueryResultRow,
 } from "../../../interface/storage/Storage";
-import type { QueryDialect } from "../common/sqlDialect";
+import type { QueryDialect, QueryScope } from "../common/sqlDialect";
 
 const CH_TABLES: EventTableName[] = [
   "basic_usage_events",
@@ -28,22 +28,22 @@ export class ClickHouseQueryDialect implements QueryDialect {
 
   async executeListQuery(
     request: QueryRequest,
-    tables: EventTableName[]
+    tables: EventTableName[],
+    scope: QueryScope
   ): Promise<QueryResponse> {
     const client = getClickHouseDB();
     const paramIndex = { value: 0 };
     const params: Record<string, unknown> = {};
 
     const queries = tables.map((t) => {
-      const whereClause = this.buildWhereClause(
+      const whereClause = this.buildScopedWhereClause(
         request.where,
         t,
+        scope,
         params,
         paramIndex
       );
-      let q = `SELECT ${this.buildSelectColumns(t)} FROM ${t}`;
-      if (whereClause) q += ` WHERE ${whereClause}`;
-      return q;
+      return `SELECT ${this.buildSelectColumns(t)} FROM ${t} FINAL WHERE ${whereClause}`;
     });
 
     const unionQuery = queries.join(" UNION ALL ");
@@ -77,14 +77,15 @@ export class ClickHouseQueryDialect implements QueryDialect {
       data as unknown as Record<string, string>[]
     ).map(normalizeRow);
 
-    const total = await this.getTotalCount(request, tables);
+    const total = await this.getTotalCount(request, tables, scope);
 
     return { rows, total };
   }
 
   async executeAggregationQuery(
     request: QueryRequest,
-    tables: EventTableName[]
+    tables: EventTableName[],
+    scope: QueryScope
   ): Promise<QueryResponse> {
     const client = getClickHouseDB();
     const agg = request.aggregation!;
@@ -123,15 +124,14 @@ export class ClickHouseQueryDialect implements QueryDialect {
         cols.push("toInt64(1) as agg_value");
       }
 
-      const whereClause = this.buildWhereClause(
+      const whereClause = this.buildScopedWhereClause(
         request.where,
         t,
+        scope,
         params,
         paramIndex
       );
-      let q = `SELECT ${cols.join(", ")} FROM ${t}`;
-      if (whereClause) q += ` WHERE ${whereClause}`;
-      return q;
+      return `SELECT ${cols.join(", ")} FROM ${t} FINAL WHERE ${whereClause}`;
     });
 
     const unionQuery = subQueries.join(" UNION ALL ");
@@ -169,22 +169,22 @@ export class ClickHouseQueryDialect implements QueryDialect {
 
   async getTotalCount(
     request: QueryRequest,
-    tables: EventTableName[]
+    tables: EventTableName[],
+    scope: QueryScope
   ): Promise<number> {
     const client = getClickHouseDB();
     const paramIndex = { value: 0 };
     const params: Record<string, unknown> = {};
 
     const subQueries = tables.map((t) => {
-      const whereClause = this.buildWhereClause(
+      const whereClause = this.buildScopedWhereClause(
         request.where,
         t,
+        scope,
         params,
         paramIndex
       );
-      let q = `SELECT count() as cnt FROM ${t}`;
-      if (whereClause) q += ` WHERE ${whereClause}`;
-      return q;
+      return `SELECT count() as cnt FROM ${t} FINAL WHERE ${whereClause}`;
     });
 
     const query = `SELECT sum(cnt) as total FROM (${subQueries.join(" UNION ALL ")})`;
@@ -214,6 +214,35 @@ export class ClickHouseQueryDialect implements QueryDialect {
       }
     }
     return parts.join(", ");
+  }
+
+  /**
+   * Combines the caller's filters with the mandatory tenant scope so that a
+   * query can never read rows from another project (or, for production/test
+   * keys, from the other mode).
+   */
+  private buildScopedWhereClause(
+    group: QueryFilterGroup,
+    table: EventTableName,
+    scope: QueryScope,
+    params: Record<string, unknown>,
+    paramIndex: { value: number }
+  ): string {
+    const projectParam = `p_${paramIndex.value++}`;
+    params[projectParam] = scope.projectId;
+    const parts: string[] = [`project_id = {${projectParam}:String}`];
+
+    if (scope.mode) {
+      const modeParam = `p_${paramIndex.value++}`;
+      params[modeParam] = scope.mode;
+      parts.push(`mode = {${modeParam}:String}`);
+    }
+
+    const userWhere = this.buildWhereClause(group, table, params, paramIndex);
+    if (userWhere) {
+      parts.push(`(${userWhere})`);
+    }
+    return parts.join(" AND ");
   }
 
   private buildWhereClause(
